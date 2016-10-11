@@ -56,22 +56,22 @@ function brapi_v1_about_json() {
  * DELETE: logs out current user.
  *
  * Supported POST parameters:
- * - grant_type string
+ * - grant_type (string)
  *   The grant type. Only allowed value is 'password', but it can be ignored.
  *   Example: 'grant_type': 'password'
  *
- * - username string required
+ * - username (string, required)
  *   The user login.
  *   Example: 'username': 'admin'
  *
- * - password string
+ * - password (string)
  *   The user password.
  *   Example: 'password': 'mylittlesecret'
  *
- * - client_id string
- *    The client_id that correspond to the remote client name.
- *    Currently ignored.
- *    Example: 'client_id': 'admin'
+ * - client_id (string)
+ *   The client_id that correspond to the remote client name.
+ *   Currently ignored.
+ *   Example: 'client_id': 'admin'
  *
  * Example:
  * - GET:
@@ -88,7 +88,10 @@ function brapi_v1_about_json() {
  *   @endcode
  *
  * @return string
- *   a JSON string.
+ *   a JSON string with the following fields:
+ *   - userDisplayName
+ *   - access_token
+ *   - expires_in
  *
  * @ingroup brapi
  */
@@ -242,6 +245,50 @@ function brapi_v1_authentication_json() {
     );
   }
 }
+
+/**
+ * BRAPI: Call search
+ *        brapi/v1/calls
+ *
+ * GET: search and returns the list of supported BrAPI calls.
+ *
+ * Supported GET parameters:
+ * - call (string)
+ *     The name of a call.
+ */
+function brapi_v1_call_json() {
+
+  // init status and debug data
+  $call_data = array();
+  $metadata = brapi_prepare_metadata(0);
+  $debug_data = array();
+
+  // GET: get current user
+  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    foreach (brapi_get_calls() as $call_name => $call_settings) {
+      if ('/' != $call_name) {
+        $call_data[] = array(
+          'call' => substr($call_name, 1),
+          'datatypes' => $call_settings['datatypes'],
+          'methods' => array_keys($call_settings['methods']),
+        );
+      }
+    }
+    return brapi_output_json(
+      array('result' => $call_data),
+      $metadata,
+      $debug_data
+    );
+  }
+    // unsupported
+  else {
+    return brapi_raise_raw_error_json(
+      400,
+      array('error' => t('Unsupported method!'),)
+    );
+  }
+}
+
 
 /**
  * BRAPI: Germplasm Search by Name

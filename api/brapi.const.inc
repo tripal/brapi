@@ -98,6 +98,23 @@ function brapi_get_calls() {
         ),
         'page callback' => 'brapi_v1_authentication_json',
       ),
+      '/calls'      => array(
+        'title'          => 'Call search',
+        'description'    => 'Supported Breeding API calls',
+        'datatypes'      => array('json',),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+        ),
+        'page callback' => 'brapi_v1_call_json',
+        'arguments' => array(
+          3 => array(
+            'name' => 'callName',
+            'type' => 'string',
+            'description' => 'a call name (machine name)',
+            'required' => FALSE,
+          ),
+        ),
+      ),
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',

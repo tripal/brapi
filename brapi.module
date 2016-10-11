@@ -220,12 +220,12 @@ function brapi_menu() {
 function brapi_page_alter(&$page) {
   $brapi_prefix_length = strlen(BRAPI_SERVICE_PREFIX_V1);
 
-  // check for BrAPI errors
+  // check for BrAPI errors and capture them to output them in JSON
   $path = request_path();
   if (0 == strncmp($path, BRAPI_SERVICE_PREFIX_V1, $brapi_prefix_length)) {
     $status = drupal_get_http_header('Status');
     // only catch 4xx and 5xx HTTP status
-    if (preg_match('/^([45]\d\d)\s*(.+)/', $status, $matches)) {
+    if (preg_match('/^([45]\d\d)\s*(.*)/', $status, $matches)) {
       $page = brapi_raise_error_json($matches[1], $matches[2]);
     }
   }
