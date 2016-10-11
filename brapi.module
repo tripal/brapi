@@ -1,0 +1,238 @@
+<?php
+
+/**
+ * @file
+ * This file contains all Drupal hooks for the Breeding API module.
+ */
+
+/**
+ * @defgroup brapi Breedind API
+ * @{
+ * Breeding API implementation.
+ *
+ * These functions are part of the Drupal Breeding API implementation internal
+ * uses.
+ * @}
+ */
+
+// includes constants
+require('api/brapi.const.inc');
+// includes API functions
+require('api/brapi.api.inc');
+// includes theming functions
+require('theme/brapi.theme.inc');
+// includes administrative functions
+require('includes/brapi.admin.inc');
+// includes call implementations
+require('api/brapi.calls.inc');
+
+/**
+ * Implements hook_boot().
+ *
+ * BrAPI-compliant clients are not supposed to support cookies but rather
+ * support "bearer" token instead. Drupal does not work with bearer token and
+ * uses session cookies.
+ * This hook implementation is used to convert the "bearer" token provided by
+ * BrAPI-compliant clients into a Drupal session cookie.
+ * The initial bearer token is provided by this BrAPI implementation when the
+ * client uses the login service (POST /brapi/v1/token). The bearer token is
+ * generated using Drupal login system that creates a session object. The
+ * session cookie is serialized in a string ("name=id") and provided as token
+ * to the client application that will use it for the next calls that
+ * requires authentication.
+ *
+ * BrAPI-compliant clients provide this kind of bearer token in the HTTP header:
+ * Authorization: Bearer SESS13cd44e3aa3714d0cc373e81c4e33f5b=JoAO7C2aGrSkteEtoy
+ *
+ * The bearer value is break into 2 pieces that correspond to the session name
+ * and the session ID.
+ *
+ * @ingroup brapi
+ */
+function brapi_boot() {
+  // get session id from bearer token (HTTP header provided by the client)
+  if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    $got_authentication = preg_match(
+                            "/\s*Bearer\s+([^\s=]+)=(\S+)/i",
+                            $_SERVER['HTTP_AUTHORIZATION'],
+                            $matches
+                          );
+    if ($got_authentication) {
+      // save current session data
+      $session_data = isset($_SESSION) ? $_SESSION : NULL;
+      // update client cookies
+      $_COOKIE[$matches[1]] = $matches[2];
+      
+      // set HTTP header cookies for others from the bearer token
+      if ($_SERVER['HTTP_COOKIE']) {
+        $cookie_already_set = 
+            false !== strpos($_SERVER['HTTP_COOKIE'], $matches[1]);
+      }
+
+      if (!$cookie_already_set) {
+        $_SERVER['HTTP_COOKIE'] .= "; " . $matches[1] . "=" . $matches[2];
+      }
+
+      // update PHP session info
+      session_name($matches[1]);
+      session_id($matches[2]);
+      // restart session system with new infos
+      session_start();
+      // restore previous session data
+      if (!empty($session_data)) {
+        $_SESSION += $session_data;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_permissions().
+ *
+ * 3 Permissions exist for this implementation of the Breeding API:
+ * - Use Breeding API: access to any Breeding API calls for read access
+ * - Update through Breeding API: allow breeding data alteration
+ * - Administer Breeding API: administrative access to manage CV settings and
+ *   examples.
+ *
+ * @ingroup brapi
+ */
+function brapi_permission() {
+
+  return array(
+    BRAPI_USE_PERMISSION => array(
+      'title' => t('Use Breeding API'),
+      'description' => t('Allow users to access to the Breeding API.'),
+    ),
+    BRAPI_UPDATE_PERMISSION => array(
+      'title' => t('Update through Breeding API'),
+      'description' => t('Allow users to update server data (insert/update/delete) through the Breeding API. Only give this access to trusted users!'),
+    ),
+    BRAPI_ADMIN_PERMISSION => array(
+      'title' => t('Administer Breeding API'),
+      'description' => t('Allow users to administer Breeding API.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu()
+ *
+ * Specifies menu items and URLs used by the Breeding API module.
+ *
+ * @ingroup brapi
+ */
+function brapi_menu() {
+  $items = array();
+
+  // Overview page
+  $items['admin/tripal/extension/brapi'] = array(
+    'title' => t('Breeding API'),
+    'description' => t('Breeding API Tripal extension module.'),
+    'page callback' => 'theme',
+    'page arguments' => array('brapi_overview'),
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/tripal/extension/brapi/overview'] = array(
+    'title' => t('BrAPI Overview'),
+    'description' => t('Breeding API Tripal extension module.'),
+    'page callback' => 'theme',
+    'page arguments' => array('brapi_overview'),
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 0,
+  );
+
+  // Configuration page
+  $items['admin/tripal/extension/brapi/configuration'] = array(
+    'title' => t('Settings'),
+    'description' => t('Configure the Breeding API module'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('brapi_admin_form'),
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  // Help page based using theme/templates/brapi_help.tpl.php file
+  $items['admin/tripal/extension/brapi/help'] = array(
+    'title' => t('Help'),
+    'description' => t('Basic Description of Breeding API Module Functionality'),
+    'page callback' => 'theme',
+    'page arguments' => array('brapi_help'),
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
+
+  // Autocomplete script
+  $items['brapi/terms/autocomplete'] = array(
+    'title' => t('Autocomplete for BrAPI terms'),
+    'page callback' => 'brapi_terms_autocomplete',
+    // only used by administrative interfaces (prevents access to private data)
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_CALLBACK,
+  );
+
+  // Generate Drupal URL menu for supported BrAPI calls
+  foreach (brapi_get_calls() as $call_name => $call_data) {
+    $call_url = BRAPI_SERVICE_PREFIX_V1 . $call_name;
+    // remove trailing slash if one
+    if ('/' == $call_url[strlen($call_url) - 1]) {
+      $call_url = substr($call_url, 0 ,-1);
+    }
+    // add call
+    $items[$call_url] = array(
+      'title' => t($call_data['title']),
+      'description' => t($call_data['description']),
+      'page callback' => $call_data['page callback'],
+      'access arguments' => array($call_data['permissions']['GET']),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    );
+    // manage optional arguments
+    if (array_key_exists('arguments', $call_data)) {
+      $items[$call_url]['page arguments'] = array();
+      foreach ($call_data['arguments'] as $argument => $argdata) {
+        $items[$call_url]['page arguments'][] = $argument;
+      }
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * @ingroup brapi
+ */
+function brapi_theme($existing, $type, $theme, $path) {
+  $items = array(
+    // the overview template
+    'brapi_overview' => array(
+      'variables' => array('node' => NULL),
+      'template' => 'brapi_overview',
+      'path' => "$path/theme/templates",
+    ),
+    // the help template
+    'brapi_help' => array(
+      'template' => 'brapi_help',
+      'variables' =>  array(NULL),
+      'path' => "$path/theme/templates",
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_help().
+ *
+ * @ingroup brapi
+ */
+function brapi_help($path, $arg) {
+  if ($path == 'admin/help#brapi') {
+    return theme('brapi_help', array());
+  }
+}

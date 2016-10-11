@@ -1,0 +1,89 @@
+/**
+ * @file
+ * Breeding API styles.
+ *
+ * This file contains styles used by the Breeding API user interface.
+ */
+.brapi-admin-block {
+  padding-bottom: 1em;
+}
+
+.brapi-admin-block .system-status-report {
+  margin: 3em 0;
+}
+
+.brapi-admin-block .system-status-report caption {
+  font-weight: bold;
+  font-size: larger;
+  text-align:left;
+}
+
+.brapi-spe-role {
+  color: DimGray;
+  font-style: italic;
+}
+
+.brapi-argument::before {
+  content: "<";
+}
+
+.brapi-argument::after {
+  content: ">";
+}
+
+.brapi-argument {
+  color: DimGray;
+  font-weight: bold;
+}
+
+.brapi-required {
+  color: red;
+}
+
+.brapi-feature {
+}
+
+.brapi-feature-name {
+  font-weight: bold;
+}
+
+.brapi-feature-value {
+}
+
+.brapi-minor-details {
+  color: DimGray;
+  font-size: smaller;
+}
+
+.brapi-missing {
+  color: DarkOrange;
+  font-weight: bold;
+}
+
+.brapi-yes, .brapi-yes a {
+  color: DarkGreen;
+}
+
+.brapi-no {
+  color: DarkRed;
+}
+
+.brapi-dl {
+  width: 100%;
+  padding: 0 2ex;
+  margin: 0;
+}
+
+.brapi-dl dt {
+  float: left;
+  clear: left;
+  width: 60ex;
+  padding: 0;
+  margin: 0;
+}
+
+.brapi-dl dd {
+  float: left;
+  padding: 0;
+  margin: 0;
+}

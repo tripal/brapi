@@ -1,0 +1,167 @@
+<?php
+/**
+ * @file
+ * Installation of Breeding API module
+ *
+ * @ingroup brapi
+ */
+
+/**
+ * Implements hook_enable().
+ *
+ * @ingroup brapi
+ */
+function brapi_enable() {
+  // make sure the BrAPI CV is still there
+  $brapi_cv_select = array('name' => BRAPI_CV);
+  $brapi_cv = chado_select_record('cv', array('cv_id'), $brapi_cv_select);
+  if (is_array($brapi_cv)) {
+    $brapi_cv = current($brapi_cv);
+  }
+  if (!$brapi_cv) {
+    brapi_add_cvs();
+  }
+}
+
+/**
+ * Implements hook_disable().
+ *
+ * @ingroup brapi
+ */
+function brapi_disable() {
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * @ingroup brapi
+ */
+function brapi_requirements($phase) {
+  $t = get_t();
+  $requirements = array();
+  if ($phase == 'install') {
+    // make sure chado is installed
+    if (!$GLOBALS["chado_is_installed"]) {
+      $requirements ['brapi'] = array(
+          'title' => 'Breeding API',
+          'value' => $t('ERROR: Chado must be installed before this module can be enabled'),
+          'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * @ingroup brapi
+ */
+function brapi_install() {
+  $t = get_t();
+
+  // add controlled vocabularies and terms
+  brapi_add_cvs();
+
+  // set BrAPI term settings
+  variable_del(BRAPI_CV_SETTINGS);
+  $initial_brapi_cv_settings = brapi_get_cv_settings(TRUE);
+  variable_set(BRAPI_CV_SETTINGS, $initial_brapi_cv_settings);
+
+  // set BrAPI example settings
+  variable_set(BRAPI_EXAMPLE_SETTINGS, array());
+
+  drupal_set_message(
+    $t('Breeding API settings are available under !link', 
+      array('!link' =>
+        l(
+          implode(
+            ' > ',
+            array(
+              $t('Administration'),
+              $t('Tripal'),
+              $t('Extensions'),
+              $t('Breeding API'),
+              $t('Settings'),
+            )
+          ),
+          '/admin/tripal/extension/brapi/configuration'
+        )
+      )
+    )
+  );
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * @ingroup brapi
+ */
+function brapi_uninstall() {
+  $t = get_t();
+  // remove BrAPI CVs
+  brapi_remove_cvs();
+  // notify MCPD CV has not been removed
+  drupal_set_message($t("BrAPI: MCPD vocabulary has not been removed from Chado. If you don't need it anymore, you can remove it manually using the following SQL query: \"DELETE FROM chado.cv cv WHERE cv.name = '" . BRAPI_CV . "';\""));
+  // clear BrAPI settings
+  variable_del(BRAPI_CV_SETTINGS);
+  variable_del(BRAPI_EXAMPLE_SETTINGS);
+}
+
+/**
+ * Adds MCPD and Breeeding API controlled vocabulary if missing.
+ *
+ * @ingroup brapi
+ */
+function brapi_add_cvs() {
+  $t = get_t();
+  // install MCPD CV if not available
+  // -first check MCPD CV is installed
+  $mcpd_select = array('name' => 'multicrop passport ontology');
+  $mcpd_cv = chado_select_record('cv', array('cv_id'), $mcpd_select);
+  if (is_array($mcpd_cv)) {
+    $mcpd_cv = current($mcpd_cv);
+  }
+  if (!$mcpd_cv) {
+    $newcvs = array();
+    $mcpd_path = drupal_get_path('module', 'brapi') . 'cv/mcpd_v2.1_151215.obo';
+    tripal_cv_load_obo_v1_2($mcpd_path, $newcvs);
+  }
+  drupal_set_message($t('Adding Breeding API CV to Chado'));
+  // insert Breeding API CV if missing
+  tripal_insert_cv(
+    BRAPI_CV,
+    'Contains Breeding API controlled vocabulary.'
+  );
+  // drupal_set_message('Adding Breeding API CV terms to Chado');
+  brapi_add_cvterms();
+}
+
+/**
+ * Adds controlled vocabulary terms needed by this module.
+ *
+ * @ingroup brapi
+ */
+function brapi_add_cvterms() {
+  $brapi_cv = brapi_get_cv();
+  foreach ($brapi_cv as $cvterm_name => $definition) {
+    tripal_insert_cvterm(array(
+      'id'         => BRAPI_DB . ':' . $cvterm_name,
+      'name'       => $cvterm_name,
+      'cv_name'    => BRAPI_CV,
+      'definition' => $definition,
+      'db_name'    => BRAPI_DB,
+    ));
+  }
+}
+
+/**
+ * Remove BrAPI CV from Chado.
+ *
+ * @ingroup brapi
+ */
+function brapi_remove_cvs() {
+  // remove Breeding API CV
+  $cv_match = array('name' => BRAPI_CV);
+  chado_delete_record('cv', $cv_match);
+}
