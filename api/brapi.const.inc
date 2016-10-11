@@ -5,7 +5,7 @@
  *
  * @ingroup brapi
  */
- 
+
 /**
  * @defgroup brapi_const Breeding API global constants
  * @ingroup brapi
@@ -13,7 +13,7 @@
  * Constants and default settings used by the Breeding API module.
  * @}
  */
- 
+
 /*******************************************************************************
  * BREEDING API GLOBALS
  *******************************************************************************
@@ -137,7 +137,7 @@ function brapi_get_calls() {
  *   -'accession': the Chado database field used to identify the record from
  *    outside (Restful, web, apps);
  *   -'fields': an array of field configuration;
- *   
+ *
  *   Each field can have the following structures:
  *   -a string: it will be treated as the name of the column holding the value
  *    in the Chado table;

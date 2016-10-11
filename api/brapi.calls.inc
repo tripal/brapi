@@ -3,13 +3,28 @@
 /**
  * @file
  * Implementation of Breeding API calls.
+ *
+ * General call parameters:
+ *
+ * - pageSize (integer)
+ *   The size of the pages to be returned.
+ *   Default is 1000.
+ *   Example: 'pageSize=1000'.
+ *
+ * - page (integer)
+ *   Which result page is requested. Page index start from 1 (not 0).
+ *   Example: 'page=10'.
+ *
+ * - pretty (boolean)
+ *   If set (true), outputs JSON in a nice human-readable format.
+ *
  */
 
 /**
  * BRAPI: About
  *        brapi/v1
  *
- * Outputs BRAPI "about" message.
+ * GET: Outputs BRAPI "about" message.
  *
  * @return string
  *   a JSON string.
@@ -31,7 +46,6 @@ function brapi_v1_about_json() {
     array()
   );
 }
- 
 
 /**
  * BRAPI: Authentication
@@ -44,26 +58,34 @@ function brapi_v1_about_json() {
  * Supported POST parameters:
  * - grant_type string
  *   The grant type. Only allowed value is 'password', but it can be ignored.
- *   Example: 'grant_type=password'
+ *   Example: 'grant_type': 'password'
  *
  * - username string required
  *   The user login.
- *   Example: 'username=admin'
+ *   Example: 'username': 'admin'
  *
- * - password string required
+ * - password string
  *   The user password.
- *   Example: 'password=mylittlesecret'
+ *   Example: 'password': 'mylittlesecret'
  *
  * - client_id string
- *    The client_id that correspond to the remote client name. 
+ *    The client_id that correspond to the remote client name.
  *    Currently ignored.
- *    Example: 'admin'
+ *    Example: 'client_id': 'admin'
  *
  * Example:
  * - GET:
  *   brapi/v1/token?pretty=1
  * - POST:
- *   brapi/v1/token?grant_type=password&username=admin&password=toto1234&client_id=root
+ *   brapi/v1/token
+ *   @code
+ *   {
+ *     'grant_type': 'password',
+ *     'username': 'admin',
+ *     'password': 'toto1234',
+ *     'client_id': 'root'
+ *   }
+ *   @endcode
  *
  * @return string
  *   a JSON string.
@@ -88,6 +110,9 @@ function brapi_v1_authentication_json() {
   $metadata = brapi_prepare_metadata(0);
   $debug_data = array();
 
+  // get expiration time
+  $maxlifetime = ini_get("session.gc_maxlifetime");
+
   // GET: get current user
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // return current credential
@@ -95,11 +120,10 @@ function brapi_v1_authentication_json() {
       //+FIXME: for admin, list all users logged in (with brapi roles?)
       $authentication_data =
         array(
-          array(
-            'username' => $user->name,
+            'userDisplayName' => $user->name,
+            'access_token' => session_name() . '=' . session_id(),
             'client_id' => $user->name,
-            'access_token' => session_name() . '=' . session_id()
-          )
+            'expires_in' => $maxlifetime,
         );
     }
     return brapi_output_json(
@@ -112,12 +136,22 @@ function brapi_v1_authentication_json() {
   elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // login...
     // get user login and password
+    try {
+      $user_data = brapi_get_user_json_input();
+    }
+    catch (Exception $e) {
+      return brapi_raise_error_json(
+        400,
+        $e->getMessage()
+      );
+    }
+
     // local client name
-    $username   = empty($_POST['username'])   ? FALSE : $_POST['username'];
-    $password   = empty($_POST['password'])   ? FALSE : $_POST['password'];
-    $grant_type = empty($_POST['grant_type']) ? FALSE : $_POST['grant_type'];
+    $username   = empty($user_data['username'])   ? FALSE : $user_data['username'];
+    $password   = empty($user_data['password'])   ? FALSE : $user_data['password'];
+    $grant_type = empty($user_data['grant_type']) ? FALSE : $user_data['grant_type'];
     // remote client name
-    $client_id  = empty($_POST['client_id'])  ? FALSE : $_POST['client_id'];
+    $client_id  = empty($user_data['client_id'])  ? FALSE : $user_data['client_id'];
 
     // BRAPI OAuth2 support only allows "password" grant type
     // and if not set, assume "password"
@@ -167,13 +201,19 @@ function brapi_v1_authentication_json() {
     }
 
 
-    $response = array('session_token' => implode('=', $authentication_data));
-    
-    return brapi_output_json($response);
+    $response = array(
+      'userDisplayName' => $user->name,
+      'access_token'    => implode('=', $authentication_data),
+      'client_id'       => $user->name,
+      'expires_in'      => $maxlifetime,
+    );
+
+    return brapi_output_json($response, $metadata, $debug_data);
 
   }
     // DELETE: logout process
   elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    //+FIXME: check if admin and a token has been provided in JSON data
     // logout if needed
     if (user_is_logged_in()) {
       module_invoke_all('user_logout', $user);
@@ -192,7 +232,7 @@ function brapi_v1_authentication_json() {
           'message' => t("Current user was not logged in."),
         );
     }
-    return brapi_output_json(array(), $metadata, $debug_data);
+    return brapi_output_json(array('result' => array()), $metadata, $debug_data);
   }
     // unsupported
   else {
@@ -202,7 +242,6 @@ function brapi_v1_authentication_json() {
     );
   }
 }
-
 
 /**
  * BRAPI: Germplasm Search by Name
@@ -239,15 +278,6 @@ function brapi_v1_authentication_json() {
  *       'synonyms': also search in synonyms.
  *     Default: empty (does not include synonyms)
  *     Example: 'include=synonyms'.
- *     
- * - pageSize integer
- *     The size of the pages to be returned.
- *     Default is 1000.
- *     Example: 'pageSize=1000'.
- *     
- * - page integer
- *     Which result page is requested. Page index start from 1 (not 0).
- *     Example: 'page=10'.
  *
  * Example:
  * - GET
@@ -331,7 +361,7 @@ function brapi_v1_germplasm_by_name_json() {
   $where_clause = array();
   $query_arguments = array();
   $matching_operator = 'ILIKE';
-  
+
   // get additional information to include in the output
   $include = array(); // old default: array('synonyms' => TRUE)
   if (isset($args['include'])) {
@@ -341,7 +371,7 @@ function brapi_v1_germplasm_by_name_json() {
   // get name search pattern
   $search_pattern = isset($args['name'])?$args['name']:'';
   //+FIXME: list all entries if no search query provided
-  
+
   // get match method
   $match_method = isset($args['matchMethod'])?$args['matchMethod']:'';
   // make sure the method is supported
@@ -531,7 +561,7 @@ function brapi_v1_germplasm_by_name_json() {
 
     $germplasm_list[] = $germplasm;
   }
-  
+
   // sort accessions by stock.uniquename
   $sort_germplasm = function($a, $b) {
     //return strcmp($a['synonyms'][0], $b['synonyms'][0]);
@@ -653,7 +683,7 @@ function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode =
  *   -abbreviation**: the Chado organism abbreviation
  *   -description**: the Chado stock description
  *   -type_id**: a Chado cvterm_id used for stock types
- * 
+ *
  *
  * @param $uniquename
  * The stock.uniquename value to use for the new stock.
@@ -741,7 +771,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   if (array_key_exists('description', $user_data)) {
     $description = $user_data['description'];
   }
-  
+
   // check if the user specified a type_id
   if (array_key_exists('type_id', $user_data)) {
     $type_id = $user_data['type_id'];
@@ -767,7 +797,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   );
   // we capture output buffer for Tripal error messages
   ob_start();
-  $stock = chado_insert_record('stock', $values);  
+  $stock = chado_insert_record('stock', $values);
   $tripal_message = ob_get_clean();
   if (empty($stock) || !$stock['stock_id']) {
     return brapi_raise_error_json(
@@ -792,7 +822,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     ),
     WATCHDOG_DEBUG
   );
-  
+
   //+FIXME: store other fields
   foreach ($optional_fields as $optional_field) {
     if (array_key_exists($optional_field, $user_data)) {
@@ -817,7 +847,7 @@ function brapi_v1_read_germplasm_json($stock) {
 
   $fields = array(
     'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
-    'germplasmPUI', 'synonyms', 
+    'germplasmPUI', 'synonyms',
   );
   foreach ($fields as $field_name) {
     $germplasm_data[$field_name] =
@@ -866,7 +896,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     if (is_array($organism)) {
       $organism = current($organism);
     }
-    
+
     if (empty($organism) || !$organism->organism_id) {
       return brapi_raise_error_json(
         404,
@@ -876,12 +906,12 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
 
     $stock_data['organism_id'] = $organism->organism_id;
   }
-  
+
   // check if the user specified a stock description
   if (array_key_exists('description', $user_data)) {
     $stock_data['description'] = $user_data['description'];
   }
-  
+
   // check if the user specified a type_id
   if (array_key_exists('type_id', $user_data)) {
     $stock_data['type_id'] = $user_data['type_id'];
@@ -923,7 +953,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     ),
     WATCHDOG_DEBUG
   );
-  
+
   // update other fields
   $updatable_fields = array('germplasmName', 'synonyms');
 
@@ -1018,7 +1048,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  *                                          (e.g. COL001) as recommended by FAO
  *                                          WIEWS
  * instituteName       string               Name of the institute (or person)
- *                                          that bred the material.  
+ *                                          that bred the material.
  * biologicalStatusOfAccessionCode  string  400) Breeding/research material 410)
  *                                          Breeder's line 411) Synthetic
  *                                          population 412) Hybrid 413) Founder
@@ -1061,11 +1091,11 @@ function brapi_v1_delete_germplasm_json($stock) {
  *                                          (for convariety); 'var.' (for
  *                                          variety); 'f.' (for form); 'Group'
  *                                          (for 'cultivar group').
- * subtaxaAuthority    string   
+ * subtaxaAuthority    string
  * donors              array of object      code of the donor institute and
  *                                          Identifier assigned to an accession
  *                                          by the donor, and permanent
- *                                          identifier.  
+ *                                          identifier.
  * acquisitionDate     string               Date on which the accession entered
  *                                          the collection where YYYY is the
  *                                          year, MM is the month and DD is the
@@ -1286,7 +1316,7 @@ function brapi_v1_germplasm_mcpd_json($germplasm_id, $view_mode = 'full', $langc
         // -donor accession number
         $donor_data['donorAccessionNumber'] = $donor_accession_number[$i];
       }
-      
+
       // $donor_data['germplasmPUI'] = NULL;
 
       $germplasm_data['donors'][] = $donor_data;
@@ -1508,7 +1538,7 @@ function brapi_v1_germplasm_pedigree_json($germplasm_id) {
 
   //+FIXME: handle notation
   $notation   = isset($args['notation']) ? $args['notation'] : 'purdy';
-  
+
   // get corresponding stock
   $pedigree_data = array();
   $selector = array(
@@ -1547,7 +1577,7 @@ function brapi_v1_germplasm_pedigree_json($germplasm_id) {
         }
       }
     }
-    
+
     $rank0_pedigree['pedigreeString'] = '';
     if ($rank0_pedigree['parent1Id'] || $rank0_pedigree['parent2Id']) {
       $rank0_pedigree['pedigreeString'] = $rank0_pedigree['parent1Id'] . ' / ' . $rank0_pedigree['parent2Id'];
@@ -1559,7 +1589,7 @@ function brapi_v1_germplasm_pedigree_json($germplasm_id) {
 }
 
 
-/**
+/ **
  * BRAPI: Germplasm markerprofiles
  *        brapi/v1/germplasm/\<id\>/markerprofiles
  *
@@ -1602,7 +1632,7 @@ function brapi_v1_germplasm_markerprofiles_json($germplasm_id) {
     $query_arguments = array(
       ':stock_uniquename' => $germplasm_id,
     );
-  
+
     $sql_query = "
         SELECT f.uniquename
         FROM
@@ -1632,7 +1662,7 @@ function brapi_v1_germplasm_markerprofiles_json($germplasm_id) {
 }
 
 
-/**
+/ **
  * brapi_v1_crops_json()
  *
  * /
@@ -1662,7 +1692,7 @@ function brapi_v1_crops_json() {
 }
 
 
-/**
+/ **
  * brapi_v1_markerprofiles_json()
  *
  * /
@@ -1671,7 +1701,7 @@ function brapi_v1_markerprofiles_json() {
 }
 
 
-/**
+/ **
  * brapi_v1_markerprofiles_details_json()
  *
  * /
@@ -1680,7 +1710,7 @@ function brapi_v1_markerprofiles_details_json($markerprofile_id) {
 }
 
 
-/**
+/ **
  * brapi_v1_allelematrices_json()
  *
  * /
@@ -1689,7 +1719,7 @@ function brapi_v1_allelematrices_json($allelematrix_id) {
 }
 
 
-/**
+/ **
  * brapi_v1_traits_json()
  *
  * /
@@ -1697,7 +1727,7 @@ function brapi_v1_traits_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_germplasm_list_by_trialdbid_json()
  *
  * /
@@ -1705,7 +1735,7 @@ function brapi_v1_germplasm_list_by_trialdbid_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_attributes_json()
  *
  * /
@@ -1713,7 +1743,7 @@ function brapi_v1_attributes_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_attribute_categories_json()
  *
  * /
@@ -1721,7 +1751,7 @@ function brapi_v1_attribute_categories_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_germplasm_attributes_json()
  *
  * /
@@ -1771,7 +1801,7 @@ function brapi_v1_germplasm_attributes_json($germplasm_id) {
   return brapi_output_json(array('result' => array('germplasmDbId' => $germplasm_id, 'data' => $attribute_list)), $metadata, $debug_data);
 }
 
-/**
+/ **
  * brapi_v1_study_types_json()
  *
  * /
@@ -1779,7 +1809,7 @@ function brapi_v1_study_types_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_study_instances_json()
  *
  * /
@@ -1787,7 +1817,7 @@ function brapi_v1_study_instances_json($study_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_studies_json()
  *
  * /
@@ -1856,7 +1886,7 @@ function brapi_v1_studies_json() {
   return brapi_output_json(array('result' => array('data' => $study_list)), $metadata, $debug_data);
 }
 
-/**
+/ **
  * brapi_v1_study_json()
  *
  * /
@@ -1864,7 +1894,7 @@ function brapi_v1_study_json($study_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_study_details_json()
  *
  * /
@@ -1872,7 +1902,7 @@ function brapi_v1_study_details_json($study_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_study_table_json()
  *
  * /
@@ -1936,7 +1966,7 @@ function brapi_v1_study_table_json($study_id) {
   return brapi_output_json(array('result' => array('data' => array($study_data))), $metadata, $debug_data);
 }
 
-/**
+/ **
  * brapi_v1_study_layout_json()
  *
  * /
@@ -1944,7 +1974,7 @@ function brapi_v1_study_layout_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_study_plot_json()
  *
  * /
@@ -1952,7 +1982,7 @@ function brapi_v1_study_plot_json($study_id, $observation_variable) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_phenotypes_json()
  *
  * /
@@ -1960,7 +1990,7 @@ function brapi_v1_phenotypes_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_phenotype_metadata_json()
  *
  * /
@@ -1968,7 +1998,7 @@ function brapi_v1_phenotype_metadata_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_phenotype_hierarchical_json()
  *
  * /
@@ -1976,7 +2006,7 @@ function brapi_v1_phenotype_hierarchical_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_trait_details_json()
  *
  * /
@@ -1984,7 +2014,7 @@ function brapi_v1_trait_details_json($trait_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_data_types_json()
  *
  * /
@@ -1992,7 +2022,7 @@ function brapi_v1_data_types_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_variables_json()
  *
  * /
@@ -2000,7 +2030,7 @@ function brapi_v1_variables_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_variable_detail_json()
  *
  * /
@@ -2008,7 +2038,7 @@ function brapi_v1_variable_detail_json($variable_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_genome_map_json()
  *
  * /
@@ -2016,7 +2046,7 @@ function brapi_v1_genome_map_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_genome_map_details_json()
  *
  * /
@@ -2024,7 +2054,7 @@ function brapi_v1_genome_map_details_json($map_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_genome_map_data_json()
  *
  * /
@@ -2032,7 +2062,7 @@ function brapi_v1_genome_map_data_json($map_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_genome_map_data_by_range_on_linkagegroup_json()
  *
  * /
@@ -2040,7 +2070,7 @@ function brapi_v1_genome_map_data_by_range_on_linkagegroup_json($map_id, $linkag
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_observation_levels_json()
  *
  * /
@@ -2048,7 +2078,7 @@ function brapi_v1_observation_levels_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_collection_json()
  *
  * /
@@ -2056,7 +2086,7 @@ function brapi_v1_collection_json($study_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_observation_sets_json()
  *
  * /
@@ -2064,7 +2094,7 @@ function brapi_v1_observation_sets_json($observation_id) {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_locations_json()
  *
  * /
@@ -2072,11 +2102,11 @@ function brapi_v1_locations_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
 
-/**
+/ **
  * brapi_v1_programs_json()
  *
  * /
 function brapi_v1_programs_json() {
   return brapi_raise_error_json(501, "Not implemented!");
 }
-
+*/

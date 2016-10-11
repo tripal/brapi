@@ -6,7 +6,7 @@
  *
  * @ingroup brapi
  */
- 
+
 /**
  * Administrative settings form.
  *
@@ -19,10 +19,10 @@ function brapi_admin_form() {
   $form = array();
 
   $form['cv_settings'] = array(
-    '#type'        => 'fieldset', 
+    '#type'        => 'fieldset',
     '#attributes'  => array('class' => array('container-inline')),
-    '#title'       => t('Controlled vocabulary settings'), 
-    '#collapsible' => TRUE, 
+    '#title'       => t('Controlled vocabulary settings'),
+    '#collapsible' => TRUE,
     '#collapsed'   => FALSE,
     '#suffix'      => '<br/>',
   );
@@ -37,13 +37,13 @@ function brapi_admin_form() {
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_name => $definition) {
     $default_id = 0;
-    
+
     // get from settings
     if (array_key_exists($term_name, $brapi_cv_settings)) {
       $default_id = $brapi_cv_settings[$term_name];
       $term = tripal_get_cvterm(array('cvterm_id' => $default_id,));
     }
-    
+
     // get term from BrAPI CV
     if (!$term) {
       $term =
@@ -74,7 +74,7 @@ function brapi_admin_form() {
       '#suffix' => '<br/><br/>',
     );
   }
-  
+
   // Default example entities settings
   $example_parameters = array();
   // get a unique list of all available parameters
@@ -91,10 +91,10 @@ function brapi_admin_form() {
       '#value' => '<br/>',
     );
     $form['example_settings'] = array(
-      '#type'        => 'fieldset', 
+      '#type'        => 'fieldset',
       '#attributes'  => array('class' => array('container-inline')),
-      '#title'       => t('Example value settings'), 
-      '#collapsible' => TRUE, 
+      '#title'       => t('Example value settings'),
+      '#collapsible' => TRUE,
       '#collapsed'   => FALSE,
       '#suffix'      => '<br/>',
     );
@@ -120,7 +120,7 @@ function brapi_admin_form() {
       '#suffix' => '<br/><br/>',
     );
   }
-  
+
   return system_settings_form($form);
 }
 
@@ -185,7 +185,7 @@ function brapi_admin_form_validate($form, &$form_state) {
       }
     }
   }
-  
+
   variable_set(BRAPI_CV_SETTINGS, $brapi_cv_settings);
   $brapi_cv_settings = brapi_get_cv_settings(TRUE);
 
@@ -199,7 +199,7 @@ function brapi_admin_form_validate($form, &$form_state) {
       }
     }
   }
-  
+
   $brapi_example_settings = array();
   foreach ($example_parameters as $example_parameter) {
     $brapi_example_settings[$example_parameter['name']] = $form_state['values'][$example_parameter['name']];

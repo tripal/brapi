@@ -5,7 +5,7 @@ http://www.drupal.org/project/brapi
 
 CONTENTS OF THIS FILE
 ---------------------
-   
+
  * Introduction
  * Requirements
  * Installation

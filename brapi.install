@@ -72,7 +72,7 @@ function brapi_install() {
   variable_set(BRAPI_EXAMPLE_SETTINGS, array());
 
   drupal_set_message(
-    $t('Breeding API settings are available under !link', 
+    $t('Breeding API settings are available under !link',
       array('!link' =>
         l(
           implode(

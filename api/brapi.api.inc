@@ -16,7 +16,7 @@
  * data and breeding API module.
  * @}
  */
- 
+
 /**
  * Returns multi-crop passport descriptor controlled vocabulary settings used
  * by this Breeding API installation.
@@ -26,7 +26,7 @@
  *
  * @ingroup brapi_api
  */
-function brapi_get_mcpd_settings() { 
+function brapi_get_mcpd_settings() {
   return array(
     'BiologicalStatusOfAccessionCode' =>
       brapi_get_children_cvterm_id('BiologicalStatusOfAccessionCode'),
@@ -49,7 +49,7 @@ function brapi_get_mcpd_settings() {
  *
  * @ingroup brapi_api
  */
-function brapi_get_cv_settings($reset = FALSE) { 
+function brapi_get_cv_settings($reset = FALSE) {
   static $settings;
   // if not initialized, get it from cache if available
   if (!isset($settings) || $reset) {
@@ -72,7 +72,7 @@ function brapi_get_cv_settings($reset = FALSE) {
         if (!$brapi_cv) {
           drupal_set_message(t('BrAPI controlled vocabulary is missing! Re-install BrAPI module.'), 'error');
         }
-  
+
         $brapi_cv_settings = array();
         foreach (array_keys(brapi_get_cv()) as $term_name) {
           // get term from BrAPI CV
@@ -124,7 +124,7 @@ function brapi_get_cv_settings($reset = FALSE) {
  */
 function brapi_terms_autocomplete($string) {
   $matches = array();
-  
+
   $sql_query = "
       SELECT
         cvt.cvterm_id AS \"id\",
@@ -505,7 +505,7 @@ function brapi_get_field($data_type, $object, $field_name) {
       )
     );
   }
-  
+
   // get values using mapping
   $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
   $value = '';
@@ -586,7 +586,7 @@ function brapi_get_field($data_type, $object, $field_name) {
         $value = $field_fetcher($data_type, $object, $field_name, 'read');
       }
       break;
-    default: 
+    default:
       return brapi_raise_error_json(
         400,
         t(
@@ -599,7 +599,7 @@ function brapi_get_field($data_type, $object, $field_name) {
         )
       );
   }
-  
+
   return $value;
 }
 
@@ -652,7 +652,7 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
       )
     );
   }
-  
+
   // set values using mapping
   $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
   switch (gettype($field_fetcher)) {
@@ -792,7 +792,7 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
         $field_fetcher($data_type, $object, $field_name, 'create', $field_value);
       }
       break;
-    default: 
+    default:
       return brapi_raise_error_json(
         400,
         t(
@@ -805,7 +805,7 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
         )
       );
   }
-  
+
   return $value;
 }
 
@@ -863,7 +863,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
   if (!array_key_exists($_SERVER['REQUEST_METHOD'], $call_settings['methods'])) {
     return brapi_raise_error_json(403, t("Invalid HTTP method!"));
   }
-  
+
   // check access permission
   if (!user_access($call_settings['methods'][$_SERVER['REQUEST_METHOD']])) {
     return brapi_raise_error_json(401, t("Access denied!"));
@@ -901,47 +901,14 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
   }
 
   // get user data if some
-  $putdata_stream = fopen("php://input", "r");
-  $user_data = '';
-  while ($data = fread($putdata_stream, 1024)) {
-    $user_data .= $data;
+  try {
+    $user_data = brapi_get_user_json_input();
   }
-  fclose($putdata_stream);
-  if (!empty($user_data)) {
-    $user_data = json_decode($user_data, TRUE);
-    if (empty($user_data)) {
-      $json_error_type = '';
-      switch (json_last_error()) {
-        case JSON_ERROR_NONE:
-          $json_error_type = t('No JSON format error found but data might be empty');
-          break;
-        case JSON_ERROR_DEPTH:
-          $json_error_type = t('Maximum stack depth exceeded');
-          break;
-        case JSON_ERROR_STATE_MISMATCH:
-          $json_error_type = t('Underflow or the modes mismatch');
-          break;
-        case JSON_ERROR_CTRL_CHAR:
-          $json_error_type = t('Unexpected control character found');
-          break;
-        case JSON_ERROR_SYNTAX:
-          $json_error_type = t('Syntax error, malformed JSON');
-          break;
-        case JSON_ERROR_UTF8:
-          $json_error_type = t('Malformed UTF-8 characters, possibly incorrectly encoded');
-          break;
-        default:
-          $json_error_type = t('Unknown error');
-          break;
-      }
-      return brapi_raise_error_json(
-        400,
-        t(
-          "Invalid JSON data provided: @json_error",
-          array('@json_error' => $json_error_type,)
-        )
-      );
-    }
+  catch (Exception $e) {
+    return brapi_raise_error_json(
+      400,
+      $e->getMessage()
+    );
   }
 
   // check request type
@@ -1044,6 +1011,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
         array('@mode' => $mode, '@message' => $e->getMessage())
       );
   }
+
   return brapi_raise_error_json(
     500,
     t(
@@ -1054,13 +1022,76 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
 }
 
 /**
+ * Returns a PHP structure containing user input (POST, PUT) for a call.
+ *
+ * @return array
+ *   JSON data transcrypted into a PHP structure.
+ *
+ * @throws Exception
+ *   if JSON parsing fails. Provides JSON parsing last error as message.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_user_json_input() {
+  static $user_data;
+  if (!isset($user_data)) {
+    $user_data = '';
+    // Read stream from user JSON POST/PUT data
+    $user_data_stream = fopen("php://input", "r");
+    while ($data_buffer = fread($user_data_stream, 1024)) {
+      $user_data .= $data_buffer;
+    }
+    fclose($user_data_stream);
+
+    // tries to decode JSON data if some
+    if (!empty($user_data)) {
+      $user_data = json_decode($user_data, TRUE);
+      if (empty($user_data)) {
+        $json_error_type = '';
+        switch (json_last_error()) {
+          case JSON_ERROR_NONE:
+            $json_error_type = t('No JSON format error found but data might be empty');
+            break;
+          case JSON_ERROR_DEPTH:
+            $json_error_type = t('Maximum stack depth exceeded');
+            break;
+          case JSON_ERROR_STATE_MISMATCH:
+            $json_error_type = t('Underflow or the modes mismatch');
+            break;
+          case JSON_ERROR_CTRL_CHAR:
+            $json_error_type = t('Unexpected control character found');
+            break;
+          case JSON_ERROR_SYNTAX:
+            $json_error_type = t('Syntax error, malformed JSON');
+            break;
+          case JSON_ERROR_UTF8:
+            $json_error_type = t('Malformed UTF-8 characters, possibly incorrectly encoded');
+            break;
+          default:
+            $json_error_type = t('Unknown error');
+            break;
+        }
+        $user_data = '';
+        // throws JSON parsing error
+        throw new Exception(t(
+          "Invalid JSON data provided: @json_error",
+          array('@json_error' => $json_error_type,)
+        ));
+      }
+    }
+  }
+  return $user_data;
+}
+
+/**
  * Prepare response metadata value.
  *
- * Compute page indexing. Take in account pagination arguments passed as
- * argument to Drupal (URL query string). If the requested page is outside range
- * the status will be set to reflect the issue.
+ * Initializes default metadata fields and compute page indexing. Take in
+ * account pagination arguments passed as argument to Drupal (URL query string).
+ * If the requested page is outside range the status will be set to reflect the
+ * issue.
  *
- * Supported GET parameters:
+ * Supported GET (URL) parameters:
  * - page (integer)
  *   index of the requested page (first page having index '1')
  * - pageSize (integer)
@@ -1068,16 +1099,19 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
  *
  * @param integer $item_count
  *   Total number of item that the query could return (without pagination).
+ *   If set to 0, no pagination data is issued (ie. 'pagination' => NULL).
  *   Default: 1
  *
  * @return array
- *   a metadata hash containing the pagination and status data.
+ *   a metadata hash containing the pagination, status and datafiles data.
  *
  * @ingroup brapi_api
  */
 function brapi_prepare_metadata($item_count = 1) {
   $metadata = array(
-    'status' => array(),
+    'status' => NULL,
+    'pagination' => NULL,
+    'datafiles' => array(),
   );
 
   if ($item_count) {
@@ -1171,7 +1205,8 @@ function brapi_prepare_metadata($item_count = 1) {
  *   to an empty array.
  *   Default: array(
  *     'pagination' => (object) NULL,
- *     'status' => array()
+ *     'status' => (object) NULL,
+ *     'datafiles' => array(),
  *   )
  *
  * @param array $debug_data
@@ -1186,21 +1221,18 @@ function brapi_prepare_metadata($item_count = 1) {
  */
 function brapi_output_json(
     $data = array(),
-    $metadata = array(
-      'pagination' => NULL,
-      'status'     => array()
-    ),
+    $metadata = NULL,
     $debug_data = array()
   ) {
 
   $args = drupal_get_query_parameters();
 
+  if (!isset($metadata)) {
+    $metadata = brapi_prepare_metadata(0);
+  }
+
   // check if have metadata (either default or specified non-empty one)
   if (count($metadata)) {
-    // check if we got no pagination data and need to create one
-    if (empty($metadata['pagination'])) {
-      $metadata['pagination'] = json_decode('{}'); // we want an empty (JSON) hash, not an empty array
-    }
     // combine data and metadata
     $output_data = array_merge(array('metadata' => $metadata), $data);
   }
@@ -1209,10 +1241,11 @@ function brapi_output_json(
     $output_data = $data;
   }
 
+  // display debug data in debug mode only
   if (isset($args['debug']) && isset($debug_data)) {
     $output_data['debug'] = implode("\n", $debug_data);
   }
-  
+
   if (!isset($args['pretty']) || $args['pretty']) {
     drupal_add_http_header('Content-Type', 'application/json');
     echo json_encode($output_data, JSON_PRETTY_PRINT);

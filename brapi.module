@@ -50,8 +50,9 @@ require('api/brapi.calls.inc');
  * @ingroup brapi
  */
 function brapi_boot() {
+  // only allow authentication through HTTPS chanel
   // get session id from bearer token (HTTP header provided by the client)
-  if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+  if ($_SERVER['HTTPS'] && isset($_SERVER['HTTP_AUTHORIZATION'])) {
     $got_authentication = preg_match(
                             "/\s*Bearer\s+([^\s=]+)=(\S+)/i",
                             $_SERVER['HTTP_AUTHORIZATION'],
@@ -62,10 +63,10 @@ function brapi_boot() {
       $session_data = isset($_SESSION) ? $_SESSION : NULL;
       // update client cookies
       $_COOKIE[$matches[1]] = $matches[2];
-      
+
       // set HTTP header cookies for others from the bearer token
       if ($_SERVER['HTTP_COOKIE']) {
-        $cookie_already_set = 
+        $cookie_already_set =
             false !== strpos($_SERVER['HTTP_COOKIE'], $matches[1]);
       }
 
@@ -83,6 +84,9 @@ function brapi_boot() {
         $_SESSION += $session_data;
       }
     }
+  }
+  elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    drupal_set_message('BrAPI: Authentication is only supported through HTTPS (secure http)!', 'error');
   }
 }
 
@@ -131,6 +135,7 @@ function brapi_menu() {
     'description' => t('Breeding API Tripal extension module.'),
     'page callback' => 'theme',
     'page arguments' => array('brapi_overview'),
+    'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_NORMAL_ITEM,
   );
@@ -139,6 +144,7 @@ function brapi_menu() {
     'description' => t('Breeding API Tripal extension module.'),
     'page callback' => 'theme',
     'page arguments' => array('brapi_overview'),
+    'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_LOCAL_TASK,
     'weight' => 0,
@@ -150,6 +156,7 @@ function brapi_menu() {
     'description' => t('Configure the Breeding API module'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('brapi_admin_form'),
+    'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_LOCAL_TASK,
     'weight' => 1,
@@ -161,6 +168,7 @@ function brapi_menu() {
     'description' => t('Basic Description of Breeding API Module Functionality'),
     'page callback' => 'theme',
     'page arguments' => array('brapi_help'),
+    'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -171,6 +179,7 @@ function brapi_menu() {
     'title' => t('Autocomplete for BrAPI terms'),
     'page callback' => 'brapi_terms_autocomplete',
     // only used by administrative interfaces (prevents access to private data)
+    'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_CALLBACK,
   );
@@ -187,7 +196,8 @@ function brapi_menu() {
       'title' => t($call_data['title']),
       'description' => t($call_data['description']),
       'page callback' => $call_data['page callback'],
-      'access arguments' => array($call_data['permissions']['GET']),
+      'access callback' => 'user_access',
+      'access arguments' => array($call_data['methods']['GET']),
       'type' => MENU_DEFAULT_LOCAL_TASK,
     );
     // manage optional arguments
@@ -200,6 +210,25 @@ function brapi_menu() {
   }
 
   return $items;
+}
+
+/**
+ * Implements hook_page_alter().
+ *
+ * @ingroup brapi
+ */
+function brapi_page_alter(&$page) {
+  $brapi_prefix_length = strlen(BRAPI_SERVICE_PREFIX_V1);
+
+  // check for BrAPI errors
+  $path = request_path();
+  if (0 == strncmp($path, BRAPI_SERVICE_PREFIX_V1, $brapi_prefix_length)) {
+    $status = drupal_get_http_header('Status');
+    // only catch 4xx and 5xx HTTP status
+    if (preg_match('/^([45]\d\d)\s*(.+)/', $status, $matches)) {
+      $page = brapi_raise_error_json($matches[1], $matches[2]);
+    }
+  }
 }
 
 /**

@@ -80,7 +80,7 @@ function brapi_theme_prepare_overview_table($permission_stats) {
   $use_permission    = $permission_stats['use_permission'];
   $update_permission = $permission_stats['update_permission'];
   $admin_permission  = $permission_stats['admin_permission'];
-  
+
   $rows = array(
     // version
     array(
@@ -271,7 +271,7 @@ function brapi_theme_prepare_call_table() {
     'colgroups' => array(),
     'empty' => t('No supported call found!'),
   );
-  
+
   return $call_table;
 }
 
@@ -331,7 +331,7 @@ function brapi_theme_prepare_cv_table() {
           . "</span>"
       );
   }
-  
+
   $cv_table = array(
     'header' => array(
       t('Breeding API Term'),
