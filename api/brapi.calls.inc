@@ -260,20 +260,30 @@ function brapi_v1_call_json() {
 
   // init status and debug data
   $call_data = array();
-  $metadata = brapi_prepare_metadata(0);
+  $metadata = brapi_prepare_metadata();
   $debug_data = array();
+
+  // get call parameters
+  $args = drupal_get_query_parameters();
+  $call_filter = $args['call'];
 
   // GET: get current user
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
-      if ('/' != $call_name) {
+      $call_name = substr($call_name, 1);
+      if ($call_name && (!$call_filter || ($call_filter == $call_name))) {
         $call_data[] = array(
-          'call' => substr($call_name, 1),
+          'call' => $call_name,
           'datatypes' => $call_settings['datatypes'],
           'methods' => array_keys($call_settings['methods']),
         );
       }
     }
+    $metadata = brapi_prepare_metadata(count($call_data));
+    // $metadata['pagination']['pageSize']
+    //if ($metadata['pagination']['currentPage'] > 0) {
+    //}
+
     return brapi_output_json(
       array('result' => $call_data),
       $metadata,
