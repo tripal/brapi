@@ -264,7 +264,7 @@ function brapi_v1_call_json() {
   $debug_data = array();
 
   // get call parameters
-  $args = drupal_get_query_parameters();
+  $args = brapi_get_url_call_args();
   $call_filter = $args['call'];
 
   // GET: get current user
@@ -406,18 +406,28 @@ function brapi_v1_call_json() {
  */
 function brapi_v1_germplasm_search_json() {
 
-  // get call parameters
+  // init status and debug data
+  $status = array();
+  $debug_data = array();
+  $metadata = brapi_prepare_metadata();
+
+  // get JSON input if some
+  try {
+    $user_data = brapi_get_user_json_input();
+  }
+  catch (Exception $e) {
+    $user_data = array();
+    $debug_data[] = $e->getMessage();
+  }
+
+  // combine call parameters
   $filters = array_merge(
-    brapi_get_user_json_input(),
-    drupal_get_query_parameters()
+    $user_data,
+    brapi_get_url_call_args()
   );
 
   $cv_settings = brapi_get_cv_settings();
   $data_mapping = brapi_get_data_mapping();
-
-  // init status and debug data
-  $status = array();
-  $debug_data = array();
 
   $selectors = array();
   $identifiers = NULL; // hash of identifiers
@@ -530,23 +540,40 @@ function brapi_v1_germplasm_search_json() {
   }
 
   $debug_data[] = "Filter: " . print_r($selectors, TRUE);
-  $debug_data[] = "Metadata: " . print_r($metadata, TRUE);
 
   $options = array(
     'order_by' => array($data_mapping['germplasm']['accession'] => 'ASC'),
   );
-  if (isset($metadata['pagination']['pageSize'])
-      && isset($metadata['pagination']['currentPage'])) {
-    $options['pager'] = array(
-      'limit' => $metadata['pagination']['pageSize'],
-      'element' => $metadata['pagination']['currentPage'],
-    );
-  }
 
   // we capture output buffer for Tripal error messages
   ob_start();
   try {
-    // support pagger and sorting
+    // setup pager data
+    $count_result = chado_select_record(
+      $data_mapping['germplasm']['table'],
+      array('count(1)'),
+      $selectors
+    );
+    $total_count = $count_result[0]->count;
+    $metadata = brapi_prepare_metadata($total_count);
+    
+    if (isset($metadata['pagination']['pageSize'])
+        && isset($metadata['pagination']['currentPage'])) {
+      // use client page selection
+      $options['pager'] = array(
+        'limit' => $metadata['pagination']['pageSize'],
+        'element' => $metadata['pagination']['currentPage'],
+      );
+    }
+    else {
+      // default paging
+      $options['pager'] = array(
+        'limit' => BRAPI_DEFAULT_PAGE_SIZE,
+        'element' => 0,
+      );
+    }
+
+    // support pager and sorting
     $stocks = chado_generate_var(
       $data_mapping['germplasm']['table'],
       $selectors,
@@ -1772,7 +1799,7 @@ function brapi_v1_attribute_categories_json() {
  *
  * /
 function brapi_v1_germplasm_attributes_json($germplasm_id) {
-  //+++
+  
   $attribute_cv = array('mgis_plant_general_appearance',
     'mgis_petiole_midrib_leaf',
     'mgis_pseudostem_suckers',

@@ -1055,6 +1055,27 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
 }
 
 /**
+ * Returns a hash containing URL arguments excluding global arguments such as
+ * pagging data, output formatting and such.
+ *
+ * @return array
+ *   Keys are argument names and values are corresponding argument values.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_url_call_args() {
+  $args = drupal_get_query_parameters();
+  unset(
+    $args['page'],
+    $args['pageSize'],
+    $args['pretty'],
+    $args['debug']
+  );
+  return $args;
+}
+
+
+/**
  * Returns a PHP structure containing user input (POST, PUT) for a call.
  *
  * @return array

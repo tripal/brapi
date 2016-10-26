@@ -28,7 +28,7 @@ define('BRAPI_USE_PERMISSION',    'use breeding api');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
 define('BRAPI_ADMIN_PERMISSION',  'administer breeding api');
 define('BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV', 'multicrop passport ontology');
-define('BRAPI_DEFAULT_PAGE_SIZE', 1000);
+define('BRAPI_DEFAULT_PAGE_SIZE', 30);
 define('BRAPI_ESCAPE_CHARACTER',  "\\");
 
 /**
