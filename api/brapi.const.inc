@@ -115,6 +115,17 @@ function brapi_get_calls() {
           ),
         ),
       ),
+      '/germplasm-search' => array(
+        'title'          => 'Germplasm Search',
+        'description'    => 'Germplasm search call',
+        'datatypes'      => array('json',),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+          'POST'   => BRAPI_UPDATE_PERMISSION,
+        ),
+        'page callback' => 'brapi_v1_germplasm_search_json',
+        'features'  => array('MCPD' => 'yes', 'MCPD-version' => 'V.2.1'),
+      ),
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',

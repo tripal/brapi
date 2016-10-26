@@ -301,8 +301,8 @@ function brapi_v1_call_json() {
 
 
 /**
- * BRAPI: Germplasm Search by Name
- *        brapi/v1/germplasm
+ * BRAPI: Germplasm Search
+ *        brapi/v1/germplasm-search
  *
  * GET: search and returns name-matching accessions.
  *
@@ -338,7 +338,7 @@ function brapi_v1_call_json() {
  *
  * Example:
  * - GET
- *   brapi/v1/germplasm?name=ITC060?&matchMethod=wildcard&include=&pageSize=2&page=1
+ *   brapi/v1/germplasm-search?name=ITC060?&matchMethod=wildcard&include=&pageSize=2&page=1
  *
  * @return string
  *   a JSON string with the following variable (some can be embeded):
@@ -404,233 +404,186 @@ function brapi_v1_call_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_by_name_json() {
+function brapi_v1_germplasm_search_json() {
 
   // get call parameters
-  $args = drupal_get_query_parameters();
+  $filters = array_merge(
+    brapi_get_user_json_input(),
+    drupal_get_query_parameters()
+  );
+
+  $cv_settings = brapi_get_cv_settings();
+  $data_mapping = brapi_get_data_mapping();
 
   // init status and debug data
   $status = array();
   $debug_data = array();
 
-  // SQL statement parts
-  $join_clause = array();
-  $where_clause = array();
-  $query_arguments = array();
-  $matching_operator = 'ILIKE';
+  $selectors = array();
+  $identifiers = NULL; // hash of identifiers
+  $id_field = $data_mapping['germplasm']['identifier'];
+  foreach ($filters as $field => $values) {
+    $field_identifiers = array();
+    // check if the field is available
+    if (array_key_exists($field, $data_mapping['germplasm']['fields'])) {
+      $field_fetcher = $data_mapping['germplasm']['fields'][$field];
+      switch (gettype($field_fetcher)) {
+        case 'string':
+          // field is in object table
+          $selectors[$field_fetcher] = $values;
+          $debug_data[] = "Filter on field '$field' ($field_fetcher)"
+            . " with value(s): "
+            . (is_array($values) ? implode(', ', $values) : $values);
+          break;
+        case 'array':
+          $debug_data[] = "Filter on linked field '$field'"
+            . " with value(s): "
+            . (is_array($values) ? implode(', ', $values) : $values);
+          // get available values from database mapping
+          if (isset($field_fetcher['join_key'])) {
+            $join_key = $field_fetcher['join_key'];
+          }
+          else {
+            $join_key = $id_field;
+          }
+          $selector = array_merge(
+            array($field_fetcher['column'] => $values),
+            $field_fetcher['selector']
+          );
+          // we capture output buffer for Tripal error messages
+          ob_start();
+          $records = chado_select_record(
+             $field_fetcher['table'],
+             array($join_key),
+             $selector
+          );
+          if ($tripal_message = ob_get_clean()) {
+            $debug_data[] = $tripal_message;
+          }
 
-  // get additional information to include in the output
-  $include = array(); // old default: array('synonyms' => TRUE)
-  if (isset($args['include'])) {
-    $include = array_fill_keys(explode(',', $args['include']), TRUE);
-  }
-
-  // get name search pattern
-  $search_pattern = isset($args['name'])?$args['name']:'';
-  //+FIXME: list all entries if no search query provided
-
-  // get match method
-  $match_method = isset($args['matchMethod'])?$args['matchMethod']:'';
-  // make sure the method is supported
-  if ('wildcard' == $match_method) {
-    // replace characters
-    $search_pattern =
-      str_replace(
-        array('_', '?'),
-        array('\_', '_'),
-        $search_pattern
-      );
-    $search_pattern =
-      preg_replace(
-        '/(^|[^' . preg_quote(BRAPI_ESCAPE_CHARACTER) . '])\\*/',
-        '\\1%',
-        $search_pattern
-      );
-    $search_pattern = str_replace('\\*', '*', $search_pattern);
-  }
-  elseif ('insensitive' == $match_method) {
-  }
-  elseif ('exact' == $match_method) {
-    // $matching_operator = 'LIKE';
-  }
-  elseif ($match_method) {
-    // a method has been specified and its not the 'exact' match method, raise an error
-    return brapi_raise_error_json(
-      501,
-      t(
-        "Unknown match method '@match_method'",
-        array('@match_method' => htmlentities($match_method),)
-      )
-    );
-  }
-
-  if (!empty($search_pattern)) {
-    $join_clause[] = "
-            INNER JOIN {stockprop} sp_match ON
-              sp_match.stock_id = s.stock_id
-            INNER JOIN {cvterm} cvt_match ON
-              cvt_match.cvterm_id = sp_match.type_id
-              AND cvt_match.name IN (
-                'accession number',
-                'other identification numbers associated with the accession'
-              )
-    ";
-    $where_clause[] = "sp_match.value $matching_operator :accession_number";
-    // if we want only to match accession number add:
-    //   $where_clause[] = "cvt_match.name = 'accession number'";
-    $query_arguments[':accession_number'] = $search_pattern;
-  }
-
-  // get trial identifier
-  $trial_id = isset($args['trialID'])?$args['trialID']:'';
-  if (!empty($trial_id)) {
-    $join_clause[] = "
-            INNER JOIN {stockprop} sp_trial ON
-              sp_trial.stock_id = s.stock_id
-            INNER JOIN {cvterm} cvt_trial ON
-              cvt_trial.cvterm_id = sp_trial.type_id
-              AND cvt_trial.name = 'trial identifier'
-    ";
-    $where_clause[] = "sp_trial.value $matching_operator :trial_id";
-    $query_arguments[':trial_id'] = $trial_id;
-    $debug_data[] = 'Trial identifier: ' . $trial_id;
-  }
-
-  // prepare count query
-  $sql_count_query = "
-    SELECT COUNT(DISTINCT s.stock_id) AS \"count\"
-    FROM
-      {cv} cv_mcpd,
-      {stock} s
-        " . implode("\n", $join_clause) . "
-    WHERE
-      s.is_obsolete = FALSE
-      AND cv_mcpd.name = '" . BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV . "'
-      AND cvt_match.cv_id  = cv_mcpd.cv_id
-      " . (count($where_clause)? ' AND ' . implode(' AND ', $where_clause) : '')
-  ;
-
-  $stock_count_result = chado_query($sql_count_query, $query_arguments);
-  $stock_count = floor($stock_count_result->fetchAssoc()['count']);
-
-  $metadata = brapi_prepare_metadata($stock_count);
-  $pager = '';
-  if ($stock_count) {
-    $pager = 'LIMIT ' . $metadata['pagination']['pageSize'] . "\n";
-
-    if ($metadata['pagination']['currentPage'] > 0) {
-      $offset =
-        ($metadata['pagination']['currentPage'] - 1)
-        * $metadata['pagination']['pageSize']
+          if (FALSE === $records) {
+            // no matching result for current field, stop here
+            return brapi_output_json(
+              array(
+                'result' => array('data' => array()),
+              ),
+              $metadata,
+              $debug_data
+            );
+          }
+          else {
+            // force Tripal return value to be an array for easier management
+            if ($records && !is_array($records)) {
+              $records = array($records);
+            }
+            foreach ($records as $record) {
+              $rec_id_value = $record->$join_key;
+              $field_identifiers[$rec_id_value] = TRUE;
+            }
+          }
+          
+          // check for intersection
+          if (!isset($identifiers)) {
+            // not set yet
+            $identifiers = $field_identifiers;
+          }
+          else {
+            // make sure we intersect objects matching other fields
+            $identifiers = array_intersect_key($identifiers, $field_identifiers);
+            if (0 == count($identifiers)) {
+              // no intersection between fields, stop here
+              return brapi_output_json(
+                array(
+                  'result' => array('data' => array()),
+                ),
+                $metadata,
+                $debug_data
+              );
+            }
+          }
+          break;
+        case 'object':
+          // not supported
+          $debug_data[] = "Field '$field' not supported for filtering";
+          break;
+        default:
+      } // ends type switch
+    } // ends existing fields check
+    else {
+      $debug_data[] = "Field '$field' not found for filtering";
+    }
+  } // ends field loop
+  
+  // check if identifiers should also be filtered
+  if ($identifiers) {
+    if (array_key_exists($id_field, $selectors)) {
+      $selectors[$id_field] =
+        array_intersect(
+          array_keys($identifiers),
+          $selectors[$id_field]
+        )
       ;
-      $pager .= "OFFSET $offset\n";
+    }
+    else {
+      $selectors[$id_field] = array_keys($identifiers);
     }
   }
 
-  $germplasm_list = array();
-  $sql_query = "
-    SELECT DISTINCT s.stock_id,
-           s.uniquename,
-           s.name,
-           (
-             SELECT string_agg(cvt_an.name || '=' || sp_an.value, ',')
-             FROM
-              {stockprop} sp_an
-                INNER JOIN cvterm cvt_an ON cvt_an.cvterm_id = sp_an.type_id
-             WHERE
-               cvt_an.cv_id  = cv_mcpd.cv_id
-               AND cvt_an.name IN (
-                 'accession number',
-                 'other identification numbers associated with the accession'
-               )
-               AND sp_an.stock_id = s.stock_id
-           ) AS \"identifiers\",
-           (
-             SELECT string_agg(sp_ana.value, ',')
-             FROM
-              {stockprop} sp_ana
-                INNER JOIN cvterm cvt_ana ON cvt_ana.cvterm_id = sp_ana.type_id
-             WHERE
-               cvt_ana.cv_id  = cv_mcpd.cv_id
-               AND cvt_ana.name = 'accession name'
-               AND sp_ana.stock_id = s.stock_id
-           ) AS \"accession_names\"
-    FROM
-      {cv} cv_mcpd,
-      {stock} s
-        " . implode("\n", $join_clause) . "
-    WHERE
-      s.is_obsolete = FALSE
-      AND cv_mcpd.name = '" . BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV . "'
-      AND cvt_match.cv_id  = cv_mcpd.cv_id
-      " . (count($where_clause)? ' AND ' . implode(' AND ', $where_clause) : '')
-  . " $pager
-  ";
-  $debug_data[] = "SQL Query: $sql_query";
+  $debug_data[] = "Filter: " . print_r($selectors, TRUE);
+  $debug_data[] = "Metadata: " . print_r($metadata, TRUE);
 
-  $stocks = chado_query($sql_query, $query_arguments);
-
-  foreach ($stocks as $stock) {
-    $accession_number = '';
-    $synonyms = array($stock->uniquename);
-    // split stockprop using ','
-    foreach (explode(',', $stock->identifiers) as $identifier) {
-      // split type and value using '='
-      $stockprop = explode('=', $identifier);
-      // separate "accession number" from "other identification numbers..."
-      if ('accession number' == $stockprop[0]) {
-        // accession number
-        $accession_number = $stockprop[1];
-      }
-      else {
-        // other identification numbers...
-        $synonyms[] = $stockprop[1];
-      }
-    }
-
-    $germplasm = array(
-      'accessionNumber'    => $accession_number,
-      'germplasmDbId'      => $stock->uniquename,      // required
-      'defaultDisplayName' => $stock->name,            // required
-      'germplasmName'      => $stock->accession_names,
-      // 'breederCode'        => NULL,
-      // 'synonyms'           => NULL,                 // never empty
-      'germplasmPUI'       => NULL,                    // never empty
-      // 'pedigree'           => NULL,
-      // 'seedSource'         => NULL,
+  $options = array(
+    'order_by' => array($data_mapping['germplasm']['accession'] => 'ASC'),
+  );
+  if (isset($metadata['pagination']['pageSize'])
+      && isset($metadata['pagination']['currentPage'])) {
+    $options['pager'] = array(
+      'limit' => $metadata['pagination']['pageSize'],
+      'element' => $metadata['pagination']['currentPage'],
     );
-
-    if (isset($include['synonyms']) && $include['synonyms']) {
-      $index = array_search($accession_number, $synonyms);
-      while (FALSE !== $index) {
-        unset($synonyms[$index]);
-        $index = array_search($accession_number, $synonyms);
-      }
-      $synonyms = array_values($synonyms);
-      // otherIdentificationNumbersAssociatedWithTheAccession
-      $germplasm['synonyms'] = array_unique($synonyms);
-    }
-
-    //if (isset($include['germplasmPUI']) && $include['germplasmPUI']) {
-    $germplasm['germplasmPUI'] =
-      tripal_stock_match_stocks_page($stock->uniquename);
-    //}
-
-    $germplasm_list[] = $germplasm;
   }
 
-  // sort accessions by stock.uniquename
-  $sort_germplasm = function($a, $b) {
-    //return strcmp($a['synonyms'][0], $b['synonyms'][0]);
-    return strcmp($a['germplasmDbId'], $b['germplasmDbId']);
-  };
-  usort($germplasm_list, $sort_germplasm);
+  // we capture output buffer for Tripal error messages
+  ob_start();
+  try {
+    // support pagger and sorting
+    $stocks = chado_generate_var(
+      $data_mapping['germplasm']['table'],
+      $selectors,
+      $options
+    );
+  }
+  catch (Exception $e) {
+    $debug_data[] = $e->getMessage();
+  }
+  if ($tripal_message = ob_get_clean()) {
+    $debug_data[] = $tripal_message;
+  }
+  
+  
+  if ($stocks && !is_array($stocks)) {
+    $stocks = array($stocks);
+  }
+  
+  $debug_data[] = "Got " . count($stocks) . "results.";
 
+  // generate stock data
+  $fields = array(
+    'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
+    'germplasmPUI', 'synonyms',
+  );
+  
+  $germplasm_list = array();
+  foreach ($stocks as $stock) {
+    $germplasm_data = array();
+    foreach ($fields as $field_name) {
+      $germplasm_data[$field_name] =
+        brapi_get_field('germplasm', $stock, $field_name);
+    }
+    $germplasm_list[] = $germplasm_data;
+  }
 
   $metadata['status'] = array_merge($metadata['status'], $status);
-  $metadata['queryName'] = isset($args['name']) ? $args['name'] : '';
-
-  $debug_data[] = "pattern=$search_pattern"; // pattern debugging
 
   return brapi_output_json(
     array(
@@ -780,7 +733,10 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     'genus' => $user_data['genus'],
     'species' => $user_data['species'],
   );
+  // we capture output buffer for Tripal error messages
+  ob_start();
   $organism = chado_generate_var('organism', $organism_selector);
+  $tripal_message = ob_get_clean();
   if (is_array($organism)) {
     $organism = current($organism);
   }
@@ -949,7 +905,10 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
         $organism_selector['species'] = $stock->organism->species;
     }
 
+    // we capture output buffer for Tripal error messages
+    ob_start();
     $organism = chado_generate_var('organism', $organism_selector);
+    $tripal_message = ob_get_clean();
     if (is_array($organism)) {
       $organism = current($organism);
     }

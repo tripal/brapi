@@ -464,6 +464,42 @@ function brapi_get_children_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASS
 }
 
 /**
+ * Returns a field selector that can be used by Tripal functions like
+ * @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x* chado_select_record() @endlink
+ * .
+ *
+ * @param string $data_type
+ *   name of the data type. See keys of the array returned by
+ *   brapi_get_data_mapping().
+ *
+ * @param string $field_name
+ *   a field name such as the one returned as keys of the field 'fields' of a
+ *   datatype returned by brapi_get_data_mapping().
+ *
+ * @values mixed
+ *   value or array of values to use to identify the field record.
+ */
+function brapi_get_field_selector($data_type, $field_name, $values) {
+  static $data_mapping;
+  if (!isset($data_mapping)) {
+    $data_mapping = brapi_get_data_mapping();
+  }
+  
+  $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
+
+  if (isset($field_fetcher['join_key'])) {
+    $join_key = $field_fetcher['join_key'];
+  }
+  else {
+    $join_key = $data_mapping[$data_type]['identifier'];
+  }
+  return array_merge(
+    array($join_key => $values),
+    $field_fetcher['selector']
+  );
+}
+
+/**
  * Returns a breeding API field value according to a given data type, a given
  * loaded object and a given field name. Supported fields are defined in the
  * Breeding API module data mapping.
@@ -479,12 +515,19 @@ function brapi_get_children_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASS
  *   a field name such as the one returned as keys of the field 'fields' of a
  *   datatype returned by brapi_get_data_mapping().
  *
+ * @return mixed
+ *   returns an array if the mapping allows several values or the last value
+ *   ortherwise.
+ *
  * @see brapi_get_data_mapping()
  *
  * @ingroup brapi_api
  */
 function brapi_get_field($data_type, $object, $field_name) {
-  $data_mapping = brapi_get_data_mapping();
+  static $data_mapping;
+  if (!isset($data_mapping)) {
+    $data_mapping = brapi_get_data_mapping();
+  }
   // make sure we got a mapping defined
   if (!array_key_exists($data_type, $data_mapping)) {
     return brapi_raise_error_json(
@@ -516,62 +559,56 @@ function brapi_get_field($data_type, $object, $field_name) {
       break;
     case 'array':
       // get from database using mapping config
-      if (isset($data_mapping[$data_type]['fields'][$field_name]['join_key'])) {
-        $join_key = $data_mapping[$data_type]['fields'][$field_name]['join_key'];
-      }
-      else {
-        $join_key = $data_mapping[$data_type]['identifier'];
-      }
+      $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
       $records = chado_select_record(
-         $data_mapping[$data_type]['fields'][$field_name]['table'],
-         array($data_mapping[$data_type]['fields'][$field_name]['column']),
-         array_merge(
-           array($join_key => $object->$data_mapping[$data_type]['identifier']),
-           $data_mapping[$data_type]['fields'][$field_name]['selector']
-         )
+         $field_fetcher['table'],
+         array($field_fetcher['column']),
+         $selector
       );
-      // force Tripal return value to be an array for easier management
-      if (!is_array($records)) {
-        $records = array($records);
-      }
       $values = array();
-      foreach ($records as $record) {
-        $current_value = $record->$data_mapping[$data_type]['fields'][$field_name]['column'];
-        // check type and return the appropriate conversion
-        switch ($data_mapping[$data_type]['fields'][$field_name]['field_type']) {
-          case 'boolean':
-            $current_value = $current_value ? TRUE : FALSE;
-            break;
-          case 'integer':
-            $current_value = intval($current_value);
-            break;
-          case 'string':
-            break;
-          case 'cvterm':
-            if ($term = tripal_get_cvterm(array('cvterm_id' => $current_value,))) {
-              $current_value = $term->name;
-            }
-            else {
-              $current_value = NULL;
-            }
-            break;
-          default:
-            return brapi_raise_error_json(
-              400,
-              t(
-                "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!",
-                array(
-                  '@field'      => $field_name,
-                  '@type'       => $data_type,
-                  '@field_type' => $data_mapping[$data_type]['fields'][$field_name]['field_type']
-                )
-              )
-            );
+      if (FALSE !== $records) {
+        // force Tripal return value to be an array for easier management
+        if (!is_array($records)) {
+          $records = array($records);
         }
-        $values[] = $current_value;
+        foreach ($records as $record) {
+          $current_value = $record->$field_fetcher['column'];
+          // check type and return the appropriate conversion
+          switch ($field_fetcher['field_type']) {
+            case 'boolean':
+              $current_value = $current_value ? TRUE : FALSE;
+              break;
+            case 'integer':
+              $current_value = intval($current_value);
+              break;
+            case 'string':
+              break;
+            case 'cvterm':
+              if ($term = tripal_get_cvterm(array('cvterm_id' => $current_value,))) {
+                $current_value = $term->name;
+              }
+              else {
+                $current_value = NULL;
+              }
+              break;
+            default:
+              return brapi_raise_error_json(
+                400,
+                t(
+                  "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!",
+                  array(
+                    '@field'      => $field_name,
+                    '@type'       => $data_type,
+                    '@field_type' => $field_fetcher['field_type']
+                  )
+                )
+              );
+          }
+          $values[] = $current_value;
+        }
       }
       // check if array requested
-      if ($data_mapping[$data_type]['fields'][$field_name]['return_array']) {
+      if ($field_fetcher['return_array']) {
         // multiple values
         $value = $values;
       }
@@ -667,7 +704,7 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
         // multiple values
         // check for ranking
         $rank = 0;
-        if ($data_mapping[$data_type]['fields'][$field_name]['use_ranking']) {
+        if ($field_fetcher['use_ranking']) {
           // we use ranking
           $ranking = array('rank' => &$rank);
         }
@@ -678,15 +715,10 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
           // remove previous values
           // we capture output buffer for Tripal error messages
           ob_start();
+          $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
           $deleted_record = chado_delete_record(
-            $data_mapping[$data_type]['fields'][$field_name]['table'],
-            array_merge(
-              array(
-                $data_mapping[$data_type]['identifier']
-                  => $object->$data_mapping[$data_type]['identifier'],
-              ),
-              $data_mapping[$data_type]['fields'][$field_name]['selector']
-            )
+            $field_fetcher['table'],
+            $selector
           );
           if (!$deleted_record) {
             $tripal_message = ob_get_clean();
@@ -705,19 +737,16 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
         foreach ($field_value as $single_value) {
           // we capture output buffer for Tripal error messages
           ob_start();
+          $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
           if (!chado_insert_record(
-             $data_mapping[$data_type]['fields'][$field_name]['table'],
+             $field_fetcher['table'],
              array_merge(
+               $selector,
                array(
-                 $data_mapping[$data_type]['identifier']
-                   => $object->$data_mapping[$data_type]['identifier'],
-               ),
-               array(
-                 $data_mapping[$data_type]['fields'][$field_name]['column']
+                 $field_fetcher['column']
                    => $single_value,
                ),
-               $ranking,
-               $data_mapping[$data_type]['fields'][$field_name]['selector']
+               $ranking
              )
           )) {
             $tripal_message = ob_get_clean();
@@ -740,35 +769,39 @@ function brapi_set_field($data_type, &$object, $field_name, &$field_value, $upda
         // single value
         // we capture output buffer for Tripal error messages
         ob_start();
+        if (isset($field_fetcher['join_key'])) {
+          $join_key = $field_fetcher['join_key'];
+        }
+        else {
+          $join_key = $data_mapping[$data_type]['identifier'];
+        }
         $updated_record = FALSE;
         if ($update) {
           $updated_record = chado_update_record(
-             $data_mapping[$data_type]['fields'][$field_name]['table'],
+             $field_fetcher['table'],
              array(
-               $data_mapping[$data_type]['identifier']
-                 => $object->$data_mapping[$data_type]['identifier'],
+               $join_key => $object->$data_mapping[$data_type]['identifier'],
              ),
              array_merge(
                array(
-                 $data_mapping[$data_type]['fields'][$field_name]['column']
+                 $field_fetcher['column']
                    => $field_value,
                ),
-               $data_mapping[$data_type]['fields'][$field_name]['selector']
+               $field_fetcher['selector']
              )
           );
         }
         if (!$updated_record && !chado_insert_record(
-           $data_mapping[$data_type]['fields'][$field_name]['table'],
+           $field_fetcher['table'],
            array_merge(
              array(
-               $data_mapping[$data_type]['identifier']
-                 => $object->$data_mapping[$data_type]['identifier'],
+               $join_key => $object->$data_mapping[$data_type]['identifier'],
              ),
              array(
-               $data_mapping[$data_type]['fields'][$field_name]['column']
+               $field_fetcher['column']
                  => $field_value,
              ),
-             $data_mapping[$data_type]['fields'][$field_name]['selector']
+             $field_fetcher['selector']
            )
         )) {
           $tripal_message = ob_get_clean();
