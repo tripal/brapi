@@ -1,7 +1,7 @@
-Plant Breeding API
-==================
+Plant Breeding API Extension module
+===================================
 
-http://www.drupal.org/project/brapi
+[Plant Breeding API](http://www.drupal.org/project/brapi)
 
 CONTENTS OF THIS FILE
 ---------------------

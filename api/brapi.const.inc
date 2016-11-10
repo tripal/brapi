@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Defines Breeding API Drupal module constants.
@@ -18,18 +19,18 @@
  * BREEDING API GLOBALS
  *******************************************************************************
  */
-define('BRAPI_SERVICE_VERSION',   'v1.0');
+define('BRAPI_SERVICE_VERSION', 'v1.0');
 define('BRAPI_SERVICE_PREFIX_V1', 'brapi/v1');
-define('BRAPI_DB',                'breeding api');
-define('BRAPI_CV',                'breeding api');
-define('BRAPI_CV_SETTINGS',       'brapi_cv_settings');
-define('BRAPI_EXAMPLE_SETTINGS',  'brapi_example_settings');
-define('BRAPI_USE_PERMISSION',    'use breeding api');
+define('BRAPI_DB', 'breeding api');
+define('BRAPI_CV', 'breeding api');
+define('BRAPI_CV_SETTINGS', 'brapi_cv_settings');
+define('BRAPI_EXAMPLE_SETTINGS', 'brapi_example_settings');
+define('BRAPI_USE_PERMISSION', 'use breeding api');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
-define('BRAPI_ADMIN_PERMISSION',  'administer breeding api');
+define('BRAPI_ADMIN_PERMISSION', 'administer breeding api');
 define('BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV', 'multicrop passport ontology');
 define('BRAPI_DEFAULT_PAGE_SIZE', 30);
-define('BRAPI_ESCAPE_CHARACTER',  "\\");
+define('BRAPI_ESCAPE_CHARACTER', "\\");
 
 /**
  * Returns an array of CV terms used by the Breeding API.
@@ -81,7 +82,7 @@ function brapi_get_calls() {
       '/'               => array(
         'title'          => 'About',
         'description'    => 'About Breeding API Drupal implementation',
-        'datatypes'      => array(), //array('json', 'csv'),
+        'datatypes'      => array(),
         'methods'        => array(
           'GET' => 'access content',
         ),
@@ -90,7 +91,7 @@ function brapi_get_calls() {
       '/token'      => array(
         'title'          => 'Authentication',
         'description'    => 'User authentication in OAuth2 style',
-        'datatypes'      => array('json',),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_USE_PERMISSION,
@@ -101,7 +102,7 @@ function brapi_get_calls() {
       '/calls'      => array(
         'title'          => 'Call search',
         'description'    => 'Supported Breeding API calls',
-        'datatypes'      => array('json',),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
@@ -118,7 +119,7 @@ function brapi_get_calls() {
       '/germplasm-search' => array(
         'title'          => 'Germplasm Search',
         'description'    => 'Germplasm search call',
-        'datatypes'      => array('json',),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
@@ -129,7 +130,7 @@ function brapi_get_calls() {
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
-        'datatypes'      => array('json',),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
@@ -153,6 +154,8 @@ function brapi_get_calls() {
 }
 
 /**
+ * Returns Breeding API data mapping.
+ *
  * Returns Breeding API data mapping which is a structure describing the data
  * mapping between BrAPI data and Tripal Chado data.
  *
@@ -209,7 +212,9 @@ function brapi_get_data_mapping() {
             'column' => 'value',
             'selector' => array(
               'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,),
+                'cv_id' => array(
+                  'name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
+                ),
                 'name' => 'accession number',
               ),
             ),
@@ -220,19 +225,21 @@ function brapi_get_data_mapping() {
             'column' => 'value',
             'selector' => array(
               'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,),
+                'cv_id' => array(
+                  'name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
+                ),
                 'name' => 'accession name',
               ),
             ),
             'field_type' => 'string',
           ),
-          'germplasmPUI' => function($data_type, $stock, $field_name) {
-              if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
-                return drupal_get_path_alias('node/' . $nid);
-              }
-              else {
-                return '';
-              }
+          'germplasmPUI' => function ($data_type, $stock, $field_name) {
+            if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
+              return drupal_get_path_alias('node/' . $nid);
+            }
+            else {
+              return '';
+            }
           },
           'femaleParentStockId' => array(
             'table' => 'stock_relationship',
@@ -252,19 +259,33 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'integer',
           ),
-          'pedigree' => function($data_type, $stock, $field_name, $op) {
-              // female/male
-              $pedigree = '';
-              $female_parent_stock_id = brapi_get_field($data_type, $stock, 'femaleParentStockId');
-              if ($female_parent = chado_generate_var('stock', array('stock_id' => $female_parent_stock_id))) {
-                $pedigree .= $female_parent->name;
-              }
-              $pedigree .= '/';
-              $male_parent_stock_id = brapi_get_field($data_type, $stock, 'maleParentStockId');
-              if ($male_parent = chado_generate_var('stock', array('stock_id' => $male_parent_stock_id))) {
-                $pedigree .= $male_parent->name;
-              }
-              return $pedigree;
+          'pedigree' => function ($data_type, $stock, $field_name, $op) {
+            $pedigree = '';
+            $female_parent_stock_id = brapi_get_field(
+              $data_type,
+              $stock,
+              'femaleParentStockId'
+            );
+            $female_parent = chado_generate_var(
+              'stock',
+              array('stock_id' => $female_parent_stock_id)
+            );
+            if ($female_parent) {
+              $pedigree .= $female_parent->name;
+            }
+            $pedigree .= '/';
+            $male_parent_stock_id = brapi_get_field(
+              $data_type,
+              $stock,
+              'maleParentStockId');
+            $male_parent = chado_generate_var(
+              'stock',
+              array('stock_id' => $male_parent_stock_id)
+            );
+            if ($male_parent) {
+              $pedigree .= $male_parent->name;
+            }
+            return $pedigree;
           },
           'seedSource' => array(
             'table' => 'stockprop',
@@ -279,7 +300,7 @@ function brapi_get_data_mapping() {
             'column' => 'value',
             'selector' => array(
               'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,),
+                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV),
                 'name' => 'other identification numbers associated with the accession',
               ),
             ),
@@ -292,7 +313,7 @@ function brapi_get_data_mapping() {
             'column' => 'value',
             'selector' => array(
               'type_id' => array(
-                'cv_id' => array('name' => 'mgis_accession',),
+                'cv_id' => array('name' => 'mgis_accession'),
                 'name' => 'common crop name',
               ),
             ),
@@ -304,7 +325,7 @@ function brapi_get_data_mapping() {
             'column' => 'value',
             'selector' => array(
               'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,),
+                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV),
                 'name' => 'institute name',
               ),
             ),

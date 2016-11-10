@@ -15,16 +15,16 @@
  * @}
  */
 
-// includes constants
-require('api/brapi.const.inc');
-// includes API functions
-require('api/brapi.api.inc');
-// includes theming functions
-require('theme/brapi.theme.inc');
-// includes administrative functions
-require('includes/brapi.admin.inc');
-// includes call implementations
-require('api/brapi.calls.inc');
+// Includes constants.
+require 'api/brapi.const.inc';
+// Includes API functions.
+require 'api/brapi.api.inc';
+// Includes theming functions.
+require 'theme/brapi.theme.inc';
+// Includes administrative functions.
+require 'includes/brapi.admin.inc';
+// Includes call implementations.
+require 'api/brapi.calls.inc';
 
 /**
  * Implements hook_boot().
@@ -50,36 +50,38 @@ require('api/brapi.calls.inc');
  * @ingroup brapi
  */
 function brapi_boot() {
-  // only allow authentication through HTTPS chanel
-  // get session id from bearer token (HTTP header provided by the client)
-  if ($_SERVER['HTTPS'] && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+  // Only allow authentication through HTTPS chanel.
+  // Get session id from bearer token (HTTP header provided by the client).
+  if (isset($_SERVER['HTTPS'])
+      && $_SERVER['HTTPS']
+      && isset($_SERVER['HTTP_AUTHORIZATION'])) {
     $got_authentication = preg_match(
                             "/\s*Bearer\s+([^\s=]+)=(\S+)/i",
                             $_SERVER['HTTP_AUTHORIZATION'],
                             $matches
                           );
     if ($got_authentication) {
-      // save current session data
+      // Save current session data.
       $session_data = isset($_SESSION) ? $_SESSION : NULL;
-      // update client cookies
+      // Update client cookies.
       $_COOKIE[$matches[1]] = $matches[2];
 
-      // set HTTP header cookies for others from the bearer token
+      // Set HTTP header cookies for others from the bearer token.
       if ($_SERVER['HTTP_COOKIE']) {
         $cookie_already_set =
-            false !== strpos($_SERVER['HTTP_COOKIE'], $matches[1]);
+            (FALSE !== strpos($_SERVER['HTTP_COOKIE'], $matches[1]));
       }
 
       if (!$cookie_already_set) {
         $_SERVER['HTTP_COOKIE'] .= "; " . $matches[1] . "=" . $matches[2];
       }
 
-      // update PHP session info
+      // Update PHP session info.
       session_name($matches[1]);
       session_id($matches[2]);
-      // restart session system with new infos
+      // Restart session system with new infos.
       session_start();
-      // restore previous session data
+      // Restore previous session data.
       if (!empty($session_data)) {
         $_SESSION += $session_data;
       }
@@ -94,10 +96,10 @@ function brapi_boot() {
  * Implements hook_permissions().
  *
  * 3 Permissions exist for this implementation of the Breeding API:
- * - Use Breeding API: access to any Breeding API calls for read access
- * - Update through Breeding API: allow breeding data alteration
- * - Administer Breeding API: administrative access to manage CV settings and
- *   examples.
+ *   - Use Breeding API: access to any Breeding API calls for read access;
+ *   - Update through Breeding API: allow breeding data alteration;
+ *   - Administer Breeding API: administrative access to manage CV settings and
+ *     examples.
  *
  * @ingroup brapi
  */
@@ -120,7 +122,7 @@ function brapi_permission() {
 }
 
 /**
- * Implements hook_menu()
+ * Implements hook_menu().
  *
  * Specifies menu items and URLs used by the Breeding API module.
  *
@@ -129,10 +131,10 @@ function brapi_permission() {
 function brapi_menu() {
   $items = array();
 
-  // Overview page
+  // Overview page.
   $items['admin/tripal/extension/brapi'] = array(
-    'title' => t('Breeding API'),
-    'description' => t('Breeding API Tripal extension module.'),
+    'title' => 'Breeding API',
+    'description' => 'Breeding API Tripal extension module.',
     'page callback' => 'theme',
     'page arguments' => array('brapi_overview'),
     'access callback' => 'user_access',
@@ -140,8 +142,8 @@ function brapi_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   $items['admin/tripal/extension/brapi/overview'] = array(
-    'title' => t('BrAPI Overview'),
-    'description' => t('Breeding API Tripal extension module.'),
+    'title' => 'BrAPI Overview',
+    'description' => 'Breeding API Tripal extension module.',
     'page callback' => 'theme',
     'page arguments' => array('brapi_overview'),
     'access callback' => 'user_access',
@@ -150,10 +152,10 @@ function brapi_menu() {
     'weight' => 0,
   );
 
-  // Configuration page
+  // Configuration page.
   $items['admin/tripal/extension/brapi/configuration'] = array(
-    'title' => t('Settings'),
-    'description' => t('Configure the Breeding API module'),
+    'title' => 'Settings',
+    'description' => 'Configure the Breeding API module',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('brapi_admin_form'),
     'access callback' => 'user_access',
@@ -162,10 +164,10 @@ function brapi_menu() {
     'weight' => 1,
   );
 
-  // Help page based using theme/templates/brapi_help.tpl.php file
+  // Help page based using theme/templates/brapi_help.tpl.php file.
   $items['admin/tripal/extension/brapi/help'] = array(
-    'title' => t('Help'),
-    'description' => t('Basic Description of Breeding API Module Functionality'),
+    'title' => 'Help',
+    'description' => 'Basic Description of Breeding API Module Functionality',
     'page callback' => 'theme',
     'page arguments' => array('brapi_help'),
     'access callback' => 'user_access',
@@ -174,33 +176,33 @@ function brapi_menu() {
     'weight' => 2,
   );
 
-  // Autocomplete script
+  // Autocomplete script.
   $items['brapi/terms/autocomplete'] = array(
-    'title' => t('Autocomplete for BrAPI terms'),
+    'title' => 'Autocomplete for BrAPI terms',
     'page callback' => 'brapi_terms_autocomplete',
-    // only used by administrative interfaces (prevents access to private data)
+    // Only used by administrative interfaces (prevents access to private data).
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_CALLBACK,
   );
 
-  // Generate Drupal URL menu for supported BrAPI calls
+  // Generate Drupal URL menu for supported BrAPI calls.
   foreach (brapi_get_calls() as $call_name => $call_data) {
     $call_url = BRAPI_SERVICE_PREFIX_V1 . $call_name;
-    // remove trailing slash if one
+    // Remove trailing slash if one.
     if ('/' == $call_url[strlen($call_url) - 1]) {
-      $call_url = substr($call_url, 0 ,-1);
+      $call_url = substr($call_url, 0, -1);
     }
-    // add call
+    // Add call.
     $items[$call_url] = array(
-      'title' => t($call_data['title']),
-      'description' => t($call_data['description']),
+      'title' => $call_data['title'],
+      'description' => $call_data['description'],
       'page callback' => $call_data['page callback'],
       'access callback' => 'user_access',
       'access arguments' => array($call_data['methods']['GET']),
       'type' => MENU_DEFAULT_LOCAL_TASK,
     );
-    // manage optional arguments
+    // Manage optional arguments.
     if (array_key_exists('arguments', $call_data)) {
       $items[$call_url]['page arguments'] = array();
       foreach ($call_data['arguments'] as $argument => $argdata) {
@@ -220,11 +222,11 @@ function brapi_menu() {
 function brapi_page_alter(&$page) {
   $brapi_prefix_length = strlen(BRAPI_SERVICE_PREFIX_V1);
 
-  // check for BrAPI errors and capture them to output them in JSON
+  // Check for BrAPI errors and capture them to output them in JSON.
   $path = request_path();
   if (0 == strncmp($path, BRAPI_SERVICE_PREFIX_V1, $brapi_prefix_length)) {
     $status = drupal_get_http_header('Status');
-    // only catch 4xx and 5xx HTTP status
+    // Only catch 4xx and 5xx HTTP status.
     if (preg_match('/^([45]\d\d)\s*(.*)/', $status, $matches)) {
       $page = brapi_raise_error_json($matches[1], $matches[2]);
     }
@@ -238,16 +240,16 @@ function brapi_page_alter(&$page) {
  */
 function brapi_theme($existing, $type, $theme, $path) {
   $items = array(
-    // the overview template
+    // The overview template.
     'brapi_overview' => array(
       'variables' => array('node' => NULL),
       'template' => 'brapi_overview',
       'path' => "$path/theme/templates",
     ),
-    // the help template
+    // The help template.
     'brapi_help' => array(
       'template' => 'brapi_help',
-      'variables' =>  array(NULL),
+      'variables' => array(NULL),
       'path' => "$path/theme/templates",
     ),
   );

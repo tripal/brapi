@@ -1,8 +1,8 @@
 <?php
+
 /**
  * @file
- * This file contains the functions used for administration of the Breeding API
- * module.
+ * Contains the functions used for administration of the Breeding API module.
  *
  * @ingroup brapi
  */
@@ -27,7 +27,7 @@ function brapi_admin_form() {
     '#suffix'      => '<br/>',
   );
 
-  // CV settings
+  // CV settings.
   $brapi_cv_select = array('name' => BRAPI_CV);
   $brapi_cv = chado_select_record('cv', array('*'), $brapi_cv_select);
   if (is_array($brapi_cv)) {
@@ -38,17 +38,17 @@ function brapi_admin_form() {
   foreach (brapi_get_cv() as $term_name => $definition) {
     $default_id = 0;
 
-    // get from settings
+    // Get from settings.
     if (array_key_exists($term_name, $brapi_cv_settings)) {
       $default_id = $brapi_cv_settings[$term_name];
-      $term = tripal_get_cvterm(array('cvterm_id' => $default_id,));
+      $term = tripal_get_cvterm(array('cvterm_id' => $default_id));
     }
 
-    // get term from BrAPI CV
+    // Get term from BrAPI CV.
     if (!$term) {
       $term =
         tripal_get_cvterm(
-          array('name' => $term_name, 'cv_id' => $brapi_cv->cv_id,)
+          array('name' => $term_name, 'cv_id' => $brapi_cv->cv_id)
         );
     }
 
@@ -63,11 +63,11 @@ function brapi_admin_form() {
 
     $form['cv_settings'][$term_name] = array(
       '#type' => 'textfield',
-      '#description' => t($definition),
+      '#description' => $definition,
       '#default_value' => $default_id,
       '#autocomplete_path' => 'brapi/terms/autocomplete',
-      '#title' => t($term_name),
-      '#title_display'=> 'before',
+      '#title' => $term_name,
+      '#title_display' => 'before',
       '#required' => TRUE,
       '#size' => 80,
       '#field_suffix' => '<br/>&nbsp;&nbsp;&nbsp;',
@@ -75,9 +75,9 @@ function brapi_admin_form() {
     );
   }
 
-  // Default example entities settings
+  // Default example entities settings.
   $example_parameters = array();
-  // get a unique list of all available parameters
+  // Get a unique list of all available parameters.
   foreach (brapi_get_calls() as $call) {
     if (array_key_exists('arguments', $call)) {
       foreach ($call['arguments'] as $param) {
@@ -106,14 +106,14 @@ function brapi_admin_form() {
   foreach ($example_parameters as $example_parameter) {
     $form['example_settings'][$example_parameter['name']] = array(
       '#type' => 'textfield',
-      '#description' => t($example_parameter['description']),
+      '#description' => $example_parameter['description'],
       '#default_value' => (
         array_key_exists($example_parameter['name'], $brapi_example_settings) ?
           $brapi_example_settings[$example_parameter['name']]
           : ''
       ),
       '#title' => $example_parameter['name'],
-      '#title_display'=> 'before',
+      '#title_display' => 'before',
       '#required' => FALSE,
       '#size' => 80,
       '#field_suffix' => '<br/>&nbsp;&nbsp;&nbsp;',
@@ -138,19 +138,25 @@ function brapi_admin_form_validate($form, &$form_state) {
 
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
-    if (preg_match('/^\s*(\d+)\s*$/', $form_state['values'][$term_label], $matches)) {
-      // get cvterm_id
+    $user_term = $form_state['values'][$term_label];
+    if (preg_match('/^\s*(\d+)\s*$/', $user_term, $matches)) {
+      // Get cvterm_id.
       $brapi_cv_settings[$term_label] = $matches[1];
     }
-    else if (preg_match('/\Wid:\s*(\d+)/', $form_state['values'][$term_label], $matches)) {
-      // get cvterm_id
+    elseif (preg_match('/\Wid:\s*(\d+)/', $user_term, $matches)) {
+      // Get cvterm_id.
       $brapi_cv_settings[$term_label] = $matches[1];
     }
-    else if (preg_match('/(.+)\((?:.*\W|)cv:\s*([\w ]+)\)/', $form_state['values'][$term_label], $matches)) {
-      // find term from cv
+    elseif (preg_match('/(.+)\((?:.*\W|)cv:\s*([\w ]+)\)/', $user_term, $matches)) {
+      // Find term from cv.
       $term_name = trim($matches[1]);
       $cv_name = trim($matches[2]);
-      $term = tripal_get_cvterm(array('name' => $term_name, 'cv_id' => array('name' => $cv_name),));
+      $term = tripal_get_cvterm(
+        array(
+          'name' => $term_name,
+          'cv_id' => array('name' => $cv_name),
+        )
+      );
       if (is_array($term)) {
         $term = current($term);
       }
@@ -159,20 +165,25 @@ function brapi_admin_form_validate($form, &$form_state) {
         $brapi_cv_settings[$term_label] = $term->cvterm_id;
       }
       else {
-        drupal_set_message('Term not found for ' . $term_label . ': "' . $term_name . '" from CV "' . $cv_name .'"', 'warning');
+        drupal_set_message(
+          'Term not found for '
+          . $term_label . ': "' . $term_name
+          . '" from CV "' . $cv_name . '"',
+          'warning'
+        );
       }
     }
     else {
-      // find term
+      // Find term.
       $raw_value = $form_state['values'][$term_label];
-      // we remove extra invalid (no id: or cv:) data in parenthesis if some
-      // note: if we have a parenthesis matching at position 0, it means we
-      // don't have anything before so we should not remove anything then
+      // We remove extra invalid (no id: or cv:) data in parenthesis if some.
+      // Note: if we have a parenthesis matching at position 0, it means we
+      // don't have anything before so we should not remove anything then.
       if ($parenthesis_pos = strpos($raw_value, '(')) {
         $raw_value = substr($raw_value, 0, $parenthesis_pos);
       }
       $term_name = trim($raw_value);
-      $term = tripal_get_cvterm(array('name' => $term_name,));
+      $term = tripal_get_cvterm(array('name' => $term_name));
       if (is_array($term)) {
         $term = current($term);
       }
@@ -189,9 +200,9 @@ function brapi_admin_form_validate($form, &$form_state) {
   variable_set(BRAPI_CV_SETTINGS, $brapi_cv_settings);
   $brapi_cv_settings = brapi_get_cv_settings(TRUE);
 
-  // Default example entities settings
+  // Default example entities settings.
   $example_parameters = array();
-  // get a unique list of all available parameters
+  // Get a unique list of all available parameters.
   foreach (brapi_get_calls() as $call) {
     if (array_key_exists('arguments', $call)) {
       foreach ($call['arguments'] as $param) {

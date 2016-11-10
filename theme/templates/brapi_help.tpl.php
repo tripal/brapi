@@ -1,3 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Breeding API administrative help page.
+ *
+ * @ingroup brapi
+ */
+?>
+
 <h3>About Breeding API</h3>
 <p>
 The Breeding API specifies a standard interface for plant phenotype/genotype
@@ -8,10 +18,11 @@ state, so now is the time for potential participants to help shape the
 specifications to ensure their needs are addressed. The listserve for
 discussions and announcements is at <?php
 print l(
-  'Cornell University',
-  'http://mail2.sgn.cornell.edu/cgi-bin/mailman/listinfo/plant-breeding-api');
+  t('Cornell University'),
+  'http://mail2.sgn.cornell.edu/cgi-bin/mailman/listinfo/plant-breeding-api'
+);
 ?>. Additional documentation is in the <?php
-print l('Github wiki', 'https://github.com/plantbreeding/documentation');
+print l(t('Github wiki'), 'https://github.com/plantbreeding/documentation');
 ?>.
 </p>
 
@@ -41,14 +52,14 @@ in Seattle and in July 2016 in Ithaca.<br/>
   <li>You can select which Breeding API field correspond to which Chado CV term
   in your database instance using <?php
   print l(
-    'Breeding API settings page',
+    t('Breeding API settings page'),
     'admin/tripal/extension/brapi/configuration'
   );
   ?>
   </li>
   <li>
     You can configure access permission on the <?php
-    print l('Drupal permission settings page', 'admin/people/permissions');
+    print l(t('Drupal permission settings page'), 'admin/people/permissions');
     ?>.
   </li>
 </ul>
@@ -58,7 +69,6 @@ in Seattle and in July 2016 in Ithaca.<br/>
   Currently the following features have been implemented:
   <dl class="brapi-dl clearfix">
 <?php
-  // print theme_table($call_table);
   foreach ($call_table['rows'] as $row) {
     print "    <dt>" . $row['data'][0]['data'] . "</dt>\n";
     print "    <dd>" . $row['data'][1]['data'] . "</dd>\n";

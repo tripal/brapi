@@ -1,3 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Breeding API setting overview page.
+ *
+ * @ingroup brapi
+ */
+?>
+
 <div class="brapi-admin-block">
   <h2>Breeding API Overview</h2>
 <?php

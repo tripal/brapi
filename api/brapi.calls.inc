@@ -4,25 +4,30 @@
  * @file
  * Implementation of Breeding API calls.
  *
- * General call parameters:
+ * Global call parameters:
  *
- * - pageSize (integer)
+ * - pageSize (int)
  *   The size of the pages to be returned.
  *   Default is 1000.
  *   Example: 'pageSize=1000'.
  *
- * - page (integer)
+ * - page (int)
  *   Which result page is requested. Page index start from 1 (not 0).
  *   Example: 'page=10'.
  *
- * - pretty (boolean)
+ * - pretty (bool)
  *   If set (true), outputs JSON in a nice human-readable format.
  *
+ * - debug (bool)
+ *   If set (true), outputs debug information.
  */
 
 /**
+ * About Breeding API call.
+ *
  * BRAPI: About
- *        brapi/v1
+ * URL: brapi/v1
+ * Displays Breeding API version information.
  *
  * GET: Outputs BRAPI "about" message.
  *
@@ -48,8 +53,11 @@ function brapi_v1_about_json() {
 }
 
 /**
+ * User authentication call.
+ *
  * BRAPI: Authentication
- *        brapi/v1/token
+ * URL: brapi/v1/token
+ * Manages user login, logout and current user information.
  *
  * GET: returns an information hash about current user if one.
  * POST: tries to log in the given user with the given credential on local site.
@@ -78,14 +86,14 @@ function brapi_v1_about_json() {
  *   brapi/v1/token?pretty=1
  * - POST:
  *   brapi/v1/token
- *   @code
+ * @code
  *   {
  *     'grant_type': 'password',
  *     'username': 'admin',
  *     'password': 'toto1234',
  *     'client_id': 'root'
  *   }
- *   @endcode
+ * @endcode
  *
  * @return string
  *   a JSON string with the following fields:
@@ -97,6 +105,7 @@ function brapi_v1_about_json() {
  */
 function brapi_v1_authentication_json() {
 
+  // Enforce HTTPS use.
   if (!$_SERVER['HTTPS']) {
     return brapi_raise_raw_error_json(
       426,
@@ -108,25 +117,25 @@ function brapi_v1_authentication_json() {
 
   global $user;
 
-  // init status and debug data
+  // Init status and debug data.
   $authentication_data = array();
   $metadata = brapi_prepare_metadata(0);
   $debug_data = array();
 
-  // get expiration time
+  // Get expiration time.
   $maxlifetime = ini_get("session.gc_maxlifetime");
 
-  // GET: get current user
+  // GET: get current user.
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // return current credential
+    // Return current credential.
     if (user_is_logged_in()) {
-      //+FIXME: for admin, list all users logged in (with brapi roles?)
+      // @todo for admin, list all users logged in (with brapi roles?).
       $authentication_data =
         array(
-            'userDisplayName' => $user->name,
-            'access_token' => session_name() . '=' . session_id(),
-            'client_id' => $user->name,
-            'expires_in' => $maxlifetime,
+          'userDisplayName' => $user->name,
+          'access_token' => session_name() . '=' . session_id(),
+          'client_id' => $user->name,
+          'expires_in' => $maxlifetime,
         );
     }
     return brapi_output_json(
@@ -135,10 +144,10 @@ function brapi_v1_authentication_json() {
       $debug_data
     );
   }
-    // POST: login process
+  // POST: login process.
   elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // login...
-    // get user login and password
+    // Login...
+    // Get user login and password.
     try {
       $user_data = brapi_get_user_json_input();
     }
@@ -149,15 +158,15 @@ function brapi_v1_authentication_json() {
       );
     }
 
-    // local client name
-    $username   = empty($user_data['username'])   ? FALSE : $user_data['username'];
-    $password   = empty($user_data['password'])   ? FALSE : $user_data['password'];
+    // Local client name.
+    $username   = empty($user_data['username']) ? FALSE : $user_data['username'];
+    $password   = empty($user_data['password']) ? FALSE : $user_data['password'];
     $grant_type = empty($user_data['grant_type']) ? FALSE : $user_data['grant_type'];
-    // remote client name
-    $client_id  = empty($user_data['client_id'])  ? FALSE : $user_data['client_id'];
+    // Remote client name.
+    $client_id  = empty($user_data['client_id']) ? FALSE : $user_data['client_id'];
 
     // BRAPI OAuth2 support only allows "password" grant type
-    // and if not set, assume "password"
+    // and if not set, assume "password".
     if (!empty($grant_type) && ('password' != $grant_type)) {
       return brapi_raise_raw_error_json(
         501,
@@ -165,20 +174,20 @@ function brapi_v1_authentication_json() {
       );
     }
 
-    // stop if already logged in
+    // Stop if already logged in.
     if (user_is_logged_in()) {
       return brapi_raise_raw_error_json(
         400,
         array(
           'error' => t(
             'You are already logged in as "@username". Please logout first.',
-            array('@username' => $user->name,)
+            array('@username' => $user->name)
           ),
         )
       );
     }
 
-    // prepare authentication
+    // Prepare authentication.
     $form_state = array(
       'values' => array(
         'name' => $username,
@@ -186,23 +195,21 @@ function brapi_v1_authentication_json() {
       ),
     );
 
-    // try authenticate
+    // Try authenticate.
     user_login_authenticate_validate(NULL, $form_state);
 
-    //if ($user_id = user_authenticate($username, $password)) {
     if ($form_state['uid']) {
       user_login_submit(NULL, $form_state);
-      // got user authenticated, get session name and value
+      // Got user authenticated, get session name and value.
       $authentication_data = array(session_name(), session_id());
     }
     else {
-      // not authenticated, issue an error
+      // Not authenticated, issue an error.
       return brapi_raise_raw_error_json(
         400,
-        array('error' => t('Authentication failed!'),)
+        array('error' => t('Authentication failed!'))
       );
     }
-
 
     $response = array(
       'userDisplayName' => $user->name,
@@ -214,10 +221,10 @@ function brapi_v1_authentication_json() {
     return brapi_output_json($response, $metadata, $debug_data);
 
   }
-    // DELETE: logout process
+  // DELETE: logout process.
   elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-    //+FIXME: check if admin and a token has been provided in JSON data
-    // logout if needed
+    // @todo check if admin and a token has been provided in JSON data.
+    // Logout if needed.
     if (user_is_logged_in()) {
       module_invoke_all('user_logout', $user);
       // Destroy the current session, and reset $user to the anonymous user.
@@ -237,18 +244,21 @@ function brapi_v1_authentication_json() {
     }
     return brapi_output_json(array('result' => array()), $metadata, $debug_data);
   }
-    // unsupported
+  // Unsupported.
   else {
     return brapi_raise_raw_error_json(
       400,
-      array('error' => t('Unsupported method!'),)
+      array('error' => t('Unsupported method!'))
     );
   }
 }
 
 /**
+ * Call list/search call.
+ *
  * BRAPI: Call search
- *        brapi/v1/calls
+ * URL:  brapi/v1/calls
+ * Displays the list of available calls.
  *
  * GET: search and returns the list of supported BrAPI calls.
  *
@@ -258,16 +268,16 @@ function brapi_v1_authentication_json() {
  */
 function brapi_v1_call_json() {
 
-  // init status and debug data
+  // Init status and debug data.
   $call_data = array();
   $metadata = brapi_prepare_metadata();
   $debug_data = array();
 
-  // get call parameters
+  // Get call parameters.
   $args = brapi_get_url_call_args();
   $call_filter = $args['call'];
 
-  // GET: get current user
+  // GET: get current user.
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
       $call_name = substr($call_name, 1);
@@ -280,9 +290,6 @@ function brapi_v1_call_json() {
       }
     }
     $metadata = brapi_prepare_metadata(count($call_data));
-    // $metadata['pagination']['pageSize']
-    //if ($metadata['pagination']['currentPage'] > 0) {
-    //}
 
     return brapi_output_json(
       array('result' => $call_data),
@@ -290,19 +297,21 @@ function brapi_v1_call_json() {
       $debug_data
     );
   }
-    // unsupported
+  // Unsupported.
   else {
     return brapi_raise_raw_error_json(
       400,
-      array('error' => t('Unsupported method!'),)
+      array('error' => t('Unsupported method!'))
     );
   }
 }
 
-
 /**
+ * Germplasm search call.
+ *
  * BRAPI: Germplasm Search
- *        brapi/v1/germplasm-search
+ * URL: brapi/v1/germplasm-search
+ * Returns a list of germplasm.
  *
  * GET: search and returns name-matching accessions.
  *
@@ -342,76 +351,74 @@ function brapi_v1_call_json() {
  *
  * @return string
  *   a JSON string with the following variable (some can be embeded):
+ *   Variable          | Datatype         | Required | Description
+ *   -----------------------------------------------------
+ *   metadata          | object           |        Y | pagination, status
+ *   pagination        | object           |        Y | pageSize, currentPage, totalCount,
+ *                     |                  |          | totalPages
+ *   status            | list             |        Y | code, message
+ *   result            | object           |        Y | data
+ *   data              | array of objects |        Y | Array (possibly empty) of germplasm
+ *                     |                  |          | records
+ *   germplasmDbId     | string           |        Y | Internal db identifier
+ *   defaultDisplayName| string           |        Y | A string representing the germplasm
+ *                     |                  |          | that will be meaningful to the user
+ *   germplasmName     | string           |          | Name of the germplasm. It can be the
+ *                     |                  |          | prefered name and does not have to
+ *                     |                  |          | be unique
+ *   accessionNumber   | string           |          | This is the unique identifier for
+ *                     |                  |          | accessions within a genebank, and is
+ *                     |                  |          | assigned when a sample is entered
+ *                     |                  |          | into the genebank collection
+ *   germplasmPUI      | string           |          | Permanent identifier (e.g. URI, DOI,
+ *                     |                  |          | LSID)
+ *   pedigree          | string           |          | Cross name with optional selection
+ *                     |                  |          | history.
+ *   seedSource        | string           |          | Seed source
+ *   synonyms          | array of string  |          | List of other germplasm names
  *
- * Variable            Datatype   Required  Description
- *------------------------------------------------------
- * metadata            object            Y  pagination, status
- * pagination          object            Y  pageSize, currentPage, totalCount,
- *                                          totalPages
- * status              list              Y  code, message
- * result              object            Y  data
- * data                array of objects  Y  Array (possibly empty) of germplasm
- *                                          records
- * germplasmDbId       string            Y  Internal db identifier
- * defaultDisplayName  string            Y  A string representing the germplasm
- *                                          that will be meaningful to the user
- * germplasmName       string               Name of the germplasm. It can be the
- *                                          prefered name and does not have to
- *                                          be unique
- * accessionNumber     string               This is the unique identifier for
- *                                          accessions within a genebank, and is
- *                                          assigned when a sample is entered
- *                                          into the genebank collection
- * germplasmPUI        string               Permanent identifier (e.g. URI, DOI,
- *                                          LSID)
- * pedigree            string               Cross name with optional selection
- *                                          history.
- * seedSource          string               Seed source
- * synonyms            array of string      List of other germplasm names
- *
- *
- * Example:
- *   {
- *     "metadata": {
- *       "status": [],
- *       "pagination": {
- *         "pageSize": "2",
- *         "currentPage": 1,
- *         "totalCount": 25,
- *         "totalPages": 13
- *       },
- *       "queryName": "ITC060?"
- *     },
- *     "result": {
- *       "data": [
- *         {
- *           "accessionNumber": "ITC0605",
- *           "germplasmDbId": "01BEL084605",
- *           "defaultDisplayName": "Japaraka no.2",
- *           "germplasmName": "Japaraka no.2",
- *           "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084605"
+ *   Example:
+ *       {
+ *         "metadata": {
+ *           "status": [],
+ *           "pagination": {
+ *             "pageSize": "2",
+ *             "currentPage": 1,
+ *             "totalCount": 25,
+ *             "totalPages": 13
+ *           },
+ *           "queryName": "ITC060?"
  *         },
- *         {
- *           "accessionNumber": "PNG064",
- *           "germplasmDbId": "01AUS04388",
- *           "defaultDisplayName": "Somani",
- *           "germplasmName": "Somani",
- *           "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01AUS04388"
+ *         "result": {
+ *           "data": [
+ *             {
+ *               "accessionNumber": "ITC0605",
+ *               "germplasmDbId": "01BEL084605",
+ *               "defaultDisplayName": "Japaraka no.2",
+ *               "germplasmName": "Japaraka no.2",
+ *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084605"
+ *             },
+ *             {
+ *               "accessionNumber": "PNG064",
+ *               "germplasmDbId": "01AUS04388",
+ *               "defaultDisplayName": "Somani",
+ *               "germplasmName": "Somani",
+ *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01AUS04388"
+ *             }
+ *           ]
  *         }
- *       ]
- *     }
- *   }
+ *       }
  *
  * @ingroup brapi
  */
 function brapi_v1_germplasm_search_json() {
 
-  // init status and debug data
+  // Init status and debug data.
   $status = array();
   $debug_data = array();
   $metadata = brapi_prepare_metadata();
 
-  // get JSON input if some
+  // Get JSON input if some.
   try {
     $user_data = brapi_get_user_json_input();
   }
@@ -420,7 +427,7 @@ function brapi_v1_germplasm_search_json() {
     $debug_data[] = $e->getMessage();
   }
 
-  // combine call parameters
+  // Combine call parameters.
   $filters = array_merge(
     $user_data,
     brapi_get_url_call_args()
@@ -430,26 +437,27 @@ function brapi_v1_germplasm_search_json() {
   $data_mapping = brapi_get_data_mapping();
 
   $selectors = array();
-  $identifiers = NULL; // hash of identifiers
+  // Hash of identifiers.
+  $identifiers = NULL;
   $id_field = $data_mapping['germplasm']['identifier'];
   foreach ($filters as $field => $values) {
     $field_identifiers = array();
-    // check if the field is available
+    // Check if the field is available.
     if (array_key_exists($field, $data_mapping['germplasm']['fields'])) {
       $field_fetcher = $data_mapping['germplasm']['fields'][$field];
       switch (gettype($field_fetcher)) {
         case 'string':
-          // field is in object table
+          // Field is in object table.
           $selectors[$field_fetcher] = $values;
           $debug_data[] = "Filter on field '$field' ($field_fetcher)"
             . " with value(s): "
             . (is_array($values) ? implode(', ', $values) : $values);
           break;
+
         case 'array':
-          $debug_data[] = "Filter on linked field '$field'"
-            . " with value(s): "
+          $debug_data[] = "Filter on linked field '$field' with value(s): "
             . (is_array($values) ? implode(', ', $values) : $values);
-          // get available values from database mapping
+          // Get available values from database mapping.
           if (isset($field_fetcher['join_key'])) {
             $join_key = $field_fetcher['join_key'];
           }
@@ -460,7 +468,7 @@ function brapi_v1_germplasm_search_json() {
             array($field_fetcher['column'] => $values),
             $field_fetcher['selector']
           );
-          // we capture output buffer for Tripal error messages
+          // We capture output buffer for Tripal error messages.
           ob_start();
           $records = chado_select_record(
              $field_fetcher['table'],
@@ -472,7 +480,7 @@ function brapi_v1_germplasm_search_json() {
           }
 
           if (FALSE === $records) {
-            // no matching result for current field, stop here
+            // No matching result for current field, stop here.
             return brapi_output_json(
               array(
                 'result' => array('data' => array()),
@@ -482,7 +490,7 @@ function brapi_v1_germplasm_search_json() {
             );
           }
           else {
-            // force Tripal return value to be an array for easier management
+            // Force Tripal return value to be an array for easier management.
             if ($records && !is_array($records)) {
               $records = array($records);
             }
@@ -491,17 +499,17 @@ function brapi_v1_germplasm_search_json() {
               $field_identifiers[$rec_id_value] = TRUE;
             }
           }
-          
-          // check for intersection
+
+          // Check for intersection.
           if (!isset($identifiers)) {
-            // not set yet
+            // Not set yet.
             $identifiers = $field_identifiers;
           }
           else {
-            // make sure we intersect objects matching other fields
+            // Make sure we intersect objects matching other fields.
             $identifiers = array_intersect_key($identifiers, $field_identifiers);
             if (0 == count($identifiers)) {
-              // no intersection between fields, stop here
+              // No intersection between fields, stop here.
               return brapi_output_json(
                 array(
                   'result' => array('data' => array()),
@@ -512,27 +520,31 @@ function brapi_v1_germplasm_search_json() {
             }
           }
           break;
+
         case 'object':
-          // not supported
+          // Not supported.
           $debug_data[] = "Field '$field' not supported for filtering";
           break;
+
         default:
-      } // ends type switch
-    } // ends existing fields check
+          // Ends type switch.
+      }
+      // Ends existing fields check.
+    }
     else {
       $debug_data[] = "Field '$field' not found for filtering";
     }
-  } // ends field loop
-  
-  // check if identifiers should also be filtered
+    // Ends field loop.
+  }
+
+  // Check if identifiers should also be filtered.
   if ($identifiers) {
     if (array_key_exists($id_field, $selectors)) {
       $selectors[$id_field] =
         array_intersect(
           array_keys($identifiers),
           $selectors[$id_field]
-        )
-      ;
+        );
     }
     else {
       $selectors[$id_field] = array_keys($identifiers);
@@ -545,10 +557,10 @@ function brapi_v1_germplasm_search_json() {
     'order_by' => array($data_mapping['germplasm']['accession'] => 'ASC'),
   );
 
-  // we capture output buffer for Tripal error messages
+  // We capture output buffer for Tripal error messages.
   ob_start();
   try {
-    // setup pager data
+    // Setup pager data.
     $count_result = chado_select_record(
       $data_mapping['germplasm']['table'],
       array('count(1)'),
@@ -556,24 +568,24 @@ function brapi_v1_germplasm_search_json() {
     );
     $total_count = $count_result[0]->count;
     $metadata = brapi_prepare_metadata($total_count);
-    
+
     if (isset($metadata['pagination']['pageSize'])
         && isset($metadata['pagination']['currentPage'])) {
-      // use client page selection
+      // Use client page selection.
       $options['pager'] = array(
         'limit' => $metadata['pagination']['pageSize'],
         'element' => $metadata['pagination']['currentPage'],
       );
     }
     else {
-      // default paging
+      // Default paging.
       $options['pager'] = array(
         'limit' => BRAPI_DEFAULT_PAGE_SIZE,
         'element' => 0,
       );
     }
 
-    // support pager and sorting
+    // Support pager and sorting.
     $stocks = chado_generate_var(
       $data_mapping['germplasm']['table'],
       $selectors,
@@ -586,20 +598,19 @@ function brapi_v1_germplasm_search_json() {
   if ($tripal_message = ob_get_clean()) {
     $debug_data[] = $tripal_message;
   }
-  
-  
+
   if ($stocks && !is_array($stocks)) {
     $stocks = array($stocks);
   }
-  
+
   $debug_data[] = "Got " . count($stocks) . "results.";
 
-  // generate stock data
+  // Generate stock data.
   $fields = array(
     'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
     'germplasmPUI', 'synonyms',
   );
-  
+
   $germplasm_list = array();
   foreach ($stocks as $stock) {
     $germplasm_data = array();
@@ -621,10 +632,12 @@ function brapi_v1_germplasm_search_json() {
   );
 }
 
-
 /**
+ * Germplasm details call.
+ *
  * BRAPI: Germplasm Details by DbId
- *        brapi/v1/germplasm/\<id\>
+ * URL: brapi/v1/germplasm/\<id\>
+ * Displays details of a germplasm.
  *
  * GET: returns details of the given accession.
  *
@@ -635,59 +648,58 @@ function brapi_v1_germplasm_search_json() {
  * @return string
  *   a JSON string with the following variable (some can be embeded):
  *
- * Variable            Datatype   Required  Description
- *------------------------------------------------------
- * metadata            object            Y  pagination, status
- * pagination          object            Y  pageSize, currentPage, totalCount,
- *                                          totalPages
- * status              list              Y  code, message
- * result              object            Y  data
- * data                array of objects  Y  Array of 0 or 1 germplasm records
- * germplasmDbId       string            Y  Internal db identifier
- * defaultDisplayName  string            Y  A string representing the germplasm
- *                                          that will be meaningful to the user
- * germplasmName       string               Name of the germplasm. It can be the
- *                                          prefered name and does not have to
- *                                          be unique
- * accessionNumber     string               This is the unique identifier for
- *                                          accessions within a genebank, and is
- *                                          assigned when a sample is entered
- *                                          into the genebank collection
- * germplasmPUI        string               Permanent identifier (e.g. URI, DOI,
- *                                          LSID)
- * pedigree            string               Cross name with optional selection
- *                                          history.
- * seedSource          string               Seed source
- * synonyms            array of string      List of other germplasm names
+ *   Variable           | Datatype         | Required | Description
+ *  ----------------------------------------------------------------
+ *   metadata           | object           |        Y | pagination, status
+ *   pagination         | object           |        Y | pageSize, currentPage, totalCount,
+ *                      |                  |          | totalPages
+ *   status             | list             |        Y | code, message
+ *   result             | object           |        Y | data
+ *   data               | array of objects |        Y | Array of 0 or 1 germplasm records
+ *   germplasmDbId      | string           |        Y | Internal db identifier
+ *   defaultDisplayName | string           |        Y | A string representing the germplasm
+ *                      |                  |          | that will be meaningful to the user
+ *   germplasmName      | string           |          | Name of the germplasm. It can be the
+ *                      |                  |          | prefered name and does not have to
+ *                      |                  |          | be unique
+ *   accessionNumber    | string           |          | This is the unique identifier for
+ *                      |                  |          | accessions within a genebank, and is
+ *                      |                  |          | assigned when a sample is entered
+ *                      |                  |          | into the genebank collection
+ *   germplasmPUI       | string           |          | Permanent identifier (e.g. URI, DOI,
+ *                      |                  |          | LSID)
+ *   pedigree           | string           |          | Cross name with optional selection
+ *                      |                  |          | history.
+ *   seedSource         | string           |          | Seed source
+ *   synonyms           | array of string  |          | List of other germplasm names
  *
- *
- * Example:
- *   {
- *     "metadata": {
- *       "status": [],
- *       "pagination": {
- *         "pageSize": 1000,
- *         "currentPage": 1,
- *         "totalCount": 1,
- *         "totalPages": 1
- *       }
- *     },
- *     "result": {
- *       "data": [
- *         {
- *           "germplasmDbId": "01BEL084609",
- *           "defaultDisplayName": "Pahang",
- *           "germplasmName": "Pahang",
- *           "accessionNumber": "ITC0609",
- *           "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
- *           "synonyms": [
- *             "01BEL084609",
- *             "ITC0609"
+ *   Example:
+ *       {
+ *         "metadata": {
+ *           "status": [],
+ *           "pagination": {
+ *             "pageSize": 1000,
+ *             "currentPage": 1,
+ *             "totalCount": 1,
+ *             "totalPages": 1
+ *           }
+ *         },
+ *         "result": {
+ *           "data": [
+ *             {
+ *               "germplasmDbId": "01BEL084609",
+ *               "defaultDisplayName": "Pahang",
+ *               "germplasmName": "Pahang",
+ *               "accessionNumber": "ITC0609",
+ *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
+ *               "synonyms": [
+ *                 "01BEL084609",
+ *                 "ITC0609"
+ *               ]
+ *             }
  *           ]
  *         }
- *       ]
- *     }
- *   }
+ *       }
  *
  * @ingroup brapi
  */
@@ -698,36 +710,39 @@ function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode =
     'read'   => brapi_v1_read_germplasm_json,
     'update' => brapi_v1_update_germplasm_json,
     'delete' => brapi_v1_delete_germplasm_json,
-    // 'list'   => function (),
+    // X 'list'   => function (), .
   );
 
   return brapi_process_crud('/germplasm', $actions, 'germplasm', $germplasm_id);
 }
 
 /**
+ * Create a new stock (germplasm) entry.
+ *
  * Insert a new germplasm in the stock table and creates required related
  * entries such as missing organism or properties and associated cv terms.
  *
- * @param $user_data
- * a hash containing the stock field values.
- * Supported keys (*: mandatory fields, **: not BrAPI standard):
- *   -commonCropName*:
- *   -species*: the Chado organism species
- *   -genus*: the Chado organism genus
- *   -defaultDisplayName*: the Chado stock name
- *   -germplasmDbId*: the Chado stock uniquename. can also be specified through
- *     the $uniquename parameter which has higher priority
- *   -abbreviation**: the Chado organism abbreviation
- *   -description**: the Chado stock description
- *   -type_id**: a Chado cvterm_id used for stock types
+ * @param array $user_data
+ *   A hash containing the stock field values.
+ *   Supported keys (*: mandatory fields, **: not BrAPI standard):
+ *     - commonCropName*: common crop name;
+ *     - species*: the Chado organism species;
+ *     - genus*: the Chado organism genus;
+ *     - defaultDisplayName*: the Chado stock name;
+ *     - germplasmDbId*: the Chado stock uniquename. can also be specified
+ *       through the $uniquename parameter which has higher priority;
+ *     - abbreviation**: the Chado organism abbreviation;
+ *     - description**: the Chado stock description;
+ *     - type_id**: a Chado cvterm_id used for stock types.
+ * @param string $uniquename
+ *   The stock.uniquename value to use for the new stock.
  *
- *
- * @param $uniquename
- * The stock.uniquename value to use for the new stock.
+ * @return string
+ *   a JSON string containing the stock details.
  */
 function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 
-  // make sure we got all the requested data
+  // Make sure we got all the requested data.
   $required_fields = array(
     'commonCropName', 'species', 'genus', 'defaultDisplayName', 'germplasmDbId',
   );
@@ -737,16 +752,16 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     if (empty($user_data[$required_field])) {
       return brapi_raise_error_json(
         400,
-        t("Missing germplasm @field!", array('@field' => $required_field,))
+        t("Missing germplasm @field!", array('@field' => $required_field))
       );
     }
   }
 
-  // check if a uniquename has been specified
+  // Check if a uniquename has been specified.
   if (!$uniquename) {
     $uniquename = $user_data['germplasmDbId'];
   }
-  // make sure we got a uniquename
+  // Make sure we got a uniquename.
   if (!$uniquename) {
     return brapi_raise_error_json(
       400,
@@ -755,12 +770,12 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   }
   $cv_settings = brapi_get_cv_settings();
 
-  // check if organism exists
+  // Check if organism exists.
   $organism_selector = array(
     'genus' => $user_data['genus'],
     'species' => $user_data['species'],
   );
-  // we capture output buffer for Tripal error messages
+  // We capture output buffer for Tripal error messages.
   ob_start();
   $organism = chado_generate_var('organism', $organism_selector);
   $tripal_message = ob_get_clean();
@@ -769,7 +784,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   }
 
   if (!$organism) {
-    // try to insert organism
+    // Try to insert organism.
     if (array_key_exists('commonCropName', $user_data)) {
       $organism_selector['common_name'] = $user_data['commonCropName'];
     }
@@ -778,7 +793,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
       $organism_selector['abbreviation'] = $user_data['abbreviation'];
     }
 
-    // we capture output buffer for Tripal error messages
+    // We capture output buffer for Tripal error messages.
     ob_start();
     $organism = chado_insert_record('organism', $organism_selector);
     $tripal_message = ob_get_clean();
@@ -791,35 +806,30 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
         )
       );
     }
-    $organism = (object)$organism;
+    $organism = (object) $organism;
+    $organism_text = $organism->species . ' (' . $organism->organism_id . ')';
     watchdog(
       'brapi',
       'A new organism has been inserted: @organism',
-      array(
-        '@organism' =>
-          $organism->species
-          . ' ('
-          . $organism->organism_id
-          . ')',
-      ),
+      array('@organism' => $organism_text),
       WATCHDOG_DEBUG
     );
   }
 
-  // check if the user specified a stock description
+  // Check if the user specified a stock description.
   $description = '';
   if (array_key_exists('description', $user_data)) {
     $description = $user_data['description'];
   }
 
-  // check if the user specified a type_id
+  // Check if the user specified a type_id.
   if (array_key_exists('type_id', $user_data)) {
     $type_id = $user_data['type_id'];
   }
   else {
     $type_id = $cv_settings['Germplasm'];
   }
-  // make sure we got a type_id
+  // Make sure we got a type_id.
   if (!$type_id) {
     return brapi_raise_error_json(
       400,
@@ -827,7 +837,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     );
   }
 
-  $values =  array(
+  $values = array(
     'organism_id' => $organism->organism_id,
     'name' => $user_data['defaultDisplayName'],
     'uniquename' => $uniquename,
@@ -835,7 +845,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     'type_id' => $type_id,
     'is_obsolete' => 0,
   );
-  // we capture output buffer for Tripal error messages
+  // We capture output buffer for Tripal error messages.
   ob_start();
   $stock = chado_insert_record('stock', $values);
   $tripal_message = ob_get_clean();
@@ -848,22 +858,18 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
       )
     );
   }
-  // turn stock into an object
-  $stock = (object)$stock;
+  // Turn stock into an object.
+  $stock = (object) $stock;
+  $stock_text = $stock->uniquename . ' (' . $stock->stock_id . ')';
 
   watchdog(
     'brapi',
     'A new stock has been inserted: @stock',
-    array(
-      '@stock' => $stock->uniquename
-        . ' ('
-        . $stock->stock_id
-        . ')',
-    ),
+    array('@stock' => $stock_text),
     WATCHDOG_DEBUG
   );
 
-  //+FIXME: store other fields
+  // @todo store other fields
   foreach ($optional_fields as $optional_field) {
     if (array_key_exists($optional_field, $user_data)) {
       brapi_set_field(
@@ -879,7 +885,15 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   return brapi_v1_read_germplasm_json($stock);
 }
 
-
+/**
+ * Returns a JSON string containing the details of a given germplasm.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return string
+ *   a JSON string containing the stock details.
+ */
 function brapi_v1_read_germplasm_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
@@ -895,44 +909,50 @@ function brapi_v1_read_germplasm_json($stock) {
   }
 
   return brapi_output_json(
-    array(
-      'result' => array('data' => array($germplasm_data))
-    ),
+    array('result' => array('data' => array($germplasm_data))),
     $metadata,
     $debug_data
   );
 }
 
-
+/**
+ * Updates a germplasm.
+ *
+ * @param array $user_data
+ *   User input data.
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return string
+ *   a JSON string containing the stock details.
+ */
 function brapi_v1_update_germplasm_json($user_data, $stock) {
 
   $cv_settings = brapi_get_cv_settings();
   $stock_match = array('stock_id' => $stock->stock_id);
   $stock_data = array();
 
-  // species update?
+  // Species to update?
   $has_species = array_key_exists('species', $user_data);
   $has_genus = array_key_exists('genus', $user_data);
   if ($has_species || $has_genus) {
-    // change stock organism
-    // check if organism exists
+    // Change stock organism.
+    // Check if organism exists.
     $organism_selector = array();
     if ($has_species || $has_genus) {
-        $organism_selector['genus'] = $user_data['genus'];
-        $organism_selector['species'] = $user_data['species'];
+      $organism_selector['genus'] = $user_data['genus'];
+      $organism_selector['species'] = $user_data['species'];
     }
-    else if ($has_species) {
-        //$stock = chado_expand_var($stock, 'table', 'organism');
-        $organism_selector['genus'] = $stock->organism->genus;
-        $organism_selector['species'] = $user_data['species'];
+    elseif ($has_species) {
+      $organism_selector['genus'] = $stock->organism->genus;
+      $organism_selector['species'] = $user_data['species'];
     }
-    else if ($has_genus) {
-        //$stock = chado_expand_var($stock, 'table', 'organism');
-        $organism_selector['genus'] = $user_data['genus'];
-        $organism_selector['species'] = $stock->organism->species;
+    elseif ($has_genus) {
+      $organism_selector['genus'] = $user_data['genus'];
+      $organism_selector['species'] = $stock->organism->species;
     }
 
-    // we capture output buffer for Tripal error messages
+    // We capture output buffer for Tripal error messages.
     ob_start();
     $organism = chado_generate_var('organism', $organism_selector);
     $tripal_message = ob_get_clean();
@@ -950,22 +970,22 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     $stock_data['organism_id'] = $organism->organism_id;
   }
 
-  // check if the user specified a stock description
+  // Check if the user specified a stock description.
   if (array_key_exists('description', $user_data)) {
     $stock_data['description'] = $user_data['description'];
   }
 
-  // check if the user specified a type_id
+  // Check if the user specified a type_id.
   if (array_key_exists('type_id', $user_data)) {
     $stock_data['type_id'] = $user_data['type_id'];
   }
 
-  // check if the user specified a new name
+  // Check if the user specified a new name.
   if (array_key_exists('defaultDisplayName', $user_data)) {
     $stock_data['name'] = $user_data['defaultDisplayName'];
   }
 
-  // we capture output buffer for Tripal error messages
+  // We capture output buffer for Tripal error messages.
   ob_start();
   $updated =
     chado_update_record(
@@ -989,15 +1009,12 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     'brapi',
     'Stock has been updated: @stock',
     array(
-      '@stock' => $stock->uniquename
-        . ' ('
-        . $stock->stock_id
-        . ')',
+      '@stock' => $stock->uniquename . ' (' . $stock->stock_id . ')',
     ),
     WATCHDOG_DEBUG
   );
 
-  // update other fields
+  // Update other fields.
   $updatable_fields = array('germplasmName', 'synonyms');
 
   foreach ($updatable_fields as $updatable_field) {
@@ -1015,7 +1032,15 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
   return brapi_v1_read_germplasm_json($stock);
 }
 
-
+/**
+ * Removes a germplasm.
+ *
+ * @param object $stock
+ *   The Tripal Chado stock object to remove.
+ *
+ * @return string
+ *   a JSON string with and empty data array.
+ */
 function brapi_v1_delete_germplasm_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
@@ -1035,14 +1060,14 @@ function brapi_v1_delete_germplasm_json($stock) {
   $metadata['status'][] =
     array(
       'code' => 200,
-      'message' => t("Successfully removed germplasm.")
+      'message' => t("Successfully removed germplasm."),
     );
 
   return brapi_output_json(array(), $metadata, $debug_data);
 }
 
 
-//+FIXME: remove the old implementation below once re-implemented
+// @todo remove the old implementation below once re-implemented
 /**
  * BRAPI: Germplasm Multi Crop Passport Descriptor
  *        brapi/v1/germplasm/\<id\>/MCPD
@@ -1799,7 +1824,7 @@ function brapi_v1_attribute_categories_json() {
  *
  * /
 function brapi_v1_germplasm_attributes_json($germplasm_id) {
-  
+
   $attribute_cv = array('mgis_plant_general_appearance',
     'mgis_petiole_midrib_leaf',
     'mgis_pseudostem_suckers',

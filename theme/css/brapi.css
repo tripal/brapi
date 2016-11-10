@@ -15,7 +15,7 @@
 .brapi-admin-block .system-status-report caption {
   font-weight: bold;
   font-size: larger;
-  text-align:left;
+  text-align: left;
 }
 
 .brapi-spe-role {
@@ -41,6 +41,7 @@
 }
 
 .brapi-feature {
+  font-weight: normal;
 }
 
 .brapi-feature-name {
@@ -48,6 +49,7 @@
 }
 
 .brapi-feature-value {
+  font-weight: normal;
 }
 
 .brapi-minor-details {
@@ -60,7 +62,8 @@
   font-weight: bold;
 }
 
-.brapi-yes, .brapi-yes a {
+.brapi-yes,
+.brapi-yes a {
   color: DarkGreen;
 }
 
