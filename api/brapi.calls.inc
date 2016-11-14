@@ -22,6 +22,9 @@
  *   If set (true), outputs debug information.
  */
 
+// Includes constants.
+require_once 'brapi.const.inc';
+
 /**
  * About Breeding API call.
  *
@@ -438,7 +441,7 @@ function brapi_v1_germplasm_search_json() {
 
   $selectors = array();
   // Hash of identifiers.
-  $identifiers = NULL;
+  $identifiers = array();
   $id_field = $data_mapping['germplasm']['identifier'];
   foreach ($filters as $field => $values) {
     $field_identifiers = array();
@@ -458,11 +461,11 @@ function brapi_v1_germplasm_search_json() {
           $debug_data[] = "Filter on linked field '$field' with value(s): "
             . (is_array($values) ? implode(', ', $values) : $values);
           // Get available values from database mapping.
-          if (isset($field_fetcher['join_key'])) {
-            $join_key = $field_fetcher['join_key'];
+          if (isset($field_fetcher['foreign_key'])) {
+            $foreign_key = $field_fetcher['foreign_key'];
           }
           else {
-            $join_key = $id_field;
+            $foreign_key = $id_field;
           }
           $selector = array_merge(
             array($field_fetcher['column'] => $values),
@@ -472,7 +475,7 @@ function brapi_v1_germplasm_search_json() {
           ob_start();
           $records = chado_select_record(
              $field_fetcher['table'],
-             array($join_key),
+             array($foreign_key),
              $selector
           );
           if ($tripal_message = ob_get_clean()) {
@@ -495,19 +498,22 @@ function brapi_v1_germplasm_search_json() {
               $records = array($records);
             }
             foreach ($records as $record) {
-              $rec_id_value = $record->$join_key;
+              $rec_id_value = $record->$foreign_key;
               $field_identifiers[$rec_id_value] = TRUE;
             }
           }
 
           // Check for intersection.
-          if (!isset($identifiers)) {
+          if (!array_key_exists($foreign_key, $identifiers)) {
             // Not set yet.
-            $identifiers = $field_identifiers;
+            $identifiers[$foreign_key] = $field_identifiers;
           }
           else {
             // Make sure we intersect objects matching other fields.
-            $identifiers = array_intersect_key($identifiers, $field_identifiers);
+            $identifiers[$foreign_key] = array_intersect_key(
+              $identifiers[$foreign_key],
+              $field_identifiers
+            );
             if (0 == count($identifiers)) {
               // No intersection between fields, stop here.
               return brapi_output_json(
@@ -533,21 +539,27 @@ function brapi_v1_germplasm_search_json() {
     }
     else {
       $debug_data[] = "Field '$field' not found for filtering";
+      $status[] = array(
+        'code' => 'warning',
+        'message' => "unknown field '$field' ignored",
+      );
     }
     // Ends field loop.
   }
 
   // Check if identifiers should also be filtered.
-  if ($identifiers) {
-    if (array_key_exists($id_field, $selectors)) {
-      $selectors[$id_field] =
-        array_intersect(
-          array_keys($identifiers),
-          $selectors[$id_field]
-        );
-    }
-    else {
-      $selectors[$id_field] = array_keys($identifiers);
+  if (count($identifiers)) {
+    foreach ($identifiers as $object_key => $key_values) {
+      if (array_key_exists($object_key, $selectors)) {
+        $selectors[$object_key] =
+          array_intersect(
+            array_keys($key_values),
+            $selectors[$object_key]
+          );
+      }
+      else {
+        $selectors[$object_key] = array_keys($key_values);
+      }
     }
   }
 
@@ -606,22 +618,17 @@ function brapi_v1_germplasm_search_json() {
   $debug_data[] = "Got " . count($stocks) . "results.";
 
   // Generate stock data.
-  $fields = array(
-    'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
-    'germplasmPUI', 'synonyms',
-  );
-
   $germplasm_list = array();
   foreach ($stocks as $stock) {
-    $germplasm_data = array();
-    foreach ($fields as $field_name) {
-      $germplasm_data[$field_name] =
-        brapi_get_field('germplasm', $stock, $field_name);
-    }
-    $germplasm_list[] = $germplasm_data;
+    $germplasm_list[] = brapi_get_germplasm_details($stock);
   }
 
-  $metadata['status'] = array_merge($metadata['status'], $status);
+  if (is_array($metadata['status'])) {
+    $metadata['status'] = array_merge($metadata['status'], $status);
+  }
+  else {
+    $metadata['status'] = $status;
+  }
 
   return brapi_output_json(
     array(
@@ -897,22 +904,37 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 function brapi_v1_read_germplasm_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
-  $germplasm_data = array();
-
-  $fields = array(
-    'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
-    'germplasmPUI', 'synonyms',
-  );
-  foreach ($fields as $field_name) {
-    $germplasm_data[$field_name] =
-      brapi_get_field('germplasm', $stock, $field_name);
-  }
+  $germplasm_data = brapi_get_germplasm_details($stock);
 
   return brapi_output_json(
     array('result' => array('data' => array($germplasm_data))),
     $metadata,
     $debug_data
   );
+}
+
+/**
+ * Returns germplasm details in an associative array.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   the stock details in an associative array.
+ */
+function brapi_get_germplasm_details($stock) {
+  $germplasm_data = array();
+
+  $fields = array(
+    'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
+    'germplasmPUI', 'synonyms', 'commonCropName', 'instituteCode',
+    'instituteName', 'biologicalStatusOfAccessionCode', 'countryOfOriginCode',
+  );
+  foreach ($fields as $field_name) {
+    $germplasm_data[$field_name] =
+      brapi_get_field('germplasm', $stock, $field_name);
+  }
+  return $germplasm_data;
 }
 
 /**

@@ -15,7 +15,7 @@
  *
  * @ingroup brapi
  */
-function brapi_admin_form() {
+function brapi_admin_form($form, &$form_state) {
   $form = array();
 
   $form['cv_settings'] = array(
@@ -121,7 +121,29 @@ function brapi_admin_form() {
     );
   }
 
-  return system_settings_form($form);
+  $form['chado_mcpd'] = array(
+    '#type'        => 'fieldset',
+    '#attributes'  => array('class' => array('container-inline')),
+    '#title'       => t('MCPD settings'),
+    '#collapsible' => TRUE,
+    '#collapsed'   => TRUE,
+    '#suffix'      => '<br/>',
+  );
+
+  $form['chado_mcpd']['reset_mcpd'] = array(
+    '#type'        => 'submit',
+    '#value'       => t('Reload Chado MCPD CV'),
+    '#submit'      => array('brapi_reset_mcpd_form'),
+  );
+
+
+  $form['save_settings'] = array(
+    '#type'        => 'submit',
+    '#value'       => t('Save configuration'),
+    '#submit'      => array('brapi_admin_form_submit'),
+  );
+
+  return $form;
 }
 
 /**
@@ -134,8 +156,7 @@ function brapi_admin_form() {
  *
  * @ingroup brapi
  */
-function brapi_admin_form_validate($form, &$form_state) {
-
+function brapi_admin_form_submit($form_id, &$form_state) {
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
     $user_term = $form_state['values'][$term_label];
@@ -216,4 +237,51 @@ function brapi_admin_form_validate($form, &$form_state) {
     $brapi_example_settings[$example_parameter['name']] = $form_state['values'][$example_parameter['name']];
   }
   variable_set(BRAPI_EXAMPLE_SETTINGS, $brapi_example_settings);
+}
+
+/**
+ * MCPD Reset: redirects to confirmation form.
+ */
+function brapi_reset_mcpd_form($form_id, &$form_state) {
+  $form_state['redirect'] = 'admin/tripal/extension/brapi/configuration/reset_mcpd';
+}
+
+/**
+ * MCPD reset confirmation form.
+ */
+function brapi_reset_mcpd_form_confirm($form_id, &$form_state) {
+  $title = t('Are you sure you want to reload MCPD CV?');
+  $details = t(
+    'Are you sure you want to reload MCPD controlled vocabulary stored into Chado and use the version @mcpd_version provided with this module instead? If the MCPD CV already exists in your Chado instance, it will be updated to MCPD @mcpd_version but existing terms not present in @mcpd_version will be kept. Any association with existing terms will be kept while those terms might be updated. This action cannot be undone.',
+    array('@mcpd_version' => BRAPI_MCPD_VERSION)
+  );
+  $form = array('confirm' =>array('#type' => 'hidden', '#value' => 'true'));
+
+  return confirm_form(
+    $form,
+    $title,
+    'admin/tripal/extension/brapi/configuration',
+    $details,
+    t('Reload MCPD'),
+    t('Cancel')
+  );
+}
+
+/**
+ * MCPD rested confirmed, reload MCPD CV.
+ */
+function brapi_reset_mcpd_form_confirm_submit($form_id, &$form_state) {
+  if (isset($form_state['values']['confirm'])) {
+    $newcvs = array();
+    $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
+    $loaded = tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
+    if ($loaded && !empty($newcvs)) {
+      drupal_set_message('MCPD CV loaded or updated successfully.');
+    }
+    else {
+      drupal_set_message('Failed to load or update MCPD CV!', 'warning');
+    }
+  }
+
+  $form_state['redirect'] = 'admin/tripal/extension/brapi/configuration';
 }

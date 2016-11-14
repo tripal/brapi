@@ -164,6 +164,17 @@ function brapi_menu() {
     'weight' => 1,
   );
 
+  $items['admin/tripal/extension/brapi/configuration/reset_mcpd'] = array(
+    'title' => 'Settings',
+    'description' => 'Confirm reload MCPD CV',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('brapi_reset_mcpd_form_confirm'),
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    // 'type' => MENU_LOCAL_TASK,
+    // 'weight' => 1,
+  );
+
   // Help page based using theme/templates/brapi_help.tpl.php file.
   $items['admin/tripal/extension/brapi/help'] = array(
     'title' => 'Help',

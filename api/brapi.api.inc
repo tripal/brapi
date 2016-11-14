@@ -19,6 +19,9 @@
  * @}
  */
 
+// Includes constants.
+require_once 'brapi.const.inc';
+
 /**
  * Returns MCPD controlled vocabulary settings.
  *
@@ -31,12 +34,47 @@
  * @ingroup brapi_api
  */
 function brapi_get_mcpd_settings() {
-  return array(
-    'BiologicalStatusOfAccessionCode' => brapi_get_children_cvterm_id(
+  $mcpd_settings = array(
+    'accessionNumber' => brapi_get_cvterm_id('accession number'),
+    'BiologicalStatusOfAccessionCode' => brapi_get_related_cvterm_id(
       'BiologicalStatusOfAccessionCode'),
-
-    'TypeOfGermplasmStorageCode'      => brapi_get_children_cvterm_id(
+    'commonCropName' => brapi_get_cvterm_id('common crop name'),
+    'countryOfOriginCode' => brapi_get_cvterm_id('CountryOfOriginCode'),
+    'countryOfOriginCode(fallback)' => brapi_get_related_cvterm_id(
+      'countryOfOriginCode',
+      BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
+      'is_a'),
+    'germplasmName' => brapi_get_cvterm_id('accession name'),
+    'instituteCode' => brapi_get_cvterm_id('InstituteCode'),
+    'instituteCode(fallback)' => brapi_get_cvterm_id('institute code'),
+    'instituteName' => brapi_get_cvterm_id('breeding institute code'),
+    'instituteName(fallback)' => brapi_get_cvterm_id('Breeding institute name'),
+    'synonyms' => brapi_get_cvterm_id(
+      'other identification numbers associated with the accession'),
+    'TypeOfGermplasmStorageCode' => brapi_get_related_cvterm_id(
       'TypeOfGermplasmStorageCode'),
+  );
+
+  return $mcpd_settings;
+}
+
+/**
+ * Example implementation of hook_brapi_cv_settings_alter.
+ *
+ * This example shows how to alter Breeding API CV term settings. It change the
+ * CV term ID of a MCPD term that can't be changed (on purpose) through the
+ * administrative interface.
+ *
+ * @param array $cv_settings
+ *   An associative array where keys are BrAPI field names and values are
+ *   Chado cvterm_ids or arrays of Chado cvterm_ids.
+ *
+ * @ingroup brapi_api
+ */
+function hook_brapi_cv_settings_alter(&$cv_settings) {
+  $cv_settings['accessionNumber'] = brapi_get_cvterm_id(
+    'accessionNumber',
+    'brapi'
   );
 }
 
@@ -62,15 +100,15 @@ function brapi_get_cv_settings($reset = FALSE) {
     if (!$reset
         && ($cache = cache_get(BRAPI_CV_SETTINGS))
         && !empty($cache->data)) {
-      $settings = unserialize($cache->data);
+      $settings = $cache->data;
     }
     else {
       // Not available in cache, get it from saved settings.
       $settings = variable_get(BRAPI_CV_SETTINGS);
-      if (!$settings) {
+      if (!$settings || $reset) {
         // Not available in settings, gets default.
         $brapi_cv_select = array('name' => BRAPI_CV);
-        $brapi_cv = chado_select_record('cv', array('cv_id'), $brapi_cv_select);
+        $brapi_cv = chado_select_record('cv', array('cv_id', 'name'), $brapi_cv_select);
         if (is_array($brapi_cv)) {
           $brapi_cv = current($brapi_cv);
         }
@@ -82,18 +120,13 @@ function brapi_get_cv_settings($reset = FALSE) {
         $brapi_cv_settings = array();
         foreach (array_keys(brapi_get_cv()) as $term_name) {
           // Get term from BrAPI CV.
-          $term = tripal_get_cvterm(
-                    array(
-                      'name' => $term_name,
-                      'cv_id' => $brapi_cv->cv_id,
-                    )
-          );
-          if ($term) {
-            $brapi_cv_settings[$term_name] = $term->cvterm_id;
+          $cvterm_id = brapi_get_cvterm_id($term_name, $brapi_cv->name);
+          if ($cvterm_id) {
+            $brapi_cv_settings[$term_name] = $cvterm_id;
           }
           else {
             $brapi_cv_settings[$term_name] = 0;
-            drupal_set_message(t('BrAPI term @term_name not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $term_name)), 'warning');
+            drupal_set_message(t('BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $term_name)), 'warning');
           }
         }
 
@@ -101,15 +134,15 @@ function brapi_get_cv_settings($reset = FALSE) {
         $mcpd_cv_settings = brapi_get_mcpd_settings();
         $settings = array_merge($brapi_cv_settings, $mcpd_cv_settings);
       }
-      elseif ($reset) {
-        // Merge with MCPD terms.
-        $mcpd_cv_settings = brapi_get_mcpd_settings();
-        $settings = array_merge($settings, $mcpd_cv_settings);
-      }
 
-      cache_set(BRAPI_CV_SETTINGS, 'cache', serialize($settings));
+      drupal_alter('brapi_cv_settings', $settings);
+      cache_set(BRAPI_CV_SETTINGS, $settings);
     }
   }
+  else {
+    drupal_alter('brapi_cv_settings', $settings);
+  }
+
   return $settings;
 }
 
@@ -206,11 +239,11 @@ function brapi_get_stock_property_values($stock_id, $property_name, $cv_name = B
  * @param array $term_selectors
  *   A hash containing any combination of the following keys:
  *   - 'cv' (string/array of string): one or more CHADO cv names;
- *   - 'cv_id' (integer/array of integer): one or more CHADO cv_id;
- *   - 'term_id' (integer/array of integer): one or more CHADO cvterm_id;
+ *   - 'cv_id' (int/array of int): one or more CHADO cv_id;
+ *   - 'term_id' (int/array of int): one or more CHADO cvterm_id;
  *   - 'term' (string): a single CHADO cvterm name;
  *   - 'terms' (array of string): one or more CHADO cvterm names;
- *   - 'parent_term_id' (integer/array of integer): CHADO cvterm_id of one or
+ *   - 'parent_term_id' (int/array of int): CHADO cvterm_id of one or
  *     more parent terms;
  *   - 'parent_term' (string): CHADO cvterm name of the parent cvterm;
  *   - 'parent_terms' (array of string): array of CHADO cvterm names of parents
@@ -410,6 +443,35 @@ function brapi_get_stock_cvterm_values($stock_id, $term_selectors) {
 }
 
 /**
+ * Returns a CV terms database identifier.
+ *
+ * @param string $term_name
+ *   name of the CV term.
+ * @param string $cv
+ *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
+ *
+ * @return string
+ *   returns the corresponding cvterm_id or NULL if not found.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_cvterm_id($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
+  $cvterm = tripal_get_cvterm(
+    array(
+      'name' => $term_name,
+      'cv_id' => array('name' => $cv),
+    )
+  );
+
+  if ($cvterm) {
+    return $cvterm->cvterm_id;
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
  * Returns children CV terms of a parent CV term.
  *
  * Given a parent CV term name and an optional CV name, it returns a sorted
@@ -425,26 +487,19 @@ function brapi_get_stock_cvterm_values($stock_id, $term_selectors) {
  *
  * @ingroup brapi_api
  */
-function brapi_get_children_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
+function brapi_get_related_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV, $relationship = 'is_a') {
   // Get parent term IDs from names.
-  $term = tripal_get_cvterm(
-    array(
-      'name' => $parent_cvterm,
-      'cv_id' => array(
-        'name' => $cv,
-      ),
-    )
-  );
+  $cvterm_id = brapi_get_cvterm_id($parent_cvterm, $cv);
 
   // Now get descendant terms.
   $columns = array('subject_id');
   $values = array(
-    'object_id' => $term->cvterm_id,
+    'object_id' => $cvterm_id,
     'type_id' => array(
       'cv_id' => array(
         'name' => 'relationship',
       ),
-      'name' => 'is_a',
+      'name' => $relationship,
       'is_obsolete' => 0,
     ),
   );
@@ -477,6 +532,8 @@ function brapi_get_children_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASS
  * @param string $field_name
  *   A field name such as the one returned as keys of the field 'fields' of a
  *   datatype returned by brapi_get_data_mapping().
+ * @param mixed $values
+ *   value or array of values that must match the field.
  *
  * @return mixed
  *   Value or array of values to use to identify the field record.
@@ -489,14 +546,14 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
 
   $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
 
-  if (isset($field_fetcher['join_key'])) {
-    $join_key = $field_fetcher['join_key'];
+  if (isset($field_fetcher['foreign_key'])) {
+    $foreign_key = $field_fetcher['foreign_key'];
   }
   else {
-    $join_key = $data_mapping[$data_type]['identifier'];
+    $foreign_key = $data_mapping[$data_type]['identifier'];
   }
   return array_merge(
-    array($join_key => $values),
+    array($foreign_key => $values),
     $field_fetcher['selector']
   );
 }
@@ -516,16 +573,30 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
  * @param string $field_name
  *   A field name such as the one returned as keys of the field 'fields' of a
  *   datatype returned by brapi_get_data_mapping().
+ * @param mixed $skip_fallback
+ *   If set to TRUE (bool), no fallback field is processed, if set to FALSE
+ *   (bool), all available fallback fields are processed. If set to and array of
+ *   string representing fallback field names, evry field name specified will
+ *   _not_ be processed. The array type of argument is also used internaly to
+ *   avoid infinite loop fallbacks.
  *
  * @return mixed
  *   returns an array if the mapping allows several values or the last value
  *   ortherwise.
  *
+ * @Throws Exception
+ *   Thrown if an error occured while querying the database.
+ *
  * @see brapi_get_data_mapping()
  *
  * @ingroup brapi_api
  */
-function brapi_get_field($data_type, $object, $field_name) {
+function brapi_get_field(
+  $data_type,
+  $object,
+  $field_name,
+  $skip_fallback = FALSE) {
+
   static $data_mapping;
   if (!isset($data_mapping)) {
     $data_mapping = brapi_get_data_mapping();
@@ -562,12 +633,38 @@ function brapi_get_field($data_type, $object, $field_name) {
 
     case 'array':
       // Get from database using mapping config.
-      $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
-      $records = chado_select_record(
-         $field_fetcher['table'],
-         array($field_fetcher['column']),
-         $selector
-      );
+      if (array_key_exists('object_key', $field_fetcher)) {
+        $identifier = $object->$field_fetcher['object_key'];
+        if (is_object($identifier)) {
+          $identifier = $identifier->$field_fetcher['foreign_key'];
+        }
+      }
+      else {
+        $identifier = $object->$data_mapping[$data_type]['identifier'];
+      }
+
+      $selector = brapi_get_field_selector($data_type, $field_name, $identifier);
+      // We capture output buffer for Tripal error messages.
+      ob_start();
+      try {
+        $records = chado_select_record(
+           $field_fetcher['table'],
+           array($field_fetcher['column']),
+           $selector
+        );
+      }
+      catch (Exception $e) {
+        throw new Exception(t(
+          "Failed to fetch field @field_name value for object type @object_type! @error_message",
+          array(
+            '@field_name' => $field_name,
+            '@object_type' => $data_type,
+            '@error_message' => $e->getMessage() . "\n" . ob_get_clean(),
+          )
+        ));
+      }
+      ob_get_clean();
+
       $values = array();
       if (FALSE !== $records) {
         // Force Tripal return value to be an array for easier management.
@@ -578,11 +675,11 @@ function brapi_get_field($data_type, $object, $field_name) {
           $current_value = $record->$field_fetcher['column'];
           // Check type and return the appropriate conversion.
           switch ($field_fetcher['field_type']) {
-            case 'boolean':
+            case 'bool':
               $current_value = $current_value ? TRUE : FALSE;
               break;
 
-            case 'integer':
+            case 'int':
               $current_value = intval($current_value);
               break;
 
@@ -614,6 +711,37 @@ function brapi_get_field($data_type, $object, $field_name) {
           $values[] = $current_value;
         }
       }
+      
+      // Check for fallback.
+      if (empty($values)
+          && isset($field_fetcher['fallback'])
+          && (TRUE !== $skip_fallback)) {
+        // Fallback.
+        $fallback_stack = $field_fetcher['fallback'];
+        if (!is_array($fallback_stack)) {
+          $fallback_stack = array($field_fetcher['fallback']);
+        }
+        // Get what should be skipped.
+        $skip_fallback_array = $skip_fallback;
+        if (FALSE === $skip_fallback_array) {
+          $skip_fallback_array = array();
+        }
+        // Just make sure we won't process current field again.
+        array_push($skip_fallback_array, $field_name);
+
+        // Process fallback fields until we got something or if we processed
+        // all the fallbacks.
+        while (empty($values) && !empty($fallback_stack)){
+          $fallback = array_shift($fallback_stack);
+          // Skip this fallback?
+          if ($fallback && !in_array($fallback, $skip_fallback_array)) {
+            array_push($skip_fallback_array, $fallback);
+            $values = brapi_get_field($data_type, $object, $fallback, $skip_fallback_array);
+            $values = (is_array($values) ? $values : array($values));
+          }
+        }
+      }
+
       // Check if array requested.
       if ($field_fetcher['return_array']) {
         // Multiple values.
@@ -621,7 +749,12 @@ function brapi_get_field($data_type, $object, $field_name) {
       }
       else {
         // A single value.
-        $value = current($values);
+        if (empty($values)) {
+          $value = NULL;
+        }
+        else {
+          $value = current($values);
+        }
       }
       break;
 
@@ -782,18 +915,25 @@ function brapi_set_field(
         // Single value...
         // We capture output buffer for Tripal error messages.
         ob_start();
-        if (isset($field_fetcher['join_key'])) {
-          $join_key = $field_fetcher['join_key'];
+        if (isset($field_fetcher['foreign_key'])) {
+          $foreign_key = $field_fetcher['foreign_key'];
         }
         else {
-          $join_key = $data_mapping[$data_type]['identifier'];
+          $foreign_key = $data_mapping[$data_type]['identifier'];
         }
+        if (array_key_exists('object_key', $field_fetcher)) {
+          $identifier = $object->$field_fetcher['object_key'];
+        }
+        else {
+          $identifier = $object->$data_mapping[$data_type]['identifier'];
+        }
+
         $updated_record = FALSE;
         if ($update) {
           $updated_record = chado_update_record(
              $field_fetcher['table'],
              array(
-               $join_key => $object->$data_mapping[$data_type]['identifier'],
+               $foreign_key => $identifier,
              ),
              array_merge(
                array(
@@ -807,7 +947,7 @@ function brapi_set_field(
            $field_fetcher['table'],
            array_merge(
              array(
-               $join_key => $object->$data_mapping[$data_type]['identifier'],
+               $foreign_key => $identifier,
              ),
              array(
                $field_fetcher['column'] => $field_value,
@@ -1319,9 +1459,11 @@ function brapi_output_json(
   }
 
   if (!isset($args['pretty']) || $args['pretty']) {
-    drupal_add_http_header('Content-Type', 'application/json');
-    echo json_encode($output_data, JSON_PRETTY_PRINT);
-    return '';
+    echo json_encode(
+      $output_data,
+      JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+    );
+    return drupal_json_output();
   }
 
   return drupal_json_output($output_data);

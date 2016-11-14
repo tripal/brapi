@@ -125,8 +125,8 @@ function brapi_add_cvs() {
   }
   if (!$mcpd_cv) {
     $newcvs = array();
-    $mcpd_path = drupal_get_path('module', 'brapi') . 'cv/mcpd_v2.1_151215.obo';
-    tripal_cv_load_obo_v1_2($mcpd_path, $newcvs);
+    $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
+    tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
   }
   drupal_set_message($t('Adding Breeding API CV to Chado'));
   // Insert Breeding API CV if missing.

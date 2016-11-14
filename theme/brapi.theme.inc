@@ -303,12 +303,18 @@ function brapi_theme_prepare_cv_table() {
           . $term->cvterm_id
           . ')</small></span>';
       }
+      elseif ($term->cvterm_id) {
+        $terms[] =
+          '<i class="brapi-missing">'
+          . t(
+            'term ID "@cvterm_id" not found',
+            array('@cvterm_id' => $term->cvterm_id)
+          )
+          . '</i>';
+      }
       else {
         $terms[] =
-          t(
-            '<i class="brapi-missing">term @cvterm_id not found</i>',
-            array('@cvterm_id' => $term->cvterm_id)
-          );
+          '<i class="brapi-missing">' . t('no term set') . '</i>';
       }
     }
     $overridable = array_key_exists($brapi_cv_term, $brapi_cv_settings) ?

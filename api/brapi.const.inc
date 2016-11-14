@@ -21,6 +21,7 @@
  */
 define('BRAPI_SERVICE_VERSION', 'v1.0');
 define('BRAPI_SERVICE_PREFIX_V1', 'brapi/v1');
+define('BRAPI_MCPD_VERSION', '2.1');
 define('BRAPI_DB', 'breeding api');
 define('BRAPI_CV', 'breeding api');
 define('BRAPI_CV_SETTINGS', 'brapi_cv_settings');
@@ -33,10 +34,13 @@ define('BRAPI_DEFAULT_PAGE_SIZE', 30);
 define('BRAPI_ESCAPE_CHARACTER', "\\");
 
 /**
- * Returns an array of CV terms used by the Breeding API.
+ * Returns an array of CV terms used by the Breeding API that are not part of
+ * the MCPD ontology.
  *
  * @return array
  *   Keys are CV term names and values are the associated descriptions.
+ *
+ * @see brapi_get_mcpd_settings()
  *
  * @ingroup brapi_const
  */
@@ -69,7 +73,7 @@ function brapi_get_cv() {
  *     - 'name' (string): name of the argument;
  *     - 'type' (string): type of the argument;
  *     - 'description' (string): description of the argument;
- *     - 'required' (boolean): true if the argument is required.
+ *     - 'required' (bool): true if the argument is required.
  *   - 'features' (array): an array of feature name => value/description
  *     supported by the call.
  *
@@ -86,7 +90,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET' => 'access content',
         ),
-        'page callback' => 'brapi_v1_about_json',
+        'page callback'  => 'brapi_v1_about_json',
       ),
       '/token'      => array(
         'title'          => 'Authentication',
@@ -97,17 +101,17 @@ function brapi_get_calls() {
           'POST'   => BRAPI_USE_PERMISSION,
           'DELETE' => BRAPI_USE_PERMISSION,
         ),
-        'page callback' => 'brapi_v1_authentication_json',
+        'page callback'  => 'brapi_v1_authentication_json',
       ),
       '/calls'      => array(
         'title'          => 'Call search',
         'description'    => 'Supported Breeding API calls',
         'datatypes'      => array('json'),
         'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
+          'GET' => BRAPI_USE_PERMISSION,
         ),
-        'page callback' => 'brapi_v1_call_json',
-        'arguments' => array(
+        'page callback'  => 'brapi_v1_call_json',
+        'arguments'      => array(
           3 => array(
             'name' => 'callName',
             'type' => 'string',
@@ -121,11 +125,11 @@ function brapi_get_calls() {
         'description'    => 'Germplasm search call',
         'datatypes'      => array('json'),
         'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_UPDATE_PERMISSION,
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_UPDATE_PERMISSION,
         ),
-        'page callback' => 'brapi_v1_germplasm_search_json',
-        'features'  => array('MCPD' => 'yes', 'MCPD-version' => 'V.2.1'),
+        'page callback'  => 'brapi_v1_germplasm_search_json',
+        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
       ),
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
@@ -137,8 +141,8 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
-        'page callback' => 'brapi_v1_germplasm_json',
-        'arguments' => array(
+        'page callback'  => 'brapi_v1_germplasm_json',
+        'arguments'      => array(
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
@@ -146,7 +150,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'features'  => array('MCPD' => 'yes', 'MCPD-version' => 'V.2.1'),
+        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
       ),
     );
   }
@@ -163,39 +167,47 @@ function brapi_get_calls() {
  *   Each entry of the hash
  *   returned is a BrAPI data type like 'germplasm' or 'study'. Each entry is
  *   composed by the following fields:
- *   -'table': name of the main Chado table holding the record;
- *   -'identifier': the Chado database key used to identify the record;
- *   -'accession': the Chado database field used to identify the record from
- *    outside (Restful, web, apps);
- *   -'fields': an array of field configuration;
+ *   - 'table': name of the main Chado table holding the record;
+ *   - 'identifier': the Chado database key used to identify the record;
+ *   - 'accession': the Chado database field used to identify the record from
+ *     outside (Restful, web, apps);
+ *   - 'fields': an array of field configuration;
  *
  *   Each field can have the following structures:
- *   -a string: it will be treated as the name of the column holding the value
- *    in the Chado table;
- *   -a hash structure: it configures how to fetch the field for Chado:
- *     -table: the name of the table holding the field;
- *     -column: the name of the column holding the field value;
- *     -selector: a Tripal selector as described here as '$values':
- *      http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
- *     -field_type: one of 'string', 'integer', 'boolean' and 'cvterm' (cvterms
- *      are cvterm_id turned into cvterm.name);
- *     -return_array: tells if an array of values should be returned;
- *     -use_ranking: tells if the field table has a rank column to use;
- *   -a closure: the closure is run to fetch or store the field value with the
- *    following arguments:
- *     -$data_type: the type of record in the BrAPI terminology (germplasm,
- *      study, ...);
- *     -$object: the corresponding Chado object loaded from database;
- *     -$field_name: the name of the record field to work on;
- *     -$op: the operation to perform. Can be one of 'create', 'read', 'update',
- *      'delete'. If not provided, 'read' is assumed;
- *     -$value (not provided for 'read' $op and optional for 'delete' $op): the
- *      new field value (or value to delete in case of 'delete' $op).
+ *   - a string: it will be treated as the name of the column holding the value
+ *     in the Chado table;
+ *   - a hash structure: it configures how to fetch the field for Chado:
+ *      - table: the name of the table holding the field;
+ *      - object_key: name of the object field that must be used to match
+ *        records in the other table. If not set, the 'identifier'
+ *        field value of the data type field is used;
+ *      - foreign_key: name of the field in the other table that should be used
+ *        to match either the 'object_key' if specified or the 'identifier';
+ *      - column: the name of the column holding the field value;
+ *      - selector: a Tripal selector as described here as '$values':
+ *        http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
+ *      - field_type: one of 'string', 'int', 'bool' and 'cvterm' (cvterms
+ *        are cvterm_id turned into cvterm.name);
+ *      - return_array: tells if an array of values should be returned;
+ *      - use_ranking: tells if the field table has a rank column to use;
+ *      - fallback: another field name (or ordered array of field names) that can
+ *        be used to fetch a value if none has been found with current field;
+ *   - a closure: the closure is run to fetch or store the field value with the
+ *     following arguments:
+ *      - $data_type: the type of record in the BrAPI terminology (germplasm,
+ *        study, ...);
+ *      - $object: the corresponding Chado object loaded from database;
+ *      - $field_name: the name of the record field to work on;
+ *      - $op: the operation to perform. Can be one of 'create', 'read', 'update',
+ *        'delete'. If not provided, 'read' is assumed;
+ *      - $value (not provided for 'read' $op and optional for 'delete' $op): the
+ *        new field value (or value to delete in case of 'delete' $op).
  *
  * @ingroup brapi_const
  */
 function brapi_get_data_mapping() {
   static $brapi_data_mapping;
+
   $cv_settings = brapi_get_cv_settings();
 
   if (!isset($brapi_data_mapping)) {
@@ -203,20 +215,15 @@ function brapi_get_data_mapping() {
       'germplasm'      => array(
         'table' => 'stock',
         'identifier' => 'stock_id',
-        'accession'  => 'uniquename',
+        'accession' => 'uniquename',
         'fields' => array(
-          'germplasmDbId'      => 'uniquename',
+          'germplasmDbId' => 'uniquename',
           'defaultDisplayName' => 'name',
           'accessionNumber' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
-                ),
-                'name' => 'accession number',
-              ),
+              'type_id' => $cv_settings['accessionNumber'],
             ),
             'field_type' => 'string',
           ),
@@ -224,18 +231,14 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
-                ),
-                'name' => 'accession name',
-              ),
+              'type_id' => $cv_settings['germplasmName'],
             ),
             'field_type' => 'string',
           ),
           'germplasmPUI' => function ($data_type, $stock, $field_name) {
+            global $base_url;
             if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
-              return drupal_get_path_alias('node/' . $nid);
+              return $base_url . '/' . drupal_get_path_alias('node/' . $nid);
             }
             else {
               return '';
@@ -244,20 +247,20 @@ function brapi_get_data_mapping() {
           'femaleParentStockId' => array(
             'table' => 'stock_relationship',
             'column' => 'subject_id',
-            'join_key' => 'object_id',
+            'foreign_key' => 'object_id',
             'selector' => array(
               'type_id' => $cv_settings['FemaleParentOf'],
             ),
-            'field_type' => 'integer',
+            'field_type' => 'int',
           ),
           'maleParentStockId' => array(
             'table' => 'stock_relationship',
             'column' => 'subject_id',
-            'join_key' => 'object_id',
+            'foreign_key' => 'object_id',
             'selector' => array(
               'type_id' => $cv_settings['MaleParentOf'],
             ),
-            'field_type' => 'integer',
+            'field_type' => 'int',
           ),
           'pedigree' => function ($data_type, $stock, $field_name, $op) {
             $pedigree = '';
@@ -299,10 +302,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV),
-                'name' => 'other identification numbers associated with the accession',
-              ),
+              'type_id' => $cv_settings['synonyms'],
             ),
             'field_type' => 'string',
             'return_array' => TRUE,
@@ -312,22 +312,50 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => array(
-                'cv_id' => array('name' => 'mgis_accession'),
-                'name' => 'common crop name',
-              ),
+              'type_id' => $cv_settings['commonCropName'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'commonCropName2',
+          ),
+          'commonCropName2' => array(
+            'table' => 'organism',
+            'foreign_key' => 'organism_id',
+            'object_key' => 'organism_id',
+            'column' => 'common_name',
+            'selector' => array(),
+            'field_type' => 'string',
+          ),
+          'instituteCode' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['instituteCode'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'instituteCode2',
+          ),
+          'instituteCode2' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['instituteCode(fallback)'],
             ),
             'field_type' => 'string',
           ),
-          'instituteCode' => '',
           'instituteName' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => array(
-                'cv_id' => array('name' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV),
-                'name' => 'institute name',
-              ),
+              'type_id' => $cv_settings['instituteName'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'instituteName2',
+          ),
+          'instituteName2' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['instituteName(fallback)'],
             ),
             'field_type' => 'string',
           ),
@@ -340,7 +368,24 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'cvterm',
           ),
-          'countryOfOriginCode' => '',
+          'countryOfOriginCode' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['countryOfOriginCode'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'countryOfOriginCode2',
+          ),
+          'countryOfOriginCode2' => array(
+            'table' => 'stock_cvterm',
+            'column' => 'cvterm_id',
+            'selector' => array(
+              'cvterm_id' => $cv_settings['countryOfOriginCode(fallback)'],
+              'is_not' => FALSE,
+            ),
+            'field_type' => 'cvterm',
+          ),
           'typeOfGermplasmStorageCode' => array(
             'table' => 'stock_cvterm',
             'column' => 'cvterm_id',
