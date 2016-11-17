@@ -186,8 +186,9 @@ function brapi_get_calls() {
  *      - column: the name of the column holding the field value;
  *      - selector: a Tripal selector as described here as '$values':
  *        http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
- *      - field_type: one of 'string', 'int', 'bool' and 'cvterm' (cvterms
- *        are cvterm_id turned into cvterm.name);
+ *      - field_type: one of 'string', 'int', 'bool', 'date' and 'cvterm'.
+ *        'date' can be litteral or timestamps while the later are turned into
+ *        'YYYY/MM/DD' format; 'cvterm' are cvterm_id turned into cvterm.name;
  *      - return_array: tells if an array of values should be returned;
  *      - use_ranking: tells if the field table has a rank column to use;
  *      - fallback: another field name (or ordered array of field names) that can
@@ -317,6 +318,7 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
             'fallback' => 'commonCropName2',
           ),
+          // If not set from MCPD, get it from organism table.
           'commonCropName2' => array(
             'table' => 'organism',
             'foreign_key' => 'organism_id',
@@ -325,6 +327,7 @@ function brapi_get_data_mapping() {
             'selector' => array(),
             'field_type' => 'string',
           ),
+          // From MCPD cvterm 'institute code'.
           'instituteCode' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -334,6 +337,7 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
             'fallback' => 'instituteCode2',
           ),
+          // From MCPD cvterm 'breeding institute code'.
           'instituteCode2' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -341,7 +345,34 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['instituteCode(fallback)'],
             ),
             'field_type' => 'string',
+            'fallback' => 'instituteCode3',
           ),
+          // In case of incorrect setup, institute code stockprop may be using
+          // the wrong type cvterm 'InstituteCode' (instead of
+          // 'institute code'). The fallback supports incorrect setup.
+          'instituteCode3' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['instituteCode(fallback2)'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'instituteName4',
+          ),
+          // if not specified through MCPD, uses stockcollection.uniquename
+          'instituteName4' => function ($data_type, $stock, $field_name, $op) {
+            $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
+            if (isset($stock->stockcollection_stock)
+                && isset($stock->stockcollection_stock->stockcollection_id)) {
+              return $stock->stockcollection_stock->stockcollection_id->uniquename;
+            }
+            else {
+              return NULL;
+            }
+          },
+          // Note: the use of MCPD 'institute code' should be priviledged
+          // against the use of 'Breeding institute name'. If 'institute code'
+          // is set, then this field should be left empty.
           'instituteName' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -351,14 +382,17 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
             'fallback' => 'instituteName2',
           ),
-          'instituteName2' => array(
-            'table' => 'stockprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['instituteName(fallback)'],
-            ),
-            'field_type' => 'string',
-          ),
+          // if not specified through MCPD, uses stockcollection.name
+          'instituteName2' => function ($data_type, $stock, $field_name, $op) {
+            $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
+            if (isset($stock->stockcollection_stock)
+                && isset($stock->stockcollection_stock->stockcollection_id)) {
+              return $stock->stockcollection_stock->stockcollection_id->name;
+            }
+            else {
+              return NULL;
+            }
+          },
           'biologicalStatusOfAccessionCode' => array(
             'table' => 'stock_cvterm',
             'column' => 'cvterm_id',
@@ -377,6 +411,11 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
             'fallback' => 'countryOfOriginCode2',
           ),
+          // If countryOfOriginCode not specified as stockprop, check for
+          // stock_cvterm relationships where cvterm names are country codes.
+          // In this case, those country codes must be children (is_a) of
+          // countryOfOriginCode cvterm. See brapi_get_mcpd_settings() in 
+          // brapi.api.inc to see how the relationship is setup.
           'countryOfOriginCode2' => array(
             'table' => 'stock_cvterm',
             'column' => 'cvterm_id',
@@ -396,13 +435,98 @@ function brapi_get_data_mapping() {
             'field_type' => 'cvterm',
             'return_array' => TRUE,
           ),
-          'genus' => '',
-          'species' => '',
-          'speciesAuthority' => '',
-          'subtaxa' => '',
-          'subtaxaAuthority' => '',
-          'donors' => '',
-          'acquisitionDate' => '',
+          // Genus from MCPD.
+          'genus' =>  array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['genus'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'genus2',
+          ),
+          // Genus from chado.organism.
+          'genus2' =>  array(
+            'table' => 'organism',
+            'foreign_key' => 'organism_id',
+            'object_key' => 'organism_id',
+            'column' => 'genus',
+            'selector' => array(),
+            'field_type' => 'string',
+          ),
+          // Species from MCPD.
+          'species' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['species'],
+            ),
+            'field_type' => 'string',
+            'fallback' => 'species2',
+          ),
+          // Species from chado.organism.
+          'species2' => array(
+            'table' => 'organism',
+            'foreign_key' => 'organism_id',
+            'object_key' => 'organism_id',
+            'column' => 'species',
+            'selector' => array(),
+            'field_type' => 'string',
+          ),
+          'speciesAuthority' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['speciesAuthority'],
+            ),
+            'field_type' => 'string',
+          ),
+          'subtaxa' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['subtaxa'],
+            ),
+            'field_type' => 'string',
+          ),
+          'subtaxaAuthority' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['subtaxaAuthority'],
+            ),
+            'field_type' => 'string',
+          ),
+          'donors' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['donor institute code'],
+            ),
+            'field_type' => 'string',
+            'return_array' => TRUE,
+            'fallback' => 'donors2',
+          ),
+          // If MCPD 'donor institute code' not set, uses MCPD
+          // 'donor institute name' however the use of 'donor institute code'
+          // should be priviledged.
+          'donors2' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['donor institute name'],
+            ),
+            'field_type' => 'string',
+            'return_array' => TRUE,
+          ),
+          'acquisitionDate' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['acquisitionDate'],
+            ),
+            'field_type' => 'date',
+          ),
         ),
       ),
       'markerprofiles' => array(),

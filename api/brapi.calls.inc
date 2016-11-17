@@ -386,7 +386,7 @@ function brapi_v1_call_json() {
  *           "status": [],
  *           "pagination": {
  *             "pageSize": "2",
- *             "currentPage": 1,
+ *             "currentPage": 0,
  *             "totalCount": 25,
  *             "totalPages": 13
  *           },
@@ -467,10 +467,65 @@ function brapi_v1_germplasm_search_json() {
           else {
             $foreign_key = $id_field;
           }
+          // @todo fix values according to data types
+          switch ($field_fetcher['field_type']) {
+            case 'bool':
+              break;
+            
+            case 'int':
+              break;
+            
+            case 'date':
+              break;
+
+            case 'string':
+              break;
+
+            case 'cvterm':
+              // Get terms cvterm_id.
+              $term_ids = array();
+              if (!is_array($values)) {
+                $values = array($values);
+              }
+              // Loop on each value.
+              foreach ($values as $value) {
+                // Try to get term.
+                $term = brapi_get_cvterm($value, FALSE);
+                if ($term) {
+                  $term_ids[$term->cvterm_id] = TRUE;
+                }
+                else {
+                  $sanitized_value = urlencode($value);
+                  $status[] = array(
+                    'code' => 'warning',
+                    'message' => t(
+                      "Term '@value' not found for field '@field'!",
+                      array('@value' => $sanitized_value, '@field' => $field)
+                    ),
+                  );
+                }
+              }
+              $values = array_keys($term_ids);
+              break;
+            
+            default:
+              return brapi_raise_error_json(
+                400,
+                t(
+                  "Bad request! Invalid field '@field' configuration type '@field_type'!",
+                  array(
+                    '@field'      => $field,
+                    '@field_type' => $field_fetcher['field_type'],
+                  )
+                )
+              );
+          }
+
           $selector = array_merge(
-            array($field_fetcher['column'] => $values),
-            $field_fetcher['selector']
+            $field_fetcher['selector'],
+            array($field_fetcher['column'] => $values)
           );
+
           // We capture output buffer for Tripal error messages.
           ob_start();
           $records = chado_select_record(
@@ -482,7 +537,7 @@ function brapi_v1_germplasm_search_json() {
             $debug_data[] = $tripal_message;
           }
 
-          if (FALSE === $records) {
+          if (empty($records)) {
             // No matching result for current field, stop here.
             return brapi_output_json(
               array(
@@ -538,17 +593,21 @@ function brapi_v1_germplasm_search_json() {
       // Ends existing fields check.
     }
     else {
-      $debug_data[] = "Field '$field' not found for filtering";
+      $sanitized_field = urlencode($field);
+      $debug_data[] = "Field '$sanitized_field' not found for filtering";
       $status[] = array(
         'code' => 'warning',
-        'message' => "unknown field '$field' ignored",
+        'message' => t(
+          "unknown field '@field' ignored",
+          array('@field' => $sanitized_field)
+        ),
       );
     }
     // Ends field loop.
   }
 
   // Check if identifiers should also be filtered.
-  if (count($identifiers)) {
+  if (count(array_keys($identifiers))) {
     foreach ($identifiers as $object_key => $key_values) {
       if (array_key_exists($object_key, $selectors)) {
         $selectors[$object_key] =
@@ -686,7 +745,7 @@ function brapi_v1_germplasm_search_json() {
  *           "status": [],
  *           "pagination": {
  *             "pageSize": 1000,
- *             "currentPage": 1,
+ *             "currentPage": 0,
  *             "totalCount": 1,
  *             "totalPages": 1
  *           }
@@ -929,6 +988,8 @@ function brapi_get_germplasm_details($stock) {
     'germplasmDbId', 'defaultDisplayName', 'germplasmName', 'accessionNumber',
     'germplasmPUI', 'synonyms', 'commonCropName', 'instituteCode',
     'instituteName', 'biologicalStatusOfAccessionCode', 'countryOfOriginCode',
+    'genus', 'species', 'speciesAuthority', 'subtaxa', 'subtaxaAuthority',
+    'donors', 'acquisitionDate',
   );
   foreach ($fields as $field_name) {
     $germplasm_data[$field_name] =
@@ -1199,7 +1260,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  *       "status": [],
  *       "pagination": {
  *         "pageSize": 1000,
- *         "currentPage": 1,
+ *         "currentPage": 0,
  *         "totalCount": 1,
  *         "totalPages": 1
  *       }

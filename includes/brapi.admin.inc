@@ -53,9 +53,6 @@ function brapi_admin_form($form, &$form_state) {
     }
 
     if ($term) {
-      if (is_array($term)) {
-        $term = current($term);
-      }
       $default_id =
         $term->name
         . ' (cv:' . $term->cv_id->name . ', id:' . $term->cvterm_id . ')';
@@ -160,61 +157,12 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
     $user_term = $form_state['values'][$term_label];
-    if (preg_match('/^\s*(\d+)\s*$/', $user_term, $matches)) {
-      // Get cvterm_id.
-      $brapi_cv_settings[$term_label] = $matches[1];
-    }
-    elseif (preg_match('/\Wid:\s*(\d+)/', $user_term, $matches)) {
-      // Get cvterm_id.
-      $brapi_cv_settings[$term_label] = $matches[1];
-    }
-    elseif (preg_match('/(.+)\((?:.*\W|)cv:\s*([\w ]+)\)/', $user_term, $matches)) {
-      // Find term from cv.
-      $term_name = trim($matches[1]);
-      $cv_name = trim($matches[2]);
-      $term = tripal_get_cvterm(
-        array(
-          'name' => $term_name,
-          'cv_id' => array('name' => $cv_name),
-        )
-      );
-      if (is_array($term)) {
-        $term = current($term);
-      }
-
-      if ($term) {
-        $brapi_cv_settings[$term_label] = $term->cvterm_id;
-      }
-      else {
-        drupal_set_message(
-          'Term not found for '
-          . $term_label . ': "' . $term_name
-          . '" from CV "' . $cv_name . '"',
-          'warning'
-        );
-      }
+    $cvterm_id = brapi_get_cvterm_id($user_term, FALSE);
+    if ($cvterm_id) {
+      $brapi_cv_settings[$term_label] = $cvterm_id;
     }
     else {
-      // Find term.
-      $raw_value = $form_state['values'][$term_label];
-      // We remove extra invalid (no id: or cv:) data in parenthesis if some.
-      // Note: if we have a parenthesis matching at position 0, it means we
-      // don't have anything before so we should not remove anything then.
-      if ($parenthesis_pos = strpos($raw_value, '(')) {
-        $raw_value = substr($raw_value, 0, $parenthesis_pos);
-      }
-      $term_name = trim($raw_value);
-      $term = tripal_get_cvterm(array('name' => $term_name));
-      if (is_array($term)) {
-        $term = current($term);
-      }
-
-      if ($term) {
-        $brapi_cv_settings[$term_label] = $term->cvterm_id;
-      }
-      else {
-        drupal_set_message('Term not found for ' . $term_label . ': "' . $term_name . '"', 'warning');
-      }
+      drupal_set_message('Term not found: "' . $term_label . '"', 'warning');
     }
   }
 

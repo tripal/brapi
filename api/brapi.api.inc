@@ -36,6 +36,7 @@ require_once 'brapi.const.inc';
 function brapi_get_mcpd_settings() {
   $mcpd_settings = array(
     'accessionNumber' => brapi_get_cvterm_id('accession number'),
+    'acquisitionDate' => brapi_get_cvterm_id('acquisition date'),
     'BiologicalStatusOfAccessionCode' => brapi_get_related_cvterm_id(
       'BiologicalStatusOfAccessionCode'),
     'commonCropName' => brapi_get_cvterm_id('common crop name'),
@@ -44,11 +45,17 @@ function brapi_get_mcpd_settings() {
       'countryOfOriginCode',
       BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
       'is_a'),
+    'donors' => brapi_get_cvterm_id('donor institute name'),
+    'genus' => brapi_get_cvterm_id('genus'),
     'germplasmName' => brapi_get_cvterm_id('accession name'),
-    'instituteCode' => brapi_get_cvterm_id('InstituteCode'),
-    'instituteCode(fallback)' => brapi_get_cvterm_id('institute code'),
-    'instituteName' => brapi_get_cvterm_id('breeding institute code'),
-    'instituteName(fallback)' => brapi_get_cvterm_id('Breeding institute name'),
+    'instituteCode' => brapi_get_cvterm_id('institute code'),
+    'instituteCode(fallback)' => brapi_get_cvterm_id('breeding institute code'),
+    'instituteCode(fallback2)' => brapi_get_cvterm_id('InstituteCode'),
+    'instituteName' => brapi_get_cvterm_id('Breeding institute name'),
+    'species' => brapi_get_cvterm_id('species'),
+    'speciesAuthority' => brapi_get_cvterm_id('species authority'),
+    'subtaxa' => brapi_get_cvterm_id('subtaxa'),
+    'subtaxaAuthority' => brapi_get_cvterm_id('subtaxa authority'),
     'synonyms' => brapi_get_cvterm_id(
       'other identification numbers associated with the accession'),
     'TypeOfGermplasmStorageCode' => brapi_get_related_cvterm_id(
@@ -443,26 +450,110 @@ function brapi_get_stock_cvterm_values($stock_id, $term_selectors) {
 }
 
 /**
- * Returns a CV terms database identifier.
+ * Returns a CV terms object.
  *
  * @param string $term_name
- *   name of the CV term.
+ *   name of the CV term or a string containing its ID or its CV name.
+ *   Supported format are (in check order):
+ *   - <cvterm_id>
+ *   - id:<cvterm_id>
+ *   - <cvterm_name> (cv:<cv_name>)
+ *   - <cvterm_name>
  * @param string $cv
  *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
  *
  * @return string
- *   returns the corresponding cvterm_id or NULL if not found.
+ *   returns the corresponding CV term object or NULL if not found or multiple
+ *   matches.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_cvterm($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
+  $selector = array();
+  if (preg_match('/^\s*(\d+)\s*$/', $term_name, $matches)) {
+    // Got cvterm_id.
+    $selector['cvterm_id'] = $cleaned_term_name = $matches[1];
+  }
+  elseif (preg_match('/(?:^|\W)id:\s*(\d+)/', $term_name, $matches)) {
+    // Got cvterm_id (method 2).
+    $selector['cvterm_id'] = $cleaned_term_name = $matches[1];
+  }
+  elseif (preg_match('/(.+)\((?:.*\W|)cv:\s*([\w ]+)\)/', $term_name, $matches)) {
+    // Find term from cv.
+    $selector['name'] = $cleaned_term_name = trim($matches[1]);
+    $selector['cv_id'] = array('name' => trim($matches[2]));
+  }
+  else {
+    // We remove extra invalid (no id: or cv:) data in parenthesis if some.
+    // Note: if we have a parenthesis matching at position 0, it means we
+    // don't have anything before so we should not remove anything then.
+    $cleaned_term_name = $term_name;
+    if ($parenthesis_pos = strpos($cleaned_term_name, '(')) {
+      $cleaned_term_name = substr($cleaned_term_name, 0, $parenthesis_pos);
+    }
+    $cleaned_term_name = trim($cleaned_term_name);
+    $selector['name'] = $cleaned_term_name;
+  }
+
+  if ((FALSE !== $cv) && (NULL !== $cv)) {
+    $selector['cv_id'] = array('name' => $cv);
+  }
+
+  // Try to get the CV term from Tripal.
+  try {
+    $cvterm = tripal_get_cvterm($selector);
+  }
+  catch (Exception $e) {
+    $cvterm = NULL;
+  }
+  
+  // If we did not find a term, check if we tried using a modified term and if
+  // so, try original one.
+  if (!$cvterm && ($cleaned_term_name != $term_name)) {
+    try {
+      // Restart with a new selector.
+      $selector = array('name' => $term_name);
+      // Check if a CV was specified.
+      if ((FALSE !== $cv) && (NULL !== $cv)) {
+        $selector['cv_id'] = array('name' => $cv);
+      }
+      $cvterm = tripal_get_cvterm($selector);
+    }
+    catch (Exception $e) {
+      $cvterm = NULL;
+    }
+  }
+
+  // Return the CV term.
+  return $cvterm;
+}
+
+/**
+ * Returns a CV terms database identifier.
+ *
+ * @param string $term_name
+ *   name of the CV term or a string containing its ID or its CV name.
+ *   Supported format are (in check order):
+ *   - <cvterm_id>
+ *   - id:<cvterm_id>
+ *   - <cvterm_name> (cv:<cv_name>)
+ *   - <cvterm_name>
+ * @param string $cv
+ *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
+ *   Set this parameter to FALSE (or NULL) if you do not want to specify the
+ *   CV name (and discard default name).
+ *
+ * @return string
+ *   returns the corresponding cvterm_id or NULL if not found or multiple
+ *   matches.
  *
  * @ingroup brapi_api
  */
 function brapi_get_cvterm_id($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
-  $cvterm = tripal_get_cvterm(
-    array(
-      'name' => $term_name,
-      'cv_id' => array('name' => $cv),
-    )
-  );
 
+  $cvterm = brapi_get_cvterm($term_name, $cv);
+
+  // Return the ID.
   if ($cvterm) {
     return $cvterm->cvterm_id;
   }
@@ -512,6 +603,14 @@ function brapi_get_related_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSP
   );
   foreach ($cvterm_relationship as $result) {
     $term_ids[] = $result->subject_id;
+  }
+  
+  if (empty($term_ids)) {
+    // We add a fake cvterm_id if none found because returning an empty array
+    // in future (Tripal) queries would not be taken into account.
+    // Returning a 0 will force Tripal to use the cvterm_id parameter in its
+    // queries.
+    $term_ids[] = 0;
   }
 
   sort($term_ids);
@@ -644,6 +743,7 @@ function brapi_get_field(
       }
 
       $selector = brapi_get_field_selector($data_type, $field_name, $identifier);
+
       // We capture output buffer for Tripal error messages.
       ob_start();
       try {
@@ -681,6 +781,28 @@ function brapi_get_field(
 
             case 'int':
               $current_value = intval($current_value);
+              break;
+
+            case 'date':
+              // If numeric value, it might be a timestamp to convert into a
+              // date.
+              if (preg_match('/^-?\d{1,9}$/', $current_value)) {
+                // Make sure it's not a date without '/' or '-'.
+                $date_match = preg_match(
+                  '/^(\d\d\d\d)(\d\d)(\d\d)$/',
+                  $current_value,
+                  $matches
+                );
+                if (!($date_match
+                      && ($matches[1] < 2100)
+                      && ($matches[2] > 0)
+                      && ($matches[2] <= 12)
+                      && ($matches[3] > 0)
+                      && ($matches[3] <= 31))
+                ) {
+                  $current_value = date('Y/m/d', intval($current_value));
+                }
+              }
               break;
 
             case 'string':
@@ -882,6 +1004,7 @@ function brapi_set_field(
         }
         // Insert new values.
         foreach ($field_value as $single_value) {
+          // @todo Check value type. Do some conversion if needed and possible.
           // We capture output buffer for Tripal error messages.
           ob_start();
           $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
@@ -927,7 +1050,7 @@ function brapi_set_field(
         else {
           $identifier = $object->$data_mapping[$data_type]['identifier'];
         }
-
+        // @todo Check value type. Do some conversion if needed and possible.
         $updated_record = FALSE;
         if ($update) {
           $updated_record = chado_update_record(
@@ -1353,37 +1476,34 @@ function brapi_prepare_metadata($item_count = 1) {
 
     $page_count = ceil($item_count / $page_size);
 
-    if ($page_number && is_numeric($page_number) && (0 < $page_number)) {
+    if (isset($page_number) && is_numeric($page_number) && (0 <= $page_number)) {
       // Convert to int.
-      $page_number = ceil($page_number);
-      if ($page_count < $page_number) {
-        $metadata['status'][] =
-          array(
-            'code' => 404,
-            'message' => t(
-              "WARNING: page number (@page_number) out of bounds (1-@page_count).",
-              array(
-                '@page_number' => $page_number,
-                '@page_count'  => $page_count,
-              )
-            ),
-          );
+      $page_number = floor($page_number);
+      if ($page_count <= $page_number) {
+        $metadata['status'][] = array(
+          'code' => 404,
+          'message' => t(
+            "WARNING: page number (@page_number) out of bounds (0-@last_page).",
+            array(
+              '@page_number' => $page_number,
+              '@last_page'   => $page_count - 1,
+            )
+          ),
+        );
       }
     }
     else {
-      if ($page_number) {
-        $metadata['status'][] =
-          array(
-            'code' => 404,
-            'message' => t(
-              "Invalid page number specified ('@page_number')!",
-              array(
-                '@page_number' => htmlentities($page_number),
-              )
-            ),
-          );
-      }
-      $page_number = 1;
+      $metadata['status'][] =
+        array(
+          'code' => 404,
+          'message' => t(
+            "Invalid page number specified ('@page_number')!",
+            array(
+              '@page_number' => htmlentities($page_number),
+            )
+          ),
+        );
+      $page_number = 0;
     }
 
     $metadata['pagination'] = array(
