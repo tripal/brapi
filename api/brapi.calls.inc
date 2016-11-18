@@ -507,7 +507,7 @@ function brapi_v1_germplasm_search_json() {
               }
               $values = array_keys($term_ids);
               break;
-            
+
             default:
               return brapi_raise_error_json(
                 400,
@@ -674,7 +674,7 @@ function brapi_v1_germplasm_search_json() {
     $stocks = array($stocks);
   }
 
-  $debug_data[] = "Got " . count($stocks) . "results.";
+  $debug_data[] = "Got " . count($stocks) . "result(s).";
 
   // Generate stock data.
   $germplasm_list = array();

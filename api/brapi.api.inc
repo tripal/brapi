@@ -786,7 +786,7 @@ function brapi_get_field(
             case 'date':
               // If numeric value, it might be a timestamp to convert into a
               // date.
-              if (preg_match('/^-?\d{1,9}$/', $current_value)) {
+              if (preg_match('/^-?\d{1,10}$/', $current_value)) {
                 // Make sure it's not a date without '/' or '-'.
                 $date_match = preg_match(
                   '/^(\d\d\d\d)(\d\d)(\d\d)$/',
