@@ -436,7 +436,7 @@ function brapi_get_data_mapping() {
             'return_array' => TRUE,
           ),
           // Genus from MCPD.
-          'genus' =>  array(
+          'genus' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
@@ -446,7 +446,7 @@ function brapi_get_data_mapping() {
             'fallback' => 'genus2',
           ),
           // Genus from chado.organism.
-          'genus2' =>  array(
+          'genus2' => array(
             'table' => 'organism',
             'foreign_key' => 'organism_id',
             'object_key' => 'organism_id',

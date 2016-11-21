@@ -170,7 +170,7 @@ function brapi_theme_prepare_overview_table($permission_stats) {
  *
  * @ingroup brapi
  */
-function brapi_theme_prepare_call_table() {
+function brapi_theme_prepare_call_table($simplified = FALSE) {
   global $base_url;
   $rows = array();
   // Get settings.
@@ -238,11 +238,33 @@ function brapi_theme_prepare_call_table() {
       }
     }
 
+    if ($simplified) {
+      $methods = 'READ';
+      if (array_key_exists('PUT', $brapi_call_data['methods'])) {
+        $methods = 'CREATE, READ, UPDATE';
+      }
+      elseif (array_key_exists('POST', $brapi_call_data['methods'])) {
+        $methods = 'READ, FILTERING';
+      }
+      
+      if (array_key_exists('DELETE', $brapi_call_data['methods'])) {
+        $methods .= ', DELETE';
+      }
+      
+      // handle special case of login
+      if ('/token' == $brapi_call) {
+        $methods = 'LOGIN, LOGOUT';
+      }
+    }
+    else {
+      $methods = implode(', ', array_keys($brapi_call_data['methods']));
+    }
+    
     $rows[] = array(
       'data' => array(
         array('data' => $call_url_display),
         array('data' => $brapi_call_data['title']),
-        array('data' => implode(', ', array_keys($brapi_call_data['methods']))),
+        array('data' => $methods),
         array('data' => $brapi_call_data['description']),
         array('data' => implode("\n", $features)),
       ),
@@ -373,9 +395,23 @@ function brapi_preprocess_brapi_overview(&$variables) {
  *
  * @ingroup brapi
  */
+function brapi_preprocess_brapi_public_overview(&$variables) {
+
+  drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
+
+  $use_permission = brapi_theme_compute_role_stats(BRAPI_USE_PERMISSION);
+  $variables['call_table'] = brapi_theme_prepare_call_table(TRUE);
+
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @ingroup brapi
+ */
 function brapi_preprocess_brapi_help(&$variables) {
 
   drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
 
-  $variables['call_table'] = brapi_theme_prepare_call_table();
+  $variables['call_table'] = brapi_theme_prepare_call_table(TRUE);
 }

@@ -9,14 +9,23 @@
 ?>
 
 <div class="brapi-admin-block">
-  <h2>Breeding API Overview</h2>
 <?php
 
-  print theme_table($overview_table);
+  if (user_access(BRAPI_ADMIN_PERMISSION)
+      || user_access('administer')) {
+    print theme_table($overview_table);
+  }
 
-  print theme_table($call_table);
+  if (user_access(BRAPI_USE_PERMISSION)
+      || user_access(BRAPI_ADMIN_PERMISSION)
+      || user_access('administer')) {
+    print theme_table($call_table);
+  }
 
-  print theme_table($cv_table);
+  if (user_access(BRAPI_ADMIN_PERMISSION)
+      || user_access('administer')) {
+    print theme_table($cv_table);
+  }
 
 ?>
 </div>

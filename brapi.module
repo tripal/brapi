@@ -187,6 +187,18 @@ function brapi_menu() {
     'weight' => 2,
   );
 
+  // Public overview
+  $items['brapi/overview'] = array(
+    'title' => 'Breeding API Overview',
+    'description' => 'Breeding API Tripal extension module.',
+    'page callback' => 'theme',
+    'page arguments' => array('brapi_public_overview'),
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_USE_PERMISSION),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 0,
+  );
+
   // Autocomplete script.
   $items['brapi/terms/autocomplete'] = array(
     'title' => 'Autocomplete for BrAPI terms',
@@ -255,6 +267,12 @@ function brapi_theme($existing, $type, $theme, $path) {
     'brapi_overview' => array(
       'variables' => array('node' => NULL),
       'template' => 'brapi_overview',
+      'path' => "$path/theme/templates",
+    ),
+    // The public overview template.
+    'brapi_public_overview' => array(
+      'variables' => array('node' => NULL),
+      'template' => 'brapi_public_overview',
       'path' => "$path/theme/templates",
     ),
     // The help template.
