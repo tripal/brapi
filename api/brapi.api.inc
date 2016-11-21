@@ -1476,7 +1476,7 @@ function brapi_prepare_metadata($item_count = 1) {
 
     $page_count = ceil($item_count / $page_size);
 
-    if (isset($page_number) && is_numeric($page_number) && (0 <= $page_number)) {
+    if ($page_number && is_numeric($page_number) && (0 <= $page_number)) {
       // Convert to int.
       $page_number = floor($page_number);
       if ($page_count <= $page_number) {
@@ -1492,7 +1492,7 @@ function brapi_prepare_metadata($item_count = 1) {
         );
       }
     }
-    else {
+    elseif (FALSE !== $page_number) {
       $metadata['status'][] =
         array(
           'code' => 404,
@@ -1503,6 +1503,9 @@ function brapi_prepare_metadata($item_count = 1) {
             )
           ),
         );
+      $page_number = 0;
+    }
+    else {
       $page_number = 0;
     }
 
