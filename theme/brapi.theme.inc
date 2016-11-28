@@ -415,3 +415,27 @@ function brapi_preprocess_brapi_help(&$variables) {
 
   $variables['call_table'] = brapi_theme_prepare_call_table(TRUE);
 }
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @ingroup brapi
+ */
+function brapi_preprocess_brapi_query(&$variables) {
+  global $base_url;
+
+  drupal_add_library('system', 'ui.datepicker');
+  drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
+  drupal_add_js(array('brapi' => array('imagePath' => $base_url . '/' . drupal_get_path('module', 'brapi') . '/theme/images/')), 'setting');
+  drupal_add_js(drupal_get_path('module', 'brapi') . '/theme/js/brapi.js');
+
+  $variables['local_brapi_url'] = $base_url . '/' . BRAPI_SERVICE_PREFIX_V1;
+
+  $variables['calls'] = array();
+  foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
+    $variables['calls'][$brapi_call] = array(
+      'arguments' => $brapi_call_data['arguments'],
+      'filters' => brapi_get_call_filters($brapi_call),
+    );
+  }
+}

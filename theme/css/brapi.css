@@ -90,3 +90,74 @@
   padding: 0;
   margin: 0;
 }
+
+/* Breeding API Query Interface */
+#brapi_query_calls {
+  padding: 0 0 1em 0;
+}
+
+#brapi_query_calls caption {
+  display: inline;
+}
+
+#brapi_query_calls form {
+  margin-top: 1em;
+}
+
+#brapi_query_url {
+  width: 100ex;
+}
+
+#brapi_query_settings label {
+  display: block;
+  width: 20ex;
+}
+
+#brapi_query_settings input,
+#brapi_query_calls .brapi-call-select select {
+  position: absolute;
+  left: 21ex;
+}
+
+.brapi-query-argument label,
+.brapi-query-filter label {
+  display: block;
+  width: 30ex;
+}
+
+.brapi-query-argument input,
+.brapi-query-argument select,
+.brapi-query-filter input,
+.brapi-query-filter select {
+  position: absolute;
+  left: 40ex;
+  width: 60ex;
+}
+
+.brapi-query-page label,
+.brapi-query-size label {
+  display: block;
+  width: 19ex;
+}
+
+.brapi-query-page input,
+.brapi-query-size input {
+  position: absolute;
+  left: 20ex;
+  width: 4ex;
+}
+
+.brapi-query-button {
+  margin-top: 1em;
+}
+
+#brapi_query_results,
+#brapi_query_debug {
+  display: block;
+  margin: 0 0 1em 0;
+  padding: 0.5em 1ex;
+  border: 1px solid black;
+  font-family: Consolas, Courier New, monospace;
+  white-space: pre-wrap;
+  overflow: auto;
+}

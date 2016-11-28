@@ -1457,6 +1457,7 @@ function brapi_prepare_metadata($item_count = 1) {
     $page_size   = isset($args['pageSize']) ? $args['pageSize'] : FALSE;
     $page_number = isset($args['page']) ? $args['page'] : FALSE;
 
+    // Set default page size if needed.
     if (!$page_size || !is_numeric($page_size) || ($page_size <= 0)) {
       if ($page_size) {
         $metadata['status'][] =
@@ -1476,8 +1477,9 @@ function brapi_prepare_metadata($item_count = 1) {
 
     $page_count = ceil($item_count / $page_size);
 
-    if ($page_number && is_numeric($page_number) && (0 <= $page_number)) {
-      // Convert to int.
+    if ((FALSE !== $page_number)
+        && preg_match('/^\d+$/', $page_number)) {
+      // Convert in int (removes leading "0" if some).
       $page_number = floor($page_number);
       if ($page_count <= $page_number) {
         $metadata['status'][] = array(
@@ -1660,4 +1662,109 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
   }
 
   return drupal_json_output($data);
+}
+
+
+/**
+ * Returns the list of parameters that can be used to filter cal results.
+ *
+ * @param string $call_name
+ *   A BrAPI call name.
+ *
+ * @return array
+ *   a hash containing filter names as keys and data types as values.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_call_filters($call_name) {
+  static $data_mapping;
+  if (!isset($data_mapping)) {
+    $data_mapping = brapi_get_data_mapping();
+  }
+
+  static $call_filters;
+  if (!isset($call_filters)) {
+    $call_filters = array();
+    $germplasm_search = array();
+    $germplasm_fields = $data_mapping['germplasm']['fields'];
+    foreach ($germplasm_fields as $field_name => $field_fetcher) {
+      switch (gettype($field_fetcher)) {
+        case "string":
+          $germplasm_search[$field_name] = 'string';
+          break;
+      
+       case "array":
+          switch ($field_fetcher['field_type']) {
+            case 'string':
+              $germplasm_search[$field_name] = 'string';
+              break;
+
+            case 'int':
+              $germplasm_search[$field_name] = 'int';
+              break;
+
+            case 'bool':
+              $germplasm_search[$field_name] = 'bool';
+              break;
+
+            case 'date':
+              $germplasm_search[$field_name] = 'date';
+              break;
+
+            case 'cvterm':
+              $germplasm_search[$field_name] = array();
+              // We capture output buffer for Tripal error messages.
+              ob_start();
+              try {
+                $records = chado_select_record(
+                   $field_fetcher['table'],
+                   array('DISTINCT ' . $field_fetcher['column']),
+                   $field_fetcher['selector']
+                );
+                $cvterm_ids = array();
+                foreach ($records as $record) {
+                  $cvterm_ids[] = $record->$field_fetcher['column'];
+                }
+                $cvterm_records = chado_select_record(
+                   'cvterm',
+                   array('name'),
+                   array('cvterm_id' => $cvterm_ids)
+                );
+                foreach ($cvterm_records as $record) {
+                  $germplasm_search[$field_name][] = $record->name;
+                }
+              }
+              catch (Exception $e) {
+                drupal_set_message(t(
+                  "Failed to fetch field @field_name possible values! @error_message",
+                  array(
+                    '@field_name' => $field_name,
+                    '@error_message' => $e->getMessage() . "\n" . ob_get_clean(),
+                  )
+                ));
+              }
+              ob_get_clean();
+              break;
+
+            default:
+              break;
+          }
+          break;
+       
+       case "object":
+          break;
+       
+       default:
+          break;
+      }
+    }
+    $call_filters['/germplasm-search'] = &$germplasm_search;
+  }
+    
+  if (array_key_exists($call_name, $call_filters)) {
+    return $call_filters[$call_name];
+  }
+  else {
+    return array();
+  }
 }
