@@ -865,7 +865,8 @@ function brapi_get_field(
       }
 
       // Check if array requested.
-      if ($field_fetcher['return_array']) {
+      if (array_key_exists('return_array', $field_fetcher)
+          && $field_fetcher['return_array']) {
         // Multiple values.
         $value = $values;
       }

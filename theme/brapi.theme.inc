@@ -433,8 +433,12 @@ function brapi_preprocess_brapi_query(&$variables) {
 
   $variables['calls'] = array();
   foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
+    $call_args = NULL;
+    if (array_key_exists('arguments', $brapi_call_data)) {
+      $call_args = $brapi_call_data['arguments'];
+    }
     $variables['calls'][$brapi_call] = array(
-      'arguments' => $brapi_call_data['arguments'],
+      'arguments' => $call_args,
       'filters' => brapi_get_call_filters($brapi_call),
     );
   }
