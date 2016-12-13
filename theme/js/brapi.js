@@ -55,11 +55,16 @@ $(function() {
         query_string = (query_string ? query_string + '&pretty=0' : 'pretty=0');
       }
       service_url += '?' + query_string;
+      $form.find('.brapi-query-filter-get input, .brapi-query-filter-get select').each(function(index, item) {
+        if ('' != $(item).val()) {
+          service_url += '&' + $(item).attr('name') + '=' + encodeURI($(item).val());
+        }
+      });
       // Update form action URL.
       $form.attr('action', service_url);
       // Get filter data.
       var filter_data = {};
-      $form.find('.brapi-query-filter input, .brapi-query-filter select').each(function(index, item) {
+      $form.find('.brapi-query-filter-post input, .brapi-query-filter-post select').each(function(index, item) {
         if ('' != $(item).val()) {
           filter_data[$(item).attr('name')] = $(item).val();
         }
@@ -74,12 +79,16 @@ $(function() {
       var $debug = $form.find('input[name="debug"]:checked');
       if ($debug.length) {
         var $debug_zone = $('#brapi_query_debug');
+        var $debug_url  = $('#brapi_query_debug_url');
         if (!$debug_zone.length) {
+          $debug_url = $('<span id="brapi_query_debug_url"></span>')
+            .insertBefore('#brapi_query_result_title');
           $('<h4 id="brapi_query_debug_title">Data sent</h4>')
             .insertBefore('#brapi_query_result_title');
           $debug_zone = $('<code id="brapi_query_debug"></code>')
             .insertBefore('#brapi_query_result_title');
         }
+        $debug_url.html('URL: ' + service_url);
         $debug_zone.html(filter_data);
       }
 

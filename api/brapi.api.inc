@@ -1686,6 +1686,9 @@ function brapi_get_call_filters($call_name) {
   static $call_filters;
   if (!isset($call_filters)) {
     $call_filters = array();
+
+    $call_filters['/calls'] = array('GET' => array('datatype' => 'string'));
+
     $germplasm_search = array();
     $germplasm_fields = $data_mapping['germplasm']['fields'];
     foreach ($germplasm_fields as $field_name => $field_fetcher) {
@@ -1759,7 +1762,7 @@ function brapi_get_call_filters($call_name) {
           break;
       }
     }
-    $call_filters['/germplasm-search'] = &$germplasm_search;
+    $call_filters['/germplasm-search'] = array('POST' => &$germplasm_search);
   }
     
   if (array_key_exists($call_name, $call_filters)) {
@@ -1768,4 +1771,36 @@ function brapi_get_call_filters($call_name) {
   else {
     return array();
   }
+}
+
+/**
+ * Checks if an array contains the given values.
+ *
+ * @param mixed $mixed
+ *   a value or an array of value to look for.
+ * @param array $array
+ *   the array to look into and check if the values are.
+ * @param bool $must_have_all
+ *   if true and $mixed is an array, all the values of $mixed must be found in
+ *   the $array array.
+ * @return bool
+ *   TRUE if the requested values have been found.
+ */
+function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
+  $return_value = FALSE;
+  if (is_array($mixed)) {
+    foreach ($mixed as $value) {
+      if ($must_have_all) {
+        $return_value = $return_value && in_array($value, $array);
+      }
+      else {
+        $return_value = $return_value || in_array($value, $array);
+      }
+    }
+  }
+  else {
+    $return_value = in_array($mixed, $array);
+  }
+
+  return $return_value;
 }

@@ -269,7 +269,7 @@ function brapi_v1_authentication_json() {
  * - call (string)
  *     The name of a call.
  */
-function brapi_v1_call_json() {
+function brapi_v1_call_json($selected_call_name) {
 
   // Init status and debug data.
   $call_data = array();
@@ -278,13 +278,31 @@ function brapi_v1_call_json() {
 
   // Get call parameters.
   $args = brapi_get_url_call_args();
-  $call_filter = $args['call'];
+  $datatype_filter = isset($args['datatype']) ? $args['datatype'] : FALSE;
 
   // GET: get current user.
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
+      // Check call name.
+      // Remove leading slash in name.
       $call_name = substr($call_name, 1);
-      if ($call_name && (!$call_filter || ($call_filter == $call_name))) {
+      $has_requested_name = TRUE;
+      if ($selected_call_name) {
+        $has_requested_name = ($selected_call_name == $call_name);
+      }
+      
+
+      // Check call supported datatypes.
+      $supported_datatypes = array();
+      if (array_key_exists('datatypes', $call_settings)) {
+        $supported_datatypes = $call_settings['datatypes'];
+      }
+      $has_requested_filters = TRUE;
+      if ($datatype_filter) {
+        $has_requested_filters = brapi_array_contains($datatype_filter, $supported_datatypes);
+      }
+
+      if ($call_name && $has_requested_name && $has_requested_filters) {
         $call_data[] = array(
           'call' => $call_name,
           'datatypes' => $call_settings['datatypes'],
@@ -295,7 +313,7 @@ function brapi_v1_call_json() {
     $metadata = brapi_prepare_metadata(count($call_data));
 
     return brapi_output_json(
-      array('result' => $call_data),
+      array('result' => array('data' => $call_data)),
       $metadata,
       $debug_data
     );

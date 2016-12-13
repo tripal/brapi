@@ -120,15 +120,18 @@
 }
 
 .brapi-query-argument label,
-.brapi-query-filter label {
+.brapi-query-filter-get label,
+.brapi-query-filter-post label {
   display: block;
   width: 30ex;
 }
 
 .brapi-query-argument input,
 .brapi-query-argument select,
-.brapi-query-filter input,
-.brapi-query-filter select {
+.brapi-query-filter-get input,
+.brapi-query-filter-get select,
+.brapi-query-filter-post input,
+.brapi-query-filter-post select {
   position: absolute;
   left: 40ex;
   width: 60ex;
