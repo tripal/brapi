@@ -155,7 +155,7 @@
 }
 
 #brapi_query_results,
-#brapi_query_debug {
+#brapi_query_debug code {
   display: block;
   margin: 0 0 1em 0;
   padding: 0.5em 1ex;

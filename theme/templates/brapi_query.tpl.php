@@ -34,79 +34,45 @@
 
     if ($call_structure['filters']) {
       echo t('Filters:') . "<br/>\n";
-      if ($call_structure['filters']['GET']) {
-        echo "<ol>\n";
-        foreach ($call_structure['filters']['GET'] as $filter_name => $value_type) {
-          // Handles filter types.
-          if (is_array($value_type)) {
-            echo "<li class=\"brapi-query-filter-get\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-            echo "  <option value=\"\" selected=\"selected\"></option>\n";
-            foreach ($value_type as $value) {
-              echo "  <option value=\"$value\">$value</option>\n";
+      foreach (array('GET', 'POST') as $method) {
+        if ($call_structure['filters'][$method]) {
+          $method_class = strtolower($method);
+          echo "<ol>\n";
+          foreach ($call_structure['filters'][$method] as $filter_name => $value_type) {
+            // Handles filter types.
+            if (is_array($value_type)) {
+              echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
+              echo "  <option value=\"\" selected=\"selected\"></option>\n";
+              foreach ($value_type as $value) {
+                echo "  <option value=\"$value\">$value</option>\n";
+              }
+              echo"</select></label></li>\n";
             }
-            echo"</select></label></li>\n";
-          }
-          else {
-            switch ($value_type) {
-              case 'string':
-              case 'int':
-                echo "<li class=\"brapi-query-filter-get\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                break;
-      
-              case 'bool':
-                echo "<li class=\"brapi-query-filter-get\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-                echo "  <option value=\"1\">TRUE</option>\n";
-                echo "  <option value=\"0\">FALSE</option>\n";
-                echo"</select></label></li>\n";
-                break;
-      
-              case 'date':
-                echo "<li class=\"brapi-query-filter-get brapi-datepicker\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                break;
-      
-              default:
-                break;
+            else {
+              switch ($value_type) {
+                case 'string':
+                case 'int':
+                  echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
+                  break;
+        
+                case 'bool':
+                  echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
+                  echo "  <option value=\"1\">TRUE</option>\n";
+                  echo "  <option value=\"0\">FALSE</option>\n";
+                  echo"</select></label></li>\n";
+                  break;
+        
+                case 'date':
+                  echo "<li class=\"brapi-query-filter-$method_class brapi-datepicker\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
+                  break;
+        
+                default:
+                  break;
+              }
             }
           }
+          echo "</ol>\n";
         }
-        echo "</ol>\n";
-      }
-      if ($call_structure['filters']['POST']) {
-        echo "<ol>\n";
-        foreach ($call_structure['filters']['POST'] as $filter_name => $value_type) {
-          // Handles filter types.
-          if (is_array($value_type)) {
-            echo "<li class=\"brapi-query-filter-post\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-            echo "  <option value=\"\" selected=\"selected\"></option>\n";
-            foreach ($value_type as $value) {
-              echo "  <option value=\"$value\">$value</option>\n";
-            }
-            echo"</select></label></li>\n";
-          }
-          else {
-            switch ($value_type) {
-              case 'string':
-              case 'int':
-                echo "<li class=\"brapi-query-filter-post\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                break;
-      
-              case 'bool':
-                echo "<li class=\"brapi-query-filter-post\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-                echo "  <option value=\"1\">TRUE</option>\n";
-                echo "  <option value=\"0\">FALSE</option>\n";
-                echo"</select></label></li>\n";
-                break;
-      
-              case 'date':
-                echo "<li class=\"brapi-query-filter-post brapi-datepicker\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                break;
-      
-              default:
-                break;
-            }
-          }
-        }
-        echo "</ol>\n";
       }
     }
 ?>

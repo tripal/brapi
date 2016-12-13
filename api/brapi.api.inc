@@ -23,6 +23,38 @@
 require_once 'brapi.const.inc';
 
 /**
+ * Checks if an array contains the given values.
+ *
+ * @param mixed $mixed
+ *   a value or an array of value to look for.
+ * @param array $array
+ *   the array to look into and check if the values are.
+ * @param bool $must_have_all
+ *   if true and $mixed is an array, all the values of $mixed must be found in
+ *   the $array array.
+ * @return bool
+ *   TRUE if the requested values have been found in the given array.
+ */
+function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
+  $return_value = FALSE;
+  if (is_array($mixed)) {
+    foreach ($mixed as $value) {
+      if ($must_have_all) {
+        $return_value = $return_value && in_array($value, $array);
+      }
+      else {
+        $return_value = $return_value || in_array($value, $array);
+      }
+    }
+  }
+  else {
+    $return_value = in_array($mixed, $array);
+  }
+
+  return $return_value;
+}
+
+/**
  * Returns MCPD controlled vocabulary settings.
  *
  * Returns multi-crop passport descriptor controlled vocabulary settings used
@@ -1673,7 +1705,8 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
  *   A BrAPI call name.
  *
  * @return array
- *   a hash containing filter names as keys and data types as values.
+ *   a hash with 2 keys, 'GET' and 'POST', containing hashes (associated to the
+ *   corresponding method) with filter names as keys and data types as values.
  *
  * @ingroup brapi_api
  */
@@ -1771,36 +1804,4 @@ function brapi_get_call_filters($call_name) {
   else {
     return array();
   }
-}
-
-/**
- * Checks if an array contains the given values.
- *
- * @param mixed $mixed
- *   a value or an array of value to look for.
- * @param array $array
- *   the array to look into and check if the values are.
- * @param bool $must_have_all
- *   if true and $mixed is an array, all the values of $mixed must be found in
- *   the $array array.
- * @return bool
- *   TRUE if the requested values have been found.
- */
-function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
-  $return_value = FALSE;
-  if (is_array($mixed)) {
-    foreach ($mixed as $value) {
-      if ($must_have_all) {
-        $return_value = $return_value && in_array($value, $array);
-      }
-      else {
-        $return_value = $return_value || in_array($value, $array);
-      }
-    }
-  }
-  else {
-    $return_value = in_array($mixed, $array);
-  }
-
-  return $return_value;
 }

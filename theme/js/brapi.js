@@ -77,25 +77,31 @@ $(function() {
       }
       // Check for debug mode.
       var $debug = $form.find('input[name="debug"]:checked');
+      var $debug_zone = $('#brapi_query_debug');
       if ($debug.length) {
-        var $debug_zone = $('#brapi_query_debug');
-        var $debug_url  = $('#brapi_query_debug_url');
         if (!$debug_zone.length) {
-          $debug_url = $('<span id="brapi_query_debug_url"></span>')
+          $debug_zone = $('<div id="brapi_query_debug"></div>')
             .insertBefore('#brapi_query_result_title');
-          $('<h4 id="brapi_query_debug_title">Data sent</h4>')
-            .insertBefore('#brapi_query_result_title');
-          $debug_zone = $('<code id="brapi_query_debug"></code>')
-            .insertBefore('#brapi_query_result_title');
+          $debug_zone
+            .append('<h4 id="brapi_query_debug_title">Data sent</h4>')
+            .append('<div id="brapi_query_debug_url"></div>')
+            .append('<code></code>')
+          ;
         }
-        $debug_url.html('URL: ' + service_url);
-        $debug_zone.html(filter_data);
+        $debug_zone.find('#brapi_query_debug_url').html('URL: ' + service_url);
+        $debug_zone.find('code').html(filter_data);
+        $debug_zone.show();
+      }
+      else {
+        $debug_zone.hide();
       }
 
 
       // Clear output and display animated gif.
       var brapi_image_path = Drupal.settings.brapi.imagePath;
-      $('#brapi_query_results').html('<img src="' + brapi_image_path + 'loading_icon.gif" title="Loading, please wait..." alt="Loading..."/>');
+      $('#brapi_query_results')
+        .html('<img src="' + brapi_image_path + 'loading_icon.gif" title="Loading, please wait..." alt="Loading..."/>')
+        .show();
       // Replace submit by an AJAX call.
       $.ajax({
         url: service_url,
