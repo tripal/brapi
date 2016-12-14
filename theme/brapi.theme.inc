@@ -427,7 +427,7 @@ function brapi_preprocess_brapi_query(&$variables) {
   drupal_add_library('system', 'ui.datepicker');
   drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
   drupal_add_js(array('brapi' => array('imagePath' => $base_url . '/' . drupal_get_path('module', 'brapi') . '/theme/images/')), 'setting');
-  drupal_add_js(drupal_get_path('module', 'brapi') . '/theme/js/brapi.js');
+  drupal_add_js(drupal_get_path('module', 'brapi') . '/theme/js/brapi.query.ui.js');
 
   $variables['local_brapi_url'] = $base_url . '/' . BRAPI_SERVICE_PREFIX_V1;
 

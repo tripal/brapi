@@ -11,5 +11,7 @@ dependencies[] = tripal_views
 dependencies[] = tripal_db
 dependencies[] = tripal_cv
 
+scripts[] = /theme/js/brapi.js
+
 ; For dev only, will be removed once released as a regular module
 project status url = https://www.drupal.org/sandbox/guignonv/2789913

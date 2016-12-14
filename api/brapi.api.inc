@@ -1479,8 +1479,13 @@ function brapi_get_user_json_input() {
  */
 function brapi_prepare_metadata($item_count = 1) {
   $metadata = array(
-    'status' => NULL,
-    'pagination' => NULL,
+    'status' => array(),
+    'pagination' => array(
+      'pageSize'    => 0,
+      'currentPage' => 0,
+      'totalCount'  => 0,
+      'totalPages'  => 0,
+    ),
     'datafiles' => array(),
   );
 
