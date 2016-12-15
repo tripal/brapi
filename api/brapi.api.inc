@@ -63,6 +63,9 @@ function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
  * @return array
  *   keys are MCPD terms and values are arrays of associated chado cvterm_id.
  *
+ * @see brapi_get_cv_settings()
+ * @see brapi_get_data_mapping()
+ *
  * @ingroup brapi_api
  */
 function brapi_get_mcpd_settings() {
@@ -77,7 +80,8 @@ function brapi_get_mcpd_settings() {
       'countryOfOriginCode',
       BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
       'is_a'),
-    'donors' => brapi_get_cvterm_id('donor institute name'),
+    'donor' => brapi_get_cvterm_id('donor institute name'),
+    'donor(fallback)' => brapi_get_cvterm_id('donor institute code'),
     'genus' => brapi_get_cvterm_id('genus'),
     'germplasmName' => brapi_get_cvterm_id('accession name'),
     'instituteCode' => brapi_get_cvterm_id('institute code'),
@@ -129,6 +133,9 @@ function hook_brapi_cv_settings_alter(&$cv_settings) {
  * @return array
  *   key are Breeding API term/field names and values are corresponding Chado
  *   cvterm_id.
+ *
+ * @see brapi_get_mcpd_settings()
+ * @see brapi_get_data_mapping()
  *
  * @ingroup brapi_api
  */
@@ -651,6 +658,99 @@ function brapi_get_related_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSP
 }
 
 /**
+ * Parses a date from a database value using the selected date format according
+ * to the specified format or, if not set, BrAPI settings.
+ *
+ * @param string $stored_value
+ *   database value to parse.
+ * @param string $format
+ *   format to use for parsing. Supported formats are xsd, timestamp and custom.
+ *
+ * @return string
+ *   the date in BrAPI format (xsd:date, YYYY-MM-DD).
+ *
+ * @ingroup brapi_api
+ */
+function brapi_parse_date($stored_value, $format = NULL) {
+  static $date_setting;
+
+  if (!$date_setting) {
+    $date_setting = variable_get('brapi_date_format');
+  }
+  
+  if (!$format) {
+    $format = $date_setting;
+  }
+
+  switch ($format) {
+    case 'timestamp':
+      $parsed_date = date(BRAPI_XSD_DATE_FORMAT, $stored_value);
+      break;
+    case 'custom':
+      $date_format = variable_get('brapi_custom_date_format');
+      if (!$date_format) {
+        $date_format = BRAPI_XSD_DATE_FORMAT;
+      }
+      $date = date_create_from_format($date_format, $stored_value);
+      $parsed_date = $date->format(BRAPI_XSD_DATE_FORMAT);
+      break;
+    case 'xsd':
+    default:
+      $parsed_date = $stored_value;
+      break;
+  }
+  
+  return $parsed_date;
+}
+ 
+/**
+ * Formats the given BrAPI date (xsd format) into the requested format or the
+ * default date format setup in the settings.
+ *
+ * @param string $brapi_date
+ *   BrAPI date (xsd format).
+ * @param string $format
+ *   Requested format. Supported formats are xsd, timestamp and custom.
+ *
+ * @return string
+ *   Date formatted in the requested format.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_encode_date($brapi_date, $format = NULL) {
+  static $date_setting;
+
+  if (!$date_setting) {
+    $date_setting = variable_get('brapi_date_format');
+  }
+  
+  if (!$format) {
+    $format = $date_setting;
+  }
+
+  $date = date_create_from_format(BRAPI_XSD_DATE_FORMAT, $brapi_date);
+
+  switch ($format) {
+    case 'timestamp':
+      $encoded_date = $date->format('U');
+      break;
+    case 'custom':
+      $date_format = variable_get('brapi_custom_date_format');
+      if (!$date_format) {
+        $date_format = BRAPI_XSD_DATE_FORMAT;
+      }
+      $encoded_date = $date->format($date_format);
+      break;
+    case 'xsd':
+    default:
+      $encoded_date = $brapi_date;
+      break;
+  }
+  
+  return $encoded_date;
+}
+ 
+/**
  * Returns a Tripal field selector.
  *
  * Returns a field selector that can be used by Tripal functions like
@@ -816,25 +916,7 @@ function brapi_get_field(
               break;
 
             case 'date':
-              // If numeric value, it might be a timestamp to convert into a
-              // date.
-              if (preg_match('/^-?\d{1,10}$/', $current_value)) {
-                // Make sure it's not a date without '/' or '-'.
-                $date_match = preg_match(
-                  '/^(\d\d\d\d)(\d\d)(\d\d)$/',
-                  $current_value,
-                  $matches
-                );
-                if (!($date_match
-                      && ($matches[1] < 2100)
-                      && ($matches[2] > 0)
-                      && ($matches[2] <= 12)
-                      && ($matches[3] > 0)
-                      && ($matches[3] <= 31))
-                ) {
-                  $current_value = date('Y/m/d', intval($current_value));
-                }
-              }
+              $current_value = brapi_parse_date($current_value);
               break;
 
             case 'string':
@@ -1041,6 +1123,28 @@ function brapi_set_field(
           // We capture output buffer for Tripal error messages.
           ob_start();
           $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
+          switch ($data_mapping[$data_type]['fields'][$field_name]['field_type']) {
+            case 'bool':
+              $single_value = $single_value ? '1' : '0';
+              break;
+
+            case 'date':
+              $single_value = brapi_encode_date($single_value);
+              break;
+              
+            case 'cvterm':
+              if ($term = tripal_get_cvterm(array('name' => $single_value))) {
+                $current_value = $term->cvterm_id;
+              }
+              else {
+                $current_value = NULL;
+              }
+              break;
+
+            default:
+              // For other types, values are left as they are.
+              break;
+          }
           if (!chado_insert_record(
              $field_fetcher['table'],
              array_merge(

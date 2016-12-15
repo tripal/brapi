@@ -32,6 +32,7 @@ define('BRAPI_ADMIN_PERMISSION', 'administer breeding api');
 define('BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV', 'multicrop passport ontology');
 define('BRAPI_DEFAULT_PAGE_SIZE', 30);
 define('BRAPI_ESCAPE_CHARACTER', "\\");
+define('BRAPI_XSD_DATE_FORMAT', "Y-m-d");
 
 /**
  * Returns an array of CV terms used by the Breeding API that are not part of
@@ -203,6 +204,9 @@ function brapi_get_calls() {
  *        'delete'. If not provided, 'read' is assumed;
  *      - $value (not provided for 'read' $op and optional for 'delete' $op): the
  *        new field value (or value to delete in case of 'delete' $op).
+ *
+ * @see brapi_get_cv_settings()
+ * @see brapi_get_mcpd_settings()
  *
  * @ingroup brapi_const
  */
@@ -501,7 +505,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => $cv_settings['donor institute code'],
+              'type_id' => $cv_settings['donor'],
             ),
             'field_type' => 'string',
             'return_array' => TRUE,
@@ -514,7 +518,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => $cv_settings['donor institute name'],
+              'type_id' => $cv_settings['donor(fallback)'],
             ),
             'field_type' => 'string',
             'return_array' => TRUE,

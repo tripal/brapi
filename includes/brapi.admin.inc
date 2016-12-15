@@ -18,6 +18,51 @@
 function brapi_admin_form($form, &$form_state) {
   $form = array();
 
+  // @TODO
+  // Storage type selection for some specific fields.
+
+  // Date settings.
+  $form['date_settings'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Date settings'),
+    '#collapsible' => TRUE,
+    '#collapsed'   => FALSE,
+    '#suffix'      => '<br/>',
+  );
+  $date_options = array(
+    'xsd' => t('YYYY-MM-DD'),
+    'timestamp' => t('Timestamp'),
+    'custom' => t('Custom format'),
+  );
+  $default_date_format = variable_get('brapi_date_format');
+  if (!$default_date_format
+      || (($default_date_format != 'timestamp')
+          && ($default_date_format != 'custom')
+          && ($default_date_format != 'xsd'))) {
+    $default_date_format = 'xsd';
+  }
+  $form['date_settings']['date_format'] = array(
+      '#type' => 'select',
+      '#id' => 'brapi_date_settings',
+      '#description' => t('Select the format used to store dates in the database.'),
+      '#options' => $date_options, 
+      '#default_value' => $default_date_format,
+      '#title' => t('Date storage format'),
+      '#title_display' => 'before',
+      '#required' => TRUE,
+      '#multiple' => FALSE,
+  );
+  $form['date_settings']['custom_date_format'] = array(
+    '#type' => 'textfield',
+    '#id' => 'brapi_custom_date_format',
+    '#description' => t('If you use a custom format, specify the way dates are stored in database using the format describbed at <a href="http://php.net/manual/en/datetime.createfromformat.php">DateTime::createFromFormat PHP documentation</a>.'),
+    '#default_value' => variable_get('brapi_custom_date_format'),
+    '#title' => t('Custom date format specification'),
+    '#title_display' => 'before',
+    '#size' => 80,
+  );
+
+  // CV settings.
   $form['cv_settings'] = array(
     '#type'        => 'fieldset',
     '#attributes'  => array('class' => array('container-inline')),
@@ -27,7 +72,6 @@ function brapi_admin_form($form, &$form_state) {
     '#suffix'      => '<br/>',
   );
 
-  // CV settings.
   $brapi_cv_select = array('name' => BRAPI_CV);
   $brapi_cv = chado_select_record('cv', array('*'), $brapi_cv_select);
   if (is_array($brapi_cv)) {
@@ -127,6 +171,9 @@ function brapi_admin_form($form, &$form_state) {
     '#suffix'      => '<br/>',
   );
 
+  // @TODO
+  // MCPD Override.
+
   $form['chado_mcpd']['reset_mcpd'] = array(
     '#type'        => 'submit',
     '#value'       => t('Reload Chado MCPD CV'),
@@ -154,6 +201,29 @@ function brapi_admin_form($form, &$form_state) {
  * @ingroup brapi
  */
 function brapi_admin_form_submit($form_id, &$form_state) {
+
+  // Save date format.
+  switch ($form_state['values']['date_format']) {
+    case 'xsd':
+      variable_set('brapi_date_format', 'xsd');
+      break;
+    case 'timestamp':
+      variable_set('brapi_date_format', 'timestamp');
+      break;
+    case 'custom':
+      if ($form_state['values']['custom_date_format']) {
+        variable_set('brapi_date_format', 'custom');
+        variable_set('brapi_custom_date_format', $form_state['values']['custom_date_format']);
+      }
+      else {
+        drupal_set_message('No custom date format specified while this format has been selected!', 'warning');
+      }
+      break;
+    default:
+      drupal_set_message('Invalid date format specification!', 'error');
+      break;
+  }
+
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
     $user_term = $form_state['values'][$term_label];

@@ -12,7 +12,7 @@
     attach: function(context, settings) {
 /******************************************************************************/
 $(function() {
-    
+
   // Auto-process page BrAPI queries: display matching accession name.
   $('form.brapi-autoquery')
     .not('.brapi-processed')
@@ -62,6 +62,24 @@ $(function() {
       });
     })
   ;
+
+  // Settings.
+  $('#brapi_date_settings').on('change', function() {
+    switch ($(this).val()) {
+      case 'custom':
+        $('#brapi_custom_date_format')
+          .prop('disabled', false)
+          .parent()
+            .removeClass('form-disabled');
+        break;
+      default:
+        $('#brapi_custom_date_format')
+          .prop('disabled', true)
+          .parent()
+            .addClass('form-disabled');
+        break;
+    }
+  }).change();
   
 });
 /******************************************************************************/
