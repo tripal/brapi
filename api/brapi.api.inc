@@ -790,6 +790,111 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
 }
 
 /**
+ * Decode a database value according to its type and turns it into a BrAPI
+ * value.
+ *
+ * @param string $value
+ *   the given raw database value.
+ * @param string $type
+ *   value type.
+ *
+ * @return string
+ *   Returns the decoded value according to the given type.
+ *
+ * @Throws Exception
+ *   Throw an exception is the value type is not correct.
+ */
+function brapi_decode_value($value, $type) {
+  switch ($type) {
+    case 'bool':
+      $value = $value ? TRUE : FALSE;
+      break;
+
+    case 'int':
+      $value = intval($value);
+      break;
+
+    case 'date':
+      $value = brapi_parse_date($value);
+      break;
+
+    case 'string':
+      break;
+
+    case 'cvterm':
+      if ($term = tripal_get_cvterm(array('cvterm_id' => $value))) {
+        $value = $term->name;
+      }
+      else {
+        $value = NULL;
+      }
+      break;
+
+    default:
+      throw new Exception(t(
+        "Failed to decode value ('@value')! Invalid value type @type!",
+        array(
+          '@type' => $type,
+          '@value' => $value,
+        )
+      ));
+      break; 
+  }
+  return $value;
+}
+
+/**
+ * Encode a BrAPI value according to its type and turns it into a database
+ * value.
+ *
+ * @param string $value
+ *   the given BrAPI value.
+ * @param string $type
+ *   value type.
+ *
+ * @return string
+ *   Returns the encoded value according to the given type.
+ *
+ * @Throws Exception
+ *   Throw an exception is the value type is not correct.
+ */
+function brapi_encode_value($value, $type) {
+  switch ($data_mapping[$data_type]['fields'][$field_name]['field_type']) {
+    case 'bool':
+      $single_value = $single_value ? '1' : '0';
+      break;
+
+    case 'date':
+      $single_value = brapi_encode_date($single_value);
+      break;
+      
+    case 'cvterm':
+      if ($term = tripal_get_cvterm(array('name' => $single_value))) {
+        $current_value = $term->cvterm_id;
+      }
+      else {
+        $current_value = NULL;
+      }
+      break;
+
+    case 'int':
+    case 'string':
+      // For other types, values are left as they are.
+      break;
+
+    default:
+      throw new Exception(t(
+        "Failed to encode value ('@value')! Invalid value type @type!",
+        array(
+          '@type' => $type,
+          '@value' => $value,
+        )
+      ));
+      break;
+  }
+}
+
+/**
  * Returns a given field value.
  *
  * Returns a breeding API field value according to a given data type, a given
@@ -906,43 +1011,22 @@ function brapi_get_field(
         foreach ($records as $record) {
           $current_value = $record->$field_fetcher['column'];
           // Check type and return the appropriate conversion.
-          switch ($field_fetcher['field_type']) {
-            case 'bool':
-              $current_value = $current_value ? TRUE : FALSE;
-              break;
-
-            case 'int':
-              $current_value = intval($current_value);
-              break;
-
-            case 'date':
-              $current_value = brapi_parse_date($current_value);
-              break;
-
-            case 'string':
-              break;
-
-            case 'cvterm':
-              if ($term = tripal_get_cvterm(array('cvterm_id' => $current_value))) {
-                $current_value = $term->name;
-              }
-              else {
-                $current_value = NULL;
-              }
-              break;
-
-            default:
-              return brapi_raise_error_json(
-                400,
-                t(
-                  "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!",
-                  array(
-                    '@field'      => $field_name,
-                    '@type'       => $data_type,
-                    '@field_type' => $field_fetcher['field_type'],
-                  )
+          try {
+            $current_value = brapi_decode_value($current_value, $field_fetcher['field_type']);
+          }
+          catch (Exception $e) {
+            return brapi_raise_error_json(
+              400,
+              t(
+                "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
+                array(
+                  '@field'         => $field_name,
+                  '@type'          => $data_type,
+                  '@field_type'    => $field_fetcher['field_type'],
+                  '@error_message' => $e->getMessage(),
                 )
-              );
+              )
+            );
           }
           $values[] = $current_value;
         }
@@ -1123,27 +1207,22 @@ function brapi_set_field(
           // We capture output buffer for Tripal error messages.
           ob_start();
           $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
-          switch ($data_mapping[$data_type]['fields'][$field_name]['field_type']) {
-            case 'bool':
-              $single_value = $single_value ? '1' : '0';
-              break;
-
-            case 'date':
-              $single_value = brapi_encode_date($single_value);
-              break;
-              
-            case 'cvterm':
-              if ($term = tripal_get_cvterm(array('name' => $single_value))) {
-                $current_value = $term->cvterm_id;
-              }
-              else {
-                $current_value = NULL;
-              }
-              break;
-
-            default:
-              // For other types, values are left as they are.
-              break;
+          try {
+            $single_value = brapi_encode_value($single_value, $data_mapping[$data_type]['fields'][$field_name]['field_type']);
+          }
+          catch (Exception $e) {
+            return brapi_raise_error_json(
+              400,
+              t(
+                "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
+                array(
+                  '@field'         => $field_name,
+                  '@type'          => $data_type,
+                  '@field_type'    => $field_fetcher['field_type'],
+                  '@error_message' => $e->getMessage(),
+                )
+              )
+            );
           }
           if (!chado_insert_record(
              $field_fetcher['table'],
@@ -1173,8 +1252,6 @@ function brapi_set_field(
       }
       else {
         // Single value...
-        // We capture output buffer for Tripal error messages.
-        ob_start();
         if (isset($field_fetcher['foreign_key'])) {
           $foreign_key = $field_fetcher['foreign_key'];
         }
@@ -1187,7 +1264,26 @@ function brapi_set_field(
         else {
           $identifier = $object->$data_mapping[$data_type]['identifier'];
         }
-        // @todo Check value type. Do some conversion if needed and possible.
+        // Check value type and do some conversion if needed.
+        try {
+          $field_value = brapi_encode_value($field_value, $data_mapping[$data_type]['fields'][$field_name]['field_type']);
+        }
+        catch (Exception $e) {
+          return brapi_raise_error_json(
+            400,
+            t(
+              "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
+              array(
+                '@field'         => $field_name,
+                '@type'          => $data_type,
+                '@field_type'    => $field_fetcher['field_type'],
+                '@error_message' => $e->getMessage(),
+              )
+            )
+          );
+        }
+        // We capture output buffer for Tripal error messages.
+        ob_start();
         $updated_record = FALSE;
         if ($update) {
           $updated_record = chado_update_record(
