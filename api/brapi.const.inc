@@ -55,6 +55,68 @@ function brapi_get_cv() {
 }
 
 /**
+ * Returns BrAPI/MCPD controlled vocabulary mapping.
+ *
+ * Returns the association between BrAPI MCPD terms and real multi-crop passport
+ * descriptor controlled vocabulary terms.
+ *
+ * @return array
+ *   keys are BrAPI MCPD terms and values are arrays with the following
+ *   structure:
+ *   - name: corresponding MCPD term name or MCPD term names;
+ *   - related: either the parent MCPD term name or an array with the fields
+ *     'name' for MCPD parent term name, 'cv' for the CV the related terms
+ *     belong to and 'relationship' (string) for the type of relationship;
+ *   - fallback: array of terms that could suggested as replacement.
+ *
+ * @see brapi_get_mcpd_settings()
+ *
+ * @ingroup brapi_api
+ */
+function brapi_get_mcpd_mapping() {
+  static $mcpd_mapping;
+  if (!$mcpd_mapping) {
+    $mcpd_mapping = array(
+      'accessionNumber' => array('name' => 'accession number'),
+      'acquisitionDate' => array('name' => 'acquisition date'),
+      'BiologicalStatusOfAccessionCode' => array(
+        'related' => 'BiologicalStatusOfAccessionCode',
+      ),
+      'commonCropName' => array('name' => 'common crop name'),
+      'countryOfOriginCode' => array(
+        'related' => array(
+          'name' => 'countryOfOriginCode',
+          'cv' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
+          'relationship' => 'is_a',
+        ),
+      ),
+      'donor' => array(
+        'name' => 'donor institute name',
+        'fallback' => array('donor institute code'),
+      ),
+      'genus' => array('name' => 'genus'),
+      'germplasmName' => array('name' => 'accession name'),
+      'instituteCode' => array(
+        'name' => 'institute code',
+        'fallback' => array('breeding institute code', 'InstituteCode'),
+      ),
+      'instituteName' => array('name' => 'Breeding institute name'),
+      'species' => array('name' => 'species'),
+      'speciesAuthority' => array('name' => 'species authority'),
+      'subtaxa' => array('name' => 'subtaxa'),
+      'subtaxaAuthority' => array('name' => 'subtaxa authority'),
+      'synonyms' => array(
+        'name' => 'other identification numbers associated with the accession',
+      ),
+      'TypeOfGermplasmStorageCode' => array(
+        'related' => 'TypeOfGermplasmStorageCode'
+      ),
+    );
+  }
+  return $mcpd_mapping;
+}
+
+/**
  * Returns an array of supported Breeding API calls.
  *
  * @return array
@@ -320,10 +382,8 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['commonCropName'],
             ),
             'field_type' => 'string',
-            'fallback' => 'commonCropName2',
           ),
-          // If not set from MCPD, get it from organism table.
-          'commonCropName2' => array(
+          'commonCropNameOrganism' => array(
             'table' => 'organism',
             'foreign_key' => 'organism_id',
             'object_key' => 'organism_id',
@@ -361,10 +421,10 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['instituteCode(fallback2)'],
             ),
             'field_type' => 'string',
-            'fallback' => 'instituteName4',
+            'fallback' => 'instituteCodeStockCollection',
           ),
           // if not specified through MCPD, uses stockcollection.uniquename
-          'instituteName4' => function ($data_type, $stock, $field_name, $op) {
+          'instituteCodeStockCollection' => function ($data_type, $stock, $field_name, $op) {
             $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
             if (isset($stock->stockcollection_stock)
                 && isset($stock->stockcollection_stock->stockcollection_id)) {
@@ -384,10 +444,10 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['instituteName'],
             ),
             'field_type' => 'string',
-            'fallback' => 'instituteName2',
+            'fallback' => 'instituteNameStockCollection',
           ),
           // if not specified through MCPD, uses stockcollection.name
-          'instituteName2' => function ($data_type, $stock, $field_name, $op) {
+          'instituteNameStockCollection' => function ($data_type, $stock, $field_name, $op) {
             $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
             if (isset($stock->stockcollection_stock)
                 && isset($stock->stockcollection_stock->stockcollection_id)) {

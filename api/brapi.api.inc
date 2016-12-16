@@ -63,40 +63,26 @@ function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
  * @return array
  *   keys are MCPD terms and values are arrays of associated chado cvterm_id.
  *
+ * @see brapi_get_mcpd_mapping()
  * @see brapi_get_cv_settings()
  * @see brapi_get_data_mapping()
  *
  * @ingroup brapi_api
  */
 function brapi_get_mcpd_settings() {
-  $mcpd_settings = array(
-    'accessionNumber' => brapi_get_cvterm_id('accession number'),
-    'acquisitionDate' => brapi_get_cvterm_id('acquisition date'),
-    'BiologicalStatusOfAccessionCode' => brapi_get_related_cvterm_id(
-      'BiologicalStatusOfAccessionCode'),
-    'commonCropName' => brapi_get_cvterm_id('common crop name'),
-    'countryOfOriginCode' => brapi_get_cvterm_id('CountryOfOriginCode'),
-    'countryOfOriginCode(fallback)' => brapi_get_related_cvterm_id(
-      'countryOfOriginCode',
-      BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV,
-      'is_a'),
-    'donor' => brapi_get_cvterm_id('donor institute name'),
-    'donor(fallback)' => brapi_get_cvterm_id('donor institute code'),
-    'genus' => brapi_get_cvterm_id('genus'),
-    'germplasmName' => brapi_get_cvterm_id('accession name'),
-    'instituteCode' => brapi_get_cvterm_id('institute code'),
-    'instituteCode(fallback)' => brapi_get_cvterm_id('breeding institute code'),
-    'instituteCode(fallback2)' => brapi_get_cvterm_id('InstituteCode'),
-    'instituteName' => brapi_get_cvterm_id('Breeding institute name'),
-    'species' => brapi_get_cvterm_id('species'),
-    'speciesAuthority' => brapi_get_cvterm_id('species authority'),
-    'subtaxa' => brapi_get_cvterm_id('subtaxa'),
-    'subtaxaAuthority' => brapi_get_cvterm_id('subtaxa authority'),
-    'synonyms' => brapi_get_cvterm_id(
-      'other identification numbers associated with the accession'),
-    'TypeOfGermplasmStorageCode' => brapi_get_related_cvterm_id(
-      'TypeOfGermplasmStorageCode'),
-  );
+  static $mcpd_settings;
+  static $mcpd_mapping;
+  if (!$mcpd_settings) {
+    if (!$mcpd_mapping) {
+      $mcpd_mapping = brapi_get_mcpd_mapping();
+    }
+    
+    $mcpd_settings = array();
+    
+    foreach ($mcpd_mapping as $brapi_term => $mapping) {
+      $mcpd_settings[$brapi_term] = brapi_get_cvterm_id($mapping);
+    }
+  }
 
   return $mcpd_settings;
 }
@@ -105,8 +91,7 @@ function brapi_get_mcpd_settings() {
  * Example implementation of hook_brapi_cv_settings_alter.
  *
  * This example shows how to alter Breeding API CV term settings. It change the
- * CV term ID of a MCPD term that can't be changed (on purpose) through the
- * administrative interface.
+ * CV term ID of a MCPD term named 'accessionNumber'.
  *
  * @param array $cv_settings
  *   An associative array where keys are BrAPI field names and values are
@@ -119,6 +104,52 @@ function hook_brapi_cv_settings_alter(&$cv_settings) {
     'accessionNumber',
     'brapi'
   );
+}
+
+/**
+ * Reset CV settings to default.
+ *
+ * @return array
+ *   key are Breeding API term/field names and values are corresponding Chado
+ *   cvterm_id.
+ *
+ * @see brapi_get_mcpd_settings()
+ * @see brapi_get_data_mapping()
+ *
+ * @ingroup brapi_api
+ */
+function brapi_reset_cv_settings() {
+  // Gets default.
+  $brapi_cv_select = array('name' => BRAPI_CV);
+  $brapi_cv = chado_select_record('cv', array('cv_id', 'name'), $brapi_cv_select);
+  if (is_array($brapi_cv)) {
+    $brapi_cv = current($brapi_cv);
+  }
+
+  if (!$brapi_cv) {
+    drupal_set_message(t('BrAPI controlled vocabulary is missing! Re-install BrAPI module.'), 'error');
+  }
+
+  $brapi_cv_settings = array();
+  foreach (array_keys(brapi_get_cv()) as $term_name) {
+    // Get term from BrAPI CV.
+    $cvterm_id = brapi_get_cvterm_id($term_name, $brapi_cv->name);
+    if ($cvterm_id) {
+      $brapi_cv_settings[$term_name] = $cvterm_id;
+    }
+    else {
+      $brapi_cv_settings[$term_name] = 0;
+      drupal_set_message(t('BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $term_name)), 'warning');
+    }
+  }
+
+  // Merge with MCPD terms.
+  $mcpd_cv_settings = brapi_get_mcpd_settings();
+  $settings = array_merge($brapi_cv_settings, $mcpd_cv_settings);
+
+  variable_set(BRAPI_CV_SETTINGS, $settings);
+  cache_set(BRAPI_CV_SETTINGS, $settings);
+  return $settings;
 }
 
 /**
@@ -151,36 +182,10 @@ function brapi_get_cv_settings($reset = FALSE) {
     else {
       // Not available in cache, get it from saved settings.
       $settings = variable_get(BRAPI_CV_SETTINGS);
-      if (!$settings || $reset) {
-        // Not available in settings, gets default.
-        $brapi_cv_select = array('name' => BRAPI_CV);
-        $brapi_cv = chado_select_record('cv', array('cv_id', 'name'), $brapi_cv_select);
-        if (is_array($brapi_cv)) {
-          $brapi_cv = current($brapi_cv);
-        }
-
-        if (!$brapi_cv) {
-          drupal_set_message(t('BrAPI controlled vocabulary is missing! Re-install BrAPI module.'), 'error');
-        }
-
-        $brapi_cv_settings = array();
-        foreach (array_keys(brapi_get_cv()) as $term_name) {
-          // Get term from BrAPI CV.
-          $cvterm_id = brapi_get_cvterm_id($term_name, $brapi_cv->name);
-          if ($cvterm_id) {
-            $brapi_cv_settings[$term_name] = $cvterm_id;
-          }
-          else {
-            $brapi_cv_settings[$term_name] = 0;
-            drupal_set_message(t('BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $term_name)), 'warning');
-          }
-        }
-
-        // Merge with MCPD terms.
-        $mcpd_cv_settings = brapi_get_mcpd_settings();
-        $settings = array_merge($brapi_cv_settings, $mcpd_cv_settings);
+      if (!$settings) {
+        // Not in saved settings, get defaults.
+        $settings = brapi_reset_cv_settings();
       }
-
       drupal_alter('brapi_cv_settings', $settings);
       cache_set(BRAPI_CV_SETTINGS, $settings);
     }
@@ -209,24 +214,32 @@ function brapi_get_cv_settings($reset = FALSE) {
 function brapi_terms_autocomplete($string) {
   $matches = array();
 
-  $sql_query = "
-      SELECT
-        cvt.cvterm_id AS \"id\",
-        cvt.name AS \"term\",
-        cv.name AS \"cv\"
-      FROM
-        cvterm cvt
-          INNER JOIN cv USING (cv_id)
-      WHERE
-        cvt.name ILIKE :user_input
-  ;";
-  $results = chado_query($sql_query, array(':user_input' => $string . '%'));
+  if ($string) {
+    $items = array_map('trim', explode(',', $string));
+    $last_item = array_pop($items);
+    $prefix = implode(', ', $items);
 
-  // Save the query to matches.
-  foreach ($results as $row) {
-    $value = $row->term . ' (cv:' . $row->cv . ', id:' . $row->id . ')';
-    $text = $row->term . ' (from ' . $row->cv . ' CV)';
-    $matches[$value] = check_plain($text);
+    $sql_query = "
+        SELECT
+          cvt.cvterm_id AS \"id\",
+          cvt.name AS \"term\",
+          cv.name AS \"cv\"
+        FROM
+          cvterm cvt
+            INNER JOIN cv USING (cv_id)
+        WHERE
+          cvt.name ILIKE :user_input
+    ;";
+    $results = chado_query($sql_query, array(':user_input' => $last_item . '%'));
+
+    // Save the query to matches.
+    foreach ($results as $row) {
+      $value = (!empty($prefix) ? $prefix . ', ' : '') . $row->term . ' (cv:' . $row->cv . '; id:' . $row->id . ')';
+      $text = $row->term . ' (from ' . $row->cv . ' CV)';
+      if ((!in_array($row->term, $items)) && (!in_array($value, $items))) {
+        $matches[$value] = check_plain($text);
+      }
+    }
   }
 
   // Return the result to the form in json.
@@ -545,7 +558,7 @@ function brapi_get_cvterm($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
   catch (Exception $e) {
     $cvterm = NULL;
   }
-  
+
   // If we did not find a term, check if we tried using a modified term and if
   // so, try original one.
   if (!$cvterm && ($cleaned_term_name != $term_name)) {
@@ -570,35 +583,108 @@ function brapi_get_cvterm($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
 /**
  * Returns a CV terms database identifier.
  *
- * @param string $term_name
- *   name of the CV term or a string containing its ID or its CV name.
- *   Supported format are (in check order):
- *   - <cvterm_id>
- *   - id:<cvterm_id>
- *   - <cvterm_name> (cv:<cv_name>)
- *   - <cvterm_name>
+ * @param mixed $filter
+ *   can be either a string corresponding to a CV term name
+ *   or a string containing its ID or its CV name,
+ *     where supported format are (in check order):
+ *     - <cvterm_id>
+ *     - id:<cvterm_id>
+ *     - <cvterm_name> (cv:<cv_name>)
+ *     - <cvterm_name>
+ *  or an array with one of the following keys:
+ *   - 'name': string corresponding a term name or array of string corresponding
+ *     to term names;
+ *   - 'related': either the parent term name or an array with the fields
+ *     'name' as a string for parent term name or an array of strings for a list
+ *     of parent term names, 'cv' (string) for the CV the related terms
+ *     belong to and 'relationship' (string) for the type of relationship.
  * @param string $cv
  *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
  *   Set this parameter to FALSE (or NULL) if you do not want to specify the
  *   CV name (and discard default name).
  *
- * @return string
+ * @return int
  *   returns the corresponding cvterm_id or NULL if not found or multiple
- *   matches.
+ *   matches for a single name (when $filter is a string).
  *
  * @ingroup brapi_api
  */
-function brapi_get_cvterm_id($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
+function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) {
 
-  $cvterm = brapi_get_cvterm($term_name, $cv);
-
-  // Return the ID.
-  if ($cvterm) {
-    return $cvterm->cvterm_id;
+  $id_found = NULL;
+  if (is_array($filter)) {
+    if (array_key_exists('cv', $filter) && $filter['cv']) {
+      $cv = $filter['cv'];
+    }
+    
+    if (array_key_exists('name', $filter)) {
+      $id_found = array();
+      if (is_array($filter['name'])) {
+        foreach ($filter['name'] as $term_name) {
+          $cvterm = brapi_get_cvterm($term_name, $cv);
+          if ($cvterm) {
+            $id_found[] = $cvterm->cvterm_id;
+          }
+        }
+      }
+      else {
+        $cvterm = brapi_get_cvterm($filter['name'], $cv);
+        if ($cvterm) {
+          $id_found = $cvterm->cvterm_id;
+        }
+      }
+    }
+    elseif (array_key_exists('related', $filter)) {
+      if (array_key_exists('cv', $filter['related'])) {
+        $cv = $filter['related']['cv'];
+      }
+      else {
+        $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV;
+      }
+      
+      if (array_key_exists('relationship', $filter['related'])) {
+        $relationship = $filter['related']['relationship'];
+      }
+      else {
+        $relationship = 'is_a';
+      }
+      
+      if (is_array($filter['related'])) {
+        if (is_array($filter['related']['name'])) {
+          foreach ($filter['related']['name'] as $term_name) {
+            $id_found[] = brapi_get_related_cvterm_id(
+              $term_name, $cv, $relationship
+            );
+          }
+        }
+        else {
+          $id_found = brapi_get_related_cvterm_id(
+            $filter['related']['name'], $cv, $relationship
+          );
+        }
+      }
+      else {
+        $id_found = brapi_get_related_cvterm_id($filter['related']);
+      }
+    }
+    else {
+      throw new Exception(t(
+        "Invalid CV term filter: no valid key found in filter array!"
+      ));
+    }
+    
+    if (empty($id_found)) {
+      $id_found = NULL;
+    }
   }
   else {
-    return NULL;
+    $cvterm = brapi_get_cvterm($filter, $cv);
+    if ($cvterm) {
+      $id_found = $cvterm->cvterm_id;
+    }
   }
+
+  return $id_found;
 }
 
 /**
