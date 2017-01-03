@@ -339,8 +339,8 @@ function brapi_theme_prepare_cv_table() {
           '<i class="brapi-missing">' . t('no term set') . '</i>';
       }
     }
-    $overridable = array_key_exists($brapi_cv_term, $brapi_cv_settings) ?
-      'brapi-yes">' . l(t('yes'), 'admin/tripal/extension/brapi/configuration')
+    $overridable = ($term->cv_id->name == BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) ?
+      'brapi-yes">' . t('yes')
       : 'brapi-no">' . t('no');
     $rows[] =
       array(
@@ -354,7 +354,7 @@ function brapi_theme_prepare_cv_table() {
     'header' => array(
       t('Breeding API Term'),
       t('Chado CVTerm'),
-      t('Overridable'),
+      t('MCPD'),
     ),
     'rows' => $rows,
     'attributes' => array('class' => array('system-status-report')),
