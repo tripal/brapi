@@ -136,7 +136,7 @@ function brapi_menu() {
     'title' => 'Breeding API',
     'description' => 'Breeding API Tripal extension module.',
     'page callback' => 'theme',
-    'page arguments' => array('brapi_overview'),
+    'page arguments' => array('brapi_overview', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_NORMAL_ITEM,
@@ -145,10 +145,10 @@ function brapi_menu() {
     'title' => 'BrAPI Overview',
     'description' => 'Breeding API Tripal extension module.',
     'page callback' => 'theme',
-    'page arguments' => array('brapi_overview'),
+    'page arguments' => array('brapi_overview', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 0,
   );
 
@@ -157,7 +157,7 @@ function brapi_menu() {
     'title' => 'Settings',
     'description' => 'Configure the Breeding API module',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('brapi_admin_form'),
+    'page arguments' => array('brapi_admin_form', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_LOCAL_TASK,
@@ -168,7 +168,7 @@ function brapi_menu() {
     'title' => 'Settings',
     'description' => 'Confirm reload MCPD CV',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('brapi_reset_mcpd_form_confirm'),
+    'page arguments' => array('brapi_reset_mcpd_form_confirm', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     // 'type' => MENU_LOCAL_TASK,
@@ -180,7 +180,7 @@ function brapi_menu() {
     'title' => 'Help',
     'description' => 'Basic Description of Breeding API Module Functionality',
     'page callback' => 'theme',
-    'page arguments' => array('brapi_help'),
+    'page arguments' => array('brapi_help', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_LOCAL_TASK,
@@ -192,7 +192,7 @@ function brapi_menu() {
     'title' => 'Breeding API Overview',
     'description' => 'Breeding API overview.',
     'page callback' => 'theme',
-    'page arguments' => array('brapi_public_overview'),
+    'page arguments' => array('brapi_public_overview', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_USE_PERMISSION),
     'type' => MENU_NORMAL_ITEM,
@@ -203,7 +203,7 @@ function brapi_menu() {
     'title' => 'Breeding API Query Interface',
     'description' => 'User interface that can be used to query a Breeding API service.',
     'page callback' => 'theme',
-    'page arguments' => array('brapi_query'),
+    'page arguments' => array('brapi_query', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_USE_PERMISSION),
     'type' => MENU_NORMAL_ITEM,
@@ -275,14 +275,14 @@ function brapi_theme($existing, $type, $theme, $path) {
   $items = array(
     // The overview template.
     'brapi_overview' => array(
-      'variables' => array('node' => NULL),
       'template' => 'brapi_overview',
+      'variables' => array(NULL),
       'path' => "$path/theme/templates",
     ),
     // The public overview template.
     'brapi_public_overview' => array(
-      'variables' => array('node' => NULL),
       'template' => 'brapi_public_overview',
+      'variables' => array(NULL),
       'path' => "$path/theme/templates",
     ),
     // The help template.
