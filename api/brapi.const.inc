@@ -275,9 +275,8 @@ function brapi_get_calls() {
 function brapi_get_data_mapping() {
   static $brapi_data_mapping;
 
-  $cv_settings = brapi_get_cv_settings();
-
   if (!isset($brapi_data_mapping)) {
+    $cv_settings = brapi_get_cv_settings();
     $brapi_data_mapping = array(
       'germplasm'      => array(
         'table' => 'stock',
@@ -375,7 +374,7 @@ function brapi_get_data_mapping() {
             'return_array' => TRUE,
             'use_ranking' => TRUE,
           ),
-          'commonCropName' => array(
+          'commonCropNameProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
@@ -392,36 +391,13 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
           ),
           // From MCPD cvterm 'institute code'.
-          'instituteCode' => array(
+          'instituteCodeProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['instituteCode'],
             ),
             'field_type' => 'string',
-            'fallback' => 'instituteCode2',
-          ),
-          // From MCPD cvterm 'breeding institute code'.
-          'instituteCode2' => array(
-            'table' => 'stockprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['instituteCode(fallback)'],
-            ),
-            'field_type' => 'string',
-            'fallback' => 'instituteCode3',
-          ),
-          // In case of incorrect setup, institute code stockprop may be using
-          // the wrong type cvterm 'InstituteCode' (instead of
-          // 'institute code'). The fallback supports incorrect setup.
-          'instituteCode3' => array(
-            'table' => 'stockprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['instituteCode(fallback2)'],
-            ),
-            'field_type' => 'string',
-            'fallback' => 'instituteCodeStockCollection',
           ),
           // if not specified through MCPD, uses stockcollection.uniquename
           'instituteCodeStockCollection' => function ($data_type, $stock, $field_name, $op) {
@@ -437,14 +413,13 @@ function brapi_get_data_mapping() {
           // Note: the use of MCPD 'institute code' should be priviledged
           // against the use of 'Breeding institute name'. If 'institute code'
           // is set, then this field should be left empty.
-          'instituteName' => array(
+          'instituteNameProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['instituteName'],
             ),
             'field_type' => 'string',
-            'fallback' => 'instituteNameStockCollection',
           ),
           // if not specified through MCPD, uses stockcollection.name
           'instituteNameStockCollection' => function ($data_type, $stock, $field_name, $op) {
@@ -466,21 +441,15 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'cvterm',
           ),
-          'countryOfOriginCode' => array(
+          'countryOfOriginCodeProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['countryOfOriginCode'],
             ),
             'field_type' => 'string',
-            'fallback' => 'countryOfOriginCode2',
           ),
-          // If countryOfOriginCode not specified as stockprop, check for
-          // stock_cvterm relationships where cvterm names are country codes.
-          // In this case, those country codes must be children (is_a) of
-          // countryOfOriginCode cvterm. See brapi_get_mcpd_settings() in 
-          // brapi.api.inc to see how the relationship is setup.
-          'countryOfOriginCode2' => array(
+          'countryOfOriginCodeCVTerm' => array(
             'table' => 'stock_cvterm',
             'column' => 'cvterm_id',
             'selector' => array(
@@ -500,17 +469,16 @@ function brapi_get_data_mapping() {
             'return_array' => TRUE,
           ),
           // Genus from MCPD.
-          'genus' => array(
+          'genusProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['genus'],
             ),
             'field_type' => 'string',
-            'fallback' => 'genus2',
           ),
           // Genus from chado.organism.
-          'genus2' => array(
+          'genusOrganism' => array(
             'table' => 'organism',
             'foreign_key' => 'organism_id',
             'object_key' => 'organism_id',
@@ -519,17 +487,16 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
           ),
           // Species from MCPD.
-          'species' => array(
+          'speciesProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['species'],
             ),
             'field_type' => 'string',
-            'fallback' => 'species2',
           ),
           // Species from chado.organism.
-          'species2' => array(
+          'speciesOrganism' => array(
             'table' => 'organism',
             'foreign_key' => 'organism_id',
             'object_key' => 'organism_id',
@@ -569,19 +536,6 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
             'return_array' => TRUE,
-            'fallback' => 'donors2',
-          ),
-          // If MCPD 'donor institute code' not set, uses MCPD
-          // 'donor institute name' however the use of 'donor institute code'
-          // should be priviledged.
-          'donors2' => array(
-            'table' => 'stockprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['donor(fallback)'],
-            ),
-            'field_type' => 'string',
-            'return_array' => TRUE,
           ),
           'acquisitionDate' => array(
             'table' => 'stockprop',
@@ -606,6 +560,88 @@ function brapi_get_data_mapping() {
       'observation'    => array(),
       'locations'      => array(),
     );
+
+    // Alter default settings.
+    $storage_options = variable_get('brapi_storage_options', array());
+
+    // Germplasm fields...
+    $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];
+
+    // Set "common crop name" settings, default to prop.
+    $germplasm_fields['commonCropName'] =
+      &$germplasm_fields['commonCropNameProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['common_crop_name'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['commonCropName'] =
+        &$germplasm_fields[$storage_options['common_crop_name']];
+    }
+
+    // Set "genus" settings, default to prop.
+    $germplasm_fields['genus'] =
+      &$germplasm_fields['genusProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['genus'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['genus'] =
+        &$germplasm_fields[$storage_options['genus']];
+    }
+
+    // Set "species" settings, default to prop.
+    $germplasm_fields['species'] =
+      &$germplasm_fields['speciesProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['species'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['species'] =
+        &$germplasm_fields[$storage_options['species']];
+    }
+
+    // Set "country of origin" settings, default to prop.
+    $germplasm_fields['countryOfOriginCode'] =
+      &$germplasm_fields['countryOfOriginCodeProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['country_of_origin_code'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['countryOfOriginCode'] =
+        &$germplasm_fields[$storage_options['country_of_origin_code']];
+    }
+
+    // Set "institute code" settings, default to prop.
+    $germplasm_fields['instituteCode'] =
+      &$germplasm_fields['instituteCodeProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['institute_code'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['instituteCode'] =
+        &$germplasm_fields[$storage_options['institute_code']];
+    }
+
+    // Set "institute name" settings, default to prop.
+    $germplasm_fields['instituteName'] =
+      &$germplasm_fields['instituteNameProp'];
+    $use_specified_settings = array_key_exists(
+      $storage_options['institute_name'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['instituteName'] =
+        &$germplasm_fields[$storage_options['institute_name']];
+    }
+
+    // Allow other modules to alter settings.
+    drupal_alter('brapi_data_mapping', $brapi_data_mapping);
   }
+
   return $brapi_data_mapping;
 }

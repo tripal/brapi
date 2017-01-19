@@ -79,14 +79,14 @@ function brapi_admin_form($form, &$form_state) {
   );
   // Common crop name storage.
   $crop_name_options = array(
-    'commonCropName' => t('Stored in stockprop table'),
+    'commonCropNameProp' => t('Stored in stockprop table'),
     'commonCropNameOrganism' => t('Stored in organism table'),
   );
   $crop_name_storage = $storage_options['common_crop_name'];
   if (!$crop_name_storage
-      || (($crop_name_storage != 'commonCropName')
+      || (($crop_name_storage != 'commonCropNameProp')
           && ($crop_name_storage != 'commonCropNameOrganism'))) {
-    $crop_name_storage = 'commonCropName';
+    $crop_name_storage = 'commonCropNameProp';
   }
   $form['storage_options']['common_crop_name'] = array(
       '#type' => 'select',
@@ -98,16 +98,58 @@ function brapi_admin_form($form, &$form_state) {
       '#required' => TRUE,
       '#multiple' => FALSE,
   );
+  // Genus storage.
+  $genus_options = array(
+    'genusProp' => t('Stored in stockprop table'),
+    'genusOrganism' => t('Stored in organism table'),
+  );
+  $genus_storage = $storage_options['genus'];
+  if (!$genus_storage
+      || (($genus_storage != 'genusProp')
+          && ($genus_storage != 'genusOrganism'))) {
+    $genus_storage = 'genusProp';
+  }
+  $form['storage_options']['genus_storage'] = array(
+      '#type' => 'select',
+      '#description' => t('Select the way genus are stored in your database.'),
+      '#options' => $genus_options, 
+      '#default_value' => $genus_storage,
+      '#title' => t('Genus storage'),
+      '#title_display' => 'before',
+      '#required' => TRUE,
+      '#multiple' => FALSE,
+  );
+  // Species storage.
+  $species_options = array(
+    'speciesProp' => t('Stored in stockprop table'),
+    'speciesOrganism' => t('Stored in organism table'),
+  );
+  $species_storage = $storage_options['species'];
+  if (!$species_storage
+      || (($species_storage != 'speciesProp')
+          && ($species_storage != 'speciesOrganism'))) {
+    $species_storage = 'speciesProp';
+  }
+  $form['storage_options']['species_storage'] = array(
+      '#type' => 'select',
+      '#description' => t('Select the way species names are stored in your database.'),
+      '#options' => $species_options, 
+      '#default_value' => $species_storage,
+      '#title' => t('Species storage'),
+      '#title_display' => 'before',
+      '#required' => TRUE,
+      '#multiple' => FALSE,
+  );
   // Country of origin code storage.
   $country_of_origin_code_options = array(
-    'countryOfOriginCode' => t('Stored in stockprop table'),
+    'countryOfOriginCodeProp' => t('Stored in stockprop table'),
     'countryOfOriginCodeCVTerm' => t('Stored in stock_cvterm table'),
   );
   $country_of_origin_code_storage = $storage_options['country_of_origin_code'];
   if (!$country_of_origin_code_storage
-      || (($country_of_origin_code_storage != 'countryOfOriginCode')
+      || (($country_of_origin_code_storage != 'countryOfOriginCodeProp')
           && ($country_of_origin_code_storage != 'countryOfOriginCodeCVTerm'))) {
-    $country_of_origin_code_storage = 'countryOfOriginCode';
+    $country_of_origin_code_storage = 'countryOfOriginCodeProp';
   }
   $form['storage_options']['country_of_origin_code'] = array(
       '#type' => 'select',
@@ -121,14 +163,14 @@ function brapi_admin_form($form, &$form_state) {
   );
   // Institute code storage.
   $institute_code_options = array(
-    'instituteCode' => t('Stored in stockprop table'),
+    'instituteCodeProp' => t('Stored in stockprop table'),
     'instituteCodeStockCollection' => t('Stored in stockcollection table'),
   );
   $institute_code_storage = $storage_options['institute_code'];
   if (!$institute_code_storage
-      || (($institute_code_storage != 'instituteCode')
+      || (($institute_code_storage != 'instituteCodeProp')
           && ($institute_code_storage != 'instituteCodeStockCollection'))) {
-    $institute_code_storage = 'instituteCode';
+    $institute_code_storage = 'instituteCodeProp';
   }
   $form['storage_options']['institute_code'] = array(
       '#type' => 'select',
@@ -142,14 +184,14 @@ function brapi_admin_form($form, &$form_state) {
   );
   // Institute name storage.
   $institute_name_options = array(
-    'instituteName' => t('Stored in stockprop table'),
+    'instituteNameProp' => t('Stored in stockprop table'),
     'instituteNameStockCollection' => t('Stored in stockcollection table'),
   );
   $institute_name_storage = $storage_options['institute_name'];
   if (!$institute_name_storage
-      || (($institute_name_storage != 'instituteName')
+      || (($institute_name_storage != 'instituteNameProp')
           && ($institute_name_storage != 'instituteNameStockCollection'))) {
-    $institute_name_storage = 'instituteName';
+    $institute_name_storage = 'instituteNameProp';
   }
   $form['storage_options']['institute_name'] = array(
       '#type' => 'select',
@@ -385,13 +427,21 @@ function brapi_admin_form($form, &$form_state) {
 function brapi_admin_form_submit($form_id, &$form_state) {
 
   // Save storage options.
-  $storage_options = variable_get('brapi_storage_options');
-  if (!$storage_options || !is_array($storage_options)) {
+  $storage_options = variable_get('brapi_storage_options', array());
+  if (!is_array($storage_options)) {
     $storage_options = array();
   }
   // Common crop name storage.
   if ($form_state['values']['common_crop_name']) {
     $storage_options['common_crop_name'] = $form_state['values']['common_crop_name'];
+  }
+  // Genus storage.
+  if ($form_state['values']['genus_storage']) {
+    $storage_options['genus'] = $form_state['values']['genus_storage'];
+  }
+  // Species storage.
+  if ($form_state['values']['species_storage']) {
+    $storage_options['species'] = $form_state['values']['species_storage'];
   }
   // Country of origin storage.
   if ($form_state['values']['country_of_origin_code']) {
@@ -406,7 +456,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     $storage_options['institute_name'] = $form_state['values']['institute_name'];
   }
   variable_set('brapi_storage_options', $storage_options);
-  
+
   // Save date format.
   switch ($form_state['values']['date_format']) {
     case 'xsd':
