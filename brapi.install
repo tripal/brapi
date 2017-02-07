@@ -128,8 +128,22 @@ function brapi_add_cvs() {
     $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
     tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
   }
-  drupal_set_message($t('Adding Breeding API CV to Chado'));
+
+  // Install relationship CV if not available.
+  // First, check relationship CV is installed.
+  $rel_select = array('name' => 'relationship');
+  $relationship_cv = chado_select_record('cv', array('cv_id'), $rel_select);
+  if (is_array($relationship_cv)) {
+    $relationship_cv = current($relationship_cv);
+  }
+  if (!$relationship_cv) {
+    $newcvs = array();
+    $relationship_path = drupal_get_path('module', 'tripal_cv') . '/files/legacy_ro.obo';
+    tripal_cv_load_obo_v1_2($relationship_path, NULL, $newcvs);
+  }
+
   // Insert Breeding API CV if missing.
+  drupal_set_message($t('Adding Breeding API CV to Chado'));
   tripal_insert_cv(
     BRAPI_CV,
     'Contains Breeding API controlled vocabulary.'

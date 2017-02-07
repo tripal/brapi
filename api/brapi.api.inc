@@ -635,21 +635,21 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
       }
     }
     elseif (array_key_exists('related', $filter)) {
-      if (array_key_exists('cv', $filter['related'])) {
-        $cv = $filter['related']['cv'];
-      }
-      else {
-        $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV;
-      }
-      
-      if (array_key_exists('relationship', $filter['related'])) {
-        $relationship = $filter['related']['relationship'];
-      }
-      else {
-        $relationship = 'is_a';
-      }
-      
       if (is_array($filter['related'])) {
+        if (array_key_exists('cv', $filter['related'])) {
+          $cv = $filter['related']['cv'];
+        }
+        else {
+          $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV;
+        }
+        
+        if (array_key_exists('relationship', $filter['related'])) {
+          $relationship = $filter['related']['relationship'];
+        }
+        else {
+          $relationship = 'is_a';
+        }
+      
         if (is_array($filter['related']['name'])) {
           foreach ($filter['related']['name'] as $term_name) {
             $id_found[] = brapi_get_related_cvterm_id(

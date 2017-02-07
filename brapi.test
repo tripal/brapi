@@ -1,0 +1,96 @@
+<?php
+
+/**
+ * @file
+ * An example of simpletest tests to accompany the tutorial at
+ * http://drupal.org/node/890654.
+ */
+
+module_load_include('php', 'tripal_core_test', 'tripal_test_case');
+
+/**
+ * The SimpleTestExampleTestCase is a functional test case, meaning that it
+ * actually exercises a particular sequence of actions through the web UI.
+ * The majority of core test cases are done this way, but the SimpleTest suite
+ * also provides unit tests as demonstrated in the unit test case example later
+ * in this file.
+ *
+ * Functional test cases are far slower to execute than unit test cases because
+ * they require a complete Drupal install to be done for each test.
+ *
+ * @see DrupalWebTestCase
+ * @see SimpleTestUnitTestExampleTestCase
+ *
+ * @ingroup simpletest_example
+ */
+class BrapiTestCase extends TripalTestCase {
+
+  protected $regular_user;
+  protected $brapi_user;
+  protected $brapi_updater;
+  protected $brapi_admin;
+
+  /**
+   * Give display information to the SimpleTest system.
+   *
+   * getInfo() returns a keyed array of information for SimpleTest to show.
+   *
+   * It's a good idea to organize your tests consistently using the 'group'
+   * key.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'BrAPI Functional Tests',
+      'description' => 'Ensure that the BrAPI works properly.',
+      'group' => 'BrAPI',
+    );
+  }
+
+  /**
+   * Set up the test environment.
+   *
+   * This method is called once per test method, before the test is executed.
+   * It gives you a chance to control the setup of the test environment.
+   *
+   * If you need a different test environment, then you should create another
+   * test class which overloads DrupalWebTestCase::setUp() differently.
+   *
+   * @see DrupalWebTestCase::setUp()
+   */
+  public function setUp() {
+
+    parent::setUp(array('tripal_cv'));
+
+    module_enable(array('brapi'), TRUE);
+    $this->resetAll();
+    $this->verbose("Enabled module: brapi");
+
+    // Cf. https://www.drupal.org/node/132202 .
+    // $brapi_access_rid = $this->drupalCreateRole(array('use breeding api'));
+    
+    $this->regular_user  = $this->drupalCreateUser(array('access content'));
+    $this->brapi_user    = $this->drupalCreateUser(array('use breeding api'));
+    $this->brapi_updater = $this->drupalCreateUser(array('update through breeding api'));
+    $this->brapi_admin   = $this->drupalCreateUser(array('administer breeding api'));
+  }
+
+  /**
+   * Test.
+   */
+  protected function runTestBrapiOverview() {
+    // $this->verbose("some message");
+    $this->drupalLogin($this->brapi_user);
+    $this->drupalGet('brapi/overview');
+  }
+
+  /**
+   * Runs all tests.
+   *
+   * Since we don't modify our initial dataset, we can runs all tests at once so
+   * we will not have to instantiate and remove Chado several times (we save a
+   *   lot of time!).
+   */
+  public function testBrAPI() {
+    $this->runTestBrapiOverview();
+  }
+}
