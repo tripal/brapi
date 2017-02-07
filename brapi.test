@@ -65,9 +65,6 @@ class BrapiTestCase extends TripalTestCase {
     $this->resetAll();
     $this->verbose("Enabled module: brapi");
 
-    // Cf. https://www.drupal.org/node/132202 .
-    // $brapi_access_rid = $this->drupalCreateRole(array('use breeding api'));
-    
     $this->regular_user  = $this->drupalCreateUser(array('access content'));
     $this->brapi_user    = $this->drupalCreateUser(array('use breeding api'));
     $this->brapi_updater = $this->drupalCreateUser(array('update through breeding api'));
@@ -78,9 +75,14 @@ class BrapiTestCase extends TripalTestCase {
    * Test.
    */
   protected function runTestBrapiOverview() {
-    // $this->verbose("some message");
+    $this->verbose("Checking public overview");
     $this->drupalLogin($this->brapi_user);
     $this->drupalGet('brapi/overview');
+    $this->assertResponse(200, 'Access allowed to regular users on the overview page.');
+    
+    $this->drupalLogin($this->regular_user);
+    $this->drupalGet('brapi/overview');
+    $this->assertResponse(403, 'Public access is denied on the overview page.');
   }
 
   /**
