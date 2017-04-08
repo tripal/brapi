@@ -790,10 +790,10 @@ function brapi_v1_germplasm_search_json() {
 function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
 
   $actions = array(
-    'create' => brapi_v1_create_germplasm_json,
-    'read'   => brapi_v1_read_germplasm_json,
-    'update' => brapi_v1_update_germplasm_json,
-    'delete' => brapi_v1_delete_germplasm_json,
+    'create' => 'brapi_v1_create_germplasm_json',
+    'read'   => 'brapi_v1_read_germplasm_json',
+    'update' => 'brapi_v1_update_germplasm_json',
+    'delete' => 'brapi_v1_delete_germplasm_json',
     // X 'list'   => function (), .
   );
 

@@ -11,7 +11,7 @@ dependencies[] = tripal_views
 dependencies[] = tripal_db
 dependencies[] = tripal_cv
 
-scripts[] = /theme/js/brapi.js
+scripts[] = theme/js/brapi.js
 
 files[] = brapi.test
 
