@@ -6,7 +6,7 @@
  * http://drupal.org/node/890654.
  */
 
-module_load_include('php', 'tripal_core_test', 'tripal_test_case');
+module_load_include('php', 'tripal_simpletest', 'tripal_test_case');
 
 /**
  * The SimpleTestExampleTestCase is a functional test case, meaning that it
