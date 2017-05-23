@@ -2,8 +2,6 @@ name = Breeding API
 description = Breeding API is an extension module for Tripal that provides REST API for plant breeding.
 core = 7.x
 package = Tripal Extensions
-;version = 7.x-1.0
-;project = brapi
 configure = admin/tripal/extension/brapi/configuration
 
 dependencies[] = tripal_core
@@ -15,5 +13,3 @@ scripts[] = theme/js/brapi.js
 
 files[] = brapi.test
 
-; For dev only, will be removed once released as a regular module
-project status url = https://www.drupal.org/sandbox/guignonv/2789913
