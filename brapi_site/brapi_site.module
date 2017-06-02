@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @file
+ * Module for the BrAPI site entity.
+ */
+
+require_once 'api/brapi_site.api.php';
+require_once 'includes/brapi_site.admin.inc';
+require_once 'includes/brapi_site.entity.inc';
+require_once 'includes/brapi_site.controller.inc';
+
+/**
+ * Implements hook_entity_info().
+ */
+function brapi_site_entity_info() {
+  $return['brapi_site'] = array(
+    'label' => t('BrAPI site reference'),
+    'plural label' => t('BrAPI site references'),
+    'entity class' => 'BrapiSite',
+    'controller class' => 'BrapiSiteController',
+    'base table' => 'brapi_site',
+    'static cache' => TRUE,
+    'field cache' => TRUE,
+    'fieldable' => TRUE,
+    'exportable' => TRUE,
+    'load hook' => 'brapi_site_load',
+    'uri callback' => 'entity_class_uri',
+    'label callback' => 'entity_class_label',
+    'entity keys' => array(
+      'id' => 'bsid',
+      'name' => 'bsid',
+      'label' => 'title',
+    ),
+    'creation callback' => 'brapi_site_create',
+    'access callback' => 'brapi_site_access',
+    'module' => 'brapi_site',
+    'admin ui' => array(
+      'path' => 'admin/content/brapi_site',
+      'controller class' => 'BrapiSiteUIController',
+      'file' => 'includes/brapi_site.ui_controller.inc',
+      'menu wildcard' => '%brapi_site',
+    ),
+    'view modes' => array(
+      'default' => array(
+        'label' => t('BrAPI site URL'),
+      ),
+      'full' => array(
+        'label' => t('Full BrAPI site details'),
+        'custom settings' => FALSE,
+      ),
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function brapi_site_permission() {
+  $permissions = array(
+    'view any brapi site entity' => array(
+      'title' => t('View any BrAPI site reference'),
+    ),
+    'edit any brapi site entity' => array(
+      'title' => t('Edit any BrAPI site reference'),
+    ),
+    'create brapi site entities' => array(
+      'title' => t('Create BrAPI site reference'),
+    ),
+    'administer brapi sites' => array(
+      'title' => t('Administer BrAPI site references'),
+      'description' => t('Create, edit and delete any BrAPI site reference.'),
+    ),
+  );
+
+  return $permissions;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function brapi_site_theme($existing, $type, $theme, $path) {
+  return array(
+    'brapi_site' => array(
+      'render element' => 'elements',
+      'template' => 'brapi_site',
+      'path' => "$path/theme/templates",
+    ),
+    'brapi_site_list' => array(
+      'variables' => array('bs_table' => NULL),
+      'template' => 'brapi_site_list',
+      'path' => "$path/theme/templates",
+    ),
+    'brapi_site_url' => array(
+      'variables' => array('brapi_site' => NULL, 'brapi_url' => ''),
+      'template' => 'brapi_site_url',
+      'path' => "$path/theme/templates",
+    ),
+    'brapi_site_authentication' => array(
+      'variables' => array('brapi_site' => NULL),
+      'template' => 'brapi_site_authentication',
+      'path' => "$path/theme/templates",
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * Prepares the variables for the BrAPI site list page.
+ *
+ * @ingroup brapi_site
+ */
+function brapi_site_preprocess_brapi_site_list(&$variables) {
+  // Set the breadcrumb.
+  $breadcrumb = array();
+  $breadcrumb[] = l(t('Home'), '<front>');
+  drupal_set_breadcrumb($breadcrumb);
+
+  $variables['bs_table'] = entity_ui_controller('brapi_site')->overviewTable();
+  $variables['pager'] = theme('pager');
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function brapi_site_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link 'admin/structure/brapi_site/add' on
+  // 'admin/structure/brapi_sites'.
+  if ($root_path == 'admin/content/brapi_site') {
+    $item = menu_get_item('brapi_site/add');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}

@@ -1,0 +1,10 @@
+name = Breeding API site entity
+description = Provides a Breeding API site entity type.
+core = 7.x
+package = Tripal Extensions
+
+dependencies[] = entity
+
+files[] = includes/brapi_site.entity.inc
+files[] = includes/brapi_site.controller.inc
+files[] = includes/brapi_site.ui_controller.inc

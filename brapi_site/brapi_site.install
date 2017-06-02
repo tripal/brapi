@@ -1,0 +1,122 @@
+<?php
+
+/**
+ * @file
+ * Sets up the base table for the BrAPI site entities.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Performs actions when the modules is first installed.
+ *
+ * @ingroup brapi_site
+ */
+function brapi_site_install() {
+  // Set password salt (255 char is the limit of the password field).
+  $salt = '';
+  for ($i = 0; 255 > $i; ++$i) {
+    $salt .= chr(rand(0, 255));
+  }
+  $salt = variable_get('brapi_salt', $salt);
+  variable_set('brapi_salt', $salt);
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Performs actions when the modules is uninstalled.
+ *
+ * @ingroup brapi_site
+ */
+function brapi_site_uninstall() {
+  variable_del('brapi_salt');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function brapi_site_schema() {
+  $schema = array();
+
+  $schema['brapi_site'] = array(
+    'description' => 'The base table for BrAPI site references.',
+    'fields' => array(
+      'bsid' => array(
+        'description' => 'Primary Key: BrAPI site reference dentifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'brapi site',
+        'description' => 'BrAPI site name (Human readable label).',
+        'translatable' => TRUE,
+      ),
+      'machine_name' => array(
+        'type' => 'varchar',
+        // Machine name is used for block names and there is a block name length
+        // limit that forces us to limit the browser machine name to 16
+        // characters.
+        'length' => 16,
+        'not null' => TRUE,
+        'default' => 'brapi-site',
+        'description' => 'BrAPI site reference machine name.',
+        'translatable' => FALSE,
+      ),
+      'description' => array(
+        'description' => 'A brief description of this BrAPI site.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The weight of the BrAPI site type in relation to others.',
+      ),
+      'url' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => FALSE,
+        'description' => 'The BrAPI site URL.',
+      ),
+      'version' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+        'description' => 'BrAPI site version.',
+      ),
+       // Note: "user" is an SQL reserved word.
+      'username' => array(
+        'description' => 'BrAPI user login',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'password' => array(
+        'description' => 'BrAPI user authentication password',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ) + entity_exportable_schema_fields(),
+    'unique keys' => array(
+      'brapi_site_bsid_uq1' => array('bsid'),
+    ),
+    'primary key' => array('bsid'),
+    'indexes' => array(
+      'bsid' => array('bsid'),
+    ),
+  );
+
+  return $schema;
+}
