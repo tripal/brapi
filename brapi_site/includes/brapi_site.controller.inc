@@ -112,10 +112,8 @@ class BrapiSiteController extends EntityAPIController {
   public function save($brapi_site, DatabaseTransaction $transaction = NULL) {
     $return_value = NULL;
 
-    // Appends a '/' to URL if needed.
-    if (!preg_match('/\/$/', $brapi_site->url)) {
-      $brapi_site->url .= '/';
-    }
+    // Remove trailing '/' to URL if needed.
+    $brapi_site->url = preg_replace('/\/+$/', '', $brapi_site->url);
 
     // New connections do not have 'password_decrypted' property and if
     // existing ones do, check if password is crypted or not.

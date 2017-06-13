@@ -613,11 +613,11 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
 
   $id_found = NULL;
   if (is_array($filter)) {
-    if (array_key_exists('cv', $filter) && $filter['cv']) {
+    if (isset($filter['cv']) && $filter['cv']) {
       $cv = $filter['cv'];
     }
     
-    if (array_key_exists('name', $filter)) {
+    if (isset($filter['name'])) {
       $id_found = array();
       if (is_array($filter['name'])) {
         foreach ($filter['name'] as $term_name) {
@@ -634,16 +634,16 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
         }
       }
     }
-    elseif (array_key_exists('related', $filter)) {
+    elseif (isset($filter['related'])) {
       if (is_array($filter['related'])) {
-        if (array_key_exists('cv', $filter['related'])) {
+        if (isset($filter['related']['cv'])) {
           $cv = $filter['related']['cv'];
         }
         else {
           $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV;
         }
         
-        if (array_key_exists('relationship', $filter['related'])) {
+        if (isset($filter['related']['relationship'])) {
           $relationship = $filter['related']['relationship'];
         }
         else {
@@ -1024,7 +1024,7 @@ function brapi_get_field(
     $data_mapping = brapi_get_data_mapping();
   }
   // Make sure we got a mapping defined.
-  if (!array_key_exists($data_type, $data_mapping)) {
+  if (!isset($data_mapping[$data_type])) {
     return brapi_raise_error_json(
       400,
       t(
@@ -1034,7 +1034,7 @@ function brapi_get_field(
     );
   }
 
-  if (!array_key_exists($field_name, $data_mapping[$data_type]['fields'])) {
+  if (!isset($data_mapping[$data_type]['fields'][$field_name])) {
     return brapi_raise_error_json(
       400,
       t(
@@ -1055,7 +1055,7 @@ function brapi_get_field(
 
     case 'array':
       // Get from database using mapping config.
-      if (array_key_exists('object_key', $field_fetcher)) {
+      if (isset($field_fetcher['object_key'])) {
         $identifier = $object->$field_fetcher['object_key'];
         if (is_object($identifier)) {
           $identifier = $identifier->$field_fetcher['foreign_key'];
@@ -1149,7 +1149,7 @@ function brapi_get_field(
       }
 
       // Check if array requested.
-      if (array_key_exists('return_array', $field_fetcher)
+      if (isset($field_fetcher['return_array'])
           && $field_fetcher['return_array']) {
         // Multiple values.
         $value = $values;
@@ -1224,7 +1224,7 @@ function brapi_set_field(
 
   $data_mapping = brapi_get_data_mapping();
   // Make sure we got a mapping defined.
-  if (!array_key_exists($data_type, $data_mapping)) {
+  if (!isset($data_mapping[$data_type])) {
     return brapi_raise_error_json(
       400,
       t(
@@ -1233,7 +1233,7 @@ function brapi_set_field(
       )
     );
   }
-  if (!array_key_exists($field_name, $data_mapping[$data_type]['fields'])) {
+  if (!isset($data_mapping[$data_type]['fields'][$field_name])) {
     return brapi_raise_error_json(
       400,
       t(
@@ -1344,7 +1344,7 @@ function brapi_set_field(
         else {
           $foreign_key = $data_mapping[$data_type]['identifier'];
         }
-        if (array_key_exists('object_key', $field_fetcher)) {
+        if (isset($field_fetcher['object_key'])) {
           $identifier = $object->$field_fetcher['object_key'];
         }
         else {
@@ -1485,7 +1485,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
   $data_settings = brapi_get_data_mapping()[$data_type];
 
   // Check method.
-  if (!array_key_exists($_SERVER['REQUEST_METHOD'], $call_settings['methods'])) {
+  if (!isset($call_settings['methods'][$_SERVER['REQUEST_METHOD']])) {
     return brapi_raise_error_json(403, t("Invalid HTTP method!"));
   }
 
@@ -1686,17 +1686,18 @@ function brapi_get_url_call_args() {
 function brapi_get_user_json_input() {
   static $user_data;
   if (!isset($user_data)) {
-    $user_data = '';
+    $user_data = array();
+    $user_data_string = '';
     // Read stream from user JSON POST/PUT data.
     $user_data_stream = fopen("php://input", "r");
     while ($data_buffer = fread($user_data_stream, 1024)) {
-      $user_data .= $data_buffer;
+      $user_data_string .= $data_buffer;
     }
     fclose($user_data_stream);
 
     // Tries to decode JSON data if some.
-    if (!empty($user_data)) {
-      $user_data = json_decode($user_data, TRUE);
+    if (!empty($user_data_string)) {
+      $user_data = json_decode($user_data_string, TRUE);
       if (empty($user_data)) {
         $json_error_type = '';
         switch (json_last_error()) {
@@ -1728,7 +1729,7 @@ function brapi_get_user_json_input() {
             $json_error_type = t('Unknown error');
             break;
         }
-        $user_data = '';
+        $user_data = array();
         // Throws JSON parsing error.
         throw new Exception(t(
           "Invalid JSON data provided: @json_error",
@@ -1895,7 +1896,7 @@ function brapi_output_json(
   // Check if have metadata (either default or specified non-empty one).
   if (count($metadata)) {
     // Combine data and metadata.
-    $output_data = array_merge(array('metadata' => $metadata), $data);
+    $output_data = array_merge($data, array('metadata' => $metadata));
   }
   else {
     // Only output data (no metadata).
@@ -2089,10 +2090,203 @@ function brapi_get_call_filters($call_name) {
     $call_filters['/germplasm-search'] = array('POST' => &$germplasm_search);
   }
     
-  if (array_key_exists($call_name, $call_filters)) {
+  if (isset($call_filters[$call_name])) {
     return $call_filters[$call_name];
   }
   else {
     return array();
   }
 }
+
+/**
+ * Aggregate call data.
+ *
+ * Aggregate data from other sites using a given call if the call aggregation
+ * has been setup for current call.
+ *
+ * @param array $data
+ *   Current call data. It will contain the aggregated data.
+ * @param array $metadata
+ *   Current call metadata.
+ * @param array $debug_data
+ *   Current call debug data.
+ * @param array $parameters
+ *   Call parameters. 'GET' key contains GET parameter hash and 'POST' key, POST
+ *   parameter hash. Other keys are ignored.
+ * @param string $call
+ *   BrAPI call to use at remote BrAPI instance. Can be set to a FALSE value to
+ *   have it guessed automatically. It may contain identifiers.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = array(), $call = NULL) {
+  static $aggregation_options;
+  // Get call aggregation settings.
+  if (!isset($aggregation_options)) {
+    $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  }
+
+  // Get call menu path used by Drupal.
+  $call_base = substr(menu_get_item()['path'], strlen(BRAPI_SERVICE_PREFIX_V1));
+
+  // Set complete call path if omitted by caller.
+  if (!$call) {
+    $call = substr(current_path(), strlen(BRAPI_SERVICE_PREFIX_V1));
+  }
+
+  // Check parameters.
+  if (!isset($parameters) ||!is_array($parameters)) {
+    $parameters = array();
+  }
+
+  // Get the list of callers if some.
+  $callers = array();
+  if (isset($_GET['callers'])) {
+    $caller_list = explode(',', $_GET['callers']);
+    $callers = array_combine($caller_list, $caller_list);
+  }
+  // Add current site as a caller (to avoid infinite loops).
+  global $base_url;
+  // Remove protocol.
+  $site_url = preg_replace('/^.*:\/\//', '', $base_url)
+    . '/'
+    . BRAPI_SERVICE_PREFIX_V1;
+  $callers[$site_url] = $site_url;
+  $parameters['GET']['callers'] = implode(',', $callers);
+
+  // Check if call has aggregation.
+  if (isset($aggregation_options[$call_base])
+      && !empty($aggregation_options[$call_base])) {
+    // Get data from other sites.
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'brapi_site')
+      ->propertyCondition('machine_name', $aggregation_options[$call_base])
+      ->propertyOrderBy('weight', 'ASC');
+    $results = $query->execute();
+    if (!empty($results)) {
+      // Load data about each connection.
+      $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+
+      $aggregated_from_list = array();
+      foreach ($brapi_sites as $bsid => $brapi_site) {
+        // Check if the site is in the list of caller URL to avoid infinite
+        // loops. If so, go next.
+        // Remove protocol.
+        $site_url = preg_replace('/^.*:\/\//', '', $brapi_site->url);
+        if (isset($callers[$site_url])) {
+          continue;
+        }
+        $aggregated_from_list[] = $brapi_site->url;
+
+        // Prepare URL.
+        $url = $brapi_site->url
+          . $call
+          . (isset($parameters['GET']) ?
+            '?' . http_build_query($parameters['GET'])
+            : '');
+        // Prepare context.
+        // Check method to use.
+        if (isset($parameters['POST'])) {
+          // POST.
+          $json_post_data = json_encode($parameters['POST']);
+          $options = array(
+            'http' => array(
+              'method'  => 'POST',
+              // 'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+              'header'  => "Content-Type: application/json\r\n",
+              // . 'Content-Length: ' . strlen($json_post_data) . "\r\n",
+              'content' => $json_post_data,
+            ),
+          );
+        }
+        else {
+          // GET.
+          $options = array(
+            'http' => array(
+              'method'  => 'GET',
+              'header'  => '',
+            ),
+          );
+        }
+        // @todo: Manage authentication.
+        // If the site supports authentication, check if we got a valid
+        // bearer. If not, get a new one and add it to the header.
+        // @code
+        // if ($username && $password) {
+        //   ... array($brapi_site->username, $brapi_site->password);
+        //   $options['http']['header'] .= 'Authorization: Bearer ' . base64_encode($bearer) . "\r\n";
+        // }
+        // @endcode
+        try {
+          $context = stream_context_create($options);
+          $call_result_json = file_get_contents($url, FALSE, $context);
+          if (isset($call_result_json)) {
+            $call_result = json_decode($call_result_json, TRUE);
+            if (isset($call_result)) {
+              $data = brapi_merge_array($data, $call_result);
+              //unset($data['metadata']);
+              // @todo +FIXME: take into account metadata (pager, files).
+            }
+          }
+        }
+        catch (Exception $error_handle) {
+          drupal_set_message('ERROR: ' . $error_handle->getMessage(), 'error');
+        }
+      }
+      // Add to metadata the list of caller URLs.
+      $metadata['aggregated_from'] = $aggregated_from_list;
+    }
+  }
+}
+
+/**
+ * Merge two arrays recursively.
+ *
+ * Merge content of $b that is not into $a to $a and returns the merging result.
+ * If a (sub)key is present in both arrays and its value is an array, the 2
+ * arrays are merged recursively using brapi_merge_array. If the value is not
+ * set in $a, the value of $b is used.
+ *
+ * @code
+ * $a = array('a' => 1, 'b' => array('x' => 5, 'y' => 7), 'c' => 6, 'e' => NULL);
+ * $b = array('a' => 2, 'b' => array('x' => 3, 'z' => 4), 'd' => 8, 'e' => 9);
+ * $c = brapi_merge_array($a, $b);
+ * // $c will be:
+ * array(
+ *   'a' => 1,
+ *   'b' => array('x' => 5, 'y' => 7, 'z' => 4),
+ *   'c' => 6,
+ *   'd' => 8,
+ *   'e' => 9,
+ * );
+ * @endcode
+ *
+ * @param array $a
+ *   first array.
+ * @param array $b
+ *   second array.
+ *
+ * @return array
+ *   merged array.
+ */
+function brapi_merge_array($a, $b) {
+  // Merge common keys.
+  foreach ($a as $key => $value) {
+    if (isset($b[$key])) {
+      if (is_array($a[$key])) {
+        if (is_array($b[$key])) {
+          $a[$key] = brapi_merge_array($value, $b[$key]);
+        }
+      }
+      elseif (empty($a[$key])) {
+        $a[$key] = $b[$key];
+      }
+    }
+  }
+  // Add b-specific keys to a.
+  $a += $b;
+
+  // Returns merged array.
+  return $a;
+}
+ 

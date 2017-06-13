@@ -233,7 +233,7 @@ function brapi_menu() {
       'page callback' => $call_data['page callback'],
       'access callback' => 'user_access',
       'access arguments' => array($call_data['methods']['GET']),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'type' => MENU_CALLBACK,
     );
     // Manage optional arguments.
     if (array_key_exists('arguments', $call_data)) {

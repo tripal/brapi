@@ -81,7 +81,7 @@ function brapi_site_edit_form($form, &$form_state, BrapiSite $brapi_site) {
     'url' => array(
       '#type' => 'textfield',
       '#title' => t('BrAPI site service URL'),
-      '#description' => t('The URL should begin with &quot;http://&quot; or &quot;https://&quot; and end with &quot;/brapi/v1/&quot;.'),
+      '#description' => t('The URL should begin with &quot;http://&quot; or &quot;https://&quot; and end with &quot;/brapi/v1&quot;.'),
       '#required' => TRUE,
       '#default_value' => isset($brapi_site->url) ? $brapi_site->url : '',
       '#element_validate' => array('brapi_site_url_validate'),

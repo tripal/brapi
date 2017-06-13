@@ -26,6 +26,7 @@ define('BRAPI_DB', 'breeding api');
 define('BRAPI_CV', 'breeding api');
 define('BRAPI_CV_SETTINGS', 'brapi_cv_settings');
 define('BRAPI_EXAMPLE_SETTINGS', 'brapi_example_settings');
+define('BRAPI_AGGREGATION_OPTIONS', 'brapi_aggregation_options');
 define('BRAPI_USE_PERMISSION', 'use breeding api');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
 define('BRAPI_ADMIN_PERMISSION', 'administer breeding api');
@@ -138,7 +139,9 @@ function brapi_get_mcpd_mapping() {
  *     - 'description' (string): description of the argument;
  *     - 'required' (bool): true if the argument is required.
  *   - 'features' (array): an array of feature name => value/description
- *     supported by the call.
+ *     supported by the call;
+ *   - 'aggregatable' (bool): if true, the call can be aggregated with other
+ *     BrAPI sites providing the same call.
  *
  * @ingroup brapi_const
  */
@@ -154,6 +157,7 @@ function brapi_get_calls() {
           'GET' => 'access content',
         ),
         'page callback'  => 'brapi_v1_about_json',
+        'aggregatable' => FALSE,
       ),
       '/token'      => array(
         'title'          => 'Authentication',
@@ -165,6 +169,7 @@ function brapi_get_calls() {
           'DELETE' => BRAPI_USE_PERMISSION,
         ),
         'page callback'  => 'brapi_v1_authentication_json',
+        'aggregatable' => FALSE,
       ),
       '/calls'      => array(
         'title'          => 'Call search',
@@ -182,6 +187,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
+        'aggregatable' => FALSE,
       ),
       '/germplasm-search' => array(
         'title'          => 'Germplasm Search',
@@ -189,10 +195,11 @@ function brapi_get_calls() {
         'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_UPDATE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
         ),
         'page callback'  => 'brapi_v1_germplasm_search_json',
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+        'aggregatable' => TRUE,
       ),
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
@@ -214,6 +221,52 @@ function brapi_get_calls() {
           ),
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+        'aggregatable' => TRUE,
+      ),
+      // Externalized calls.
+      '/allelematrix-search'      => array(
+        'title'          => 'Allele matrix search',
+        'description'    => 'Allele matrix search',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/markers'      => array(
+        'title'          => 'Markers',
+        'description'    => 'Markers',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/maps'      => array(
+        'title'          => 'Maps',
+        'description'    => 'Maps',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/markerprofiles'      => array(
+        'title'          => 'Marker profiles',
+        'description'    => 'Marker profiles',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
       ),
     );
   }

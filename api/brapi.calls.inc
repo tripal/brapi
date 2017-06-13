@@ -294,7 +294,7 @@ function brapi_v1_call_json($selected_call_name) {
 
       // Check call supported datatypes.
       $supported_datatypes = array();
-      if (array_key_exists('datatypes', $call_settings)) {
+      if (isset($call_settings['datatypes'])) {
         $supported_datatypes = $call_settings['datatypes'];
       }
       $has_requested_filters = TRUE;
@@ -464,7 +464,7 @@ function brapi_v1_germplasm_search_json() {
   foreach ($filters as $field => $values) {
     $field_identifiers = array();
     // Check if the field is available.
-    if (array_key_exists($field, $data_mapping['germplasm']['fields'])) {
+    if (isset($data_mapping['germplasm']['fields'][$field])) {
       $field_fetcher = $data_mapping['germplasm']['fields'][$field];
       switch (gettype($field_fetcher)) {
         case 'string':
@@ -577,7 +577,7 @@ function brapi_v1_germplasm_search_json() {
           }
 
           // Check for intersection.
-          if (!array_key_exists($foreign_key, $identifiers)) {
+          if (!isset($identifiers[$foreign_key])) {
             // Not set yet.
             $identifiers[$foreign_key] = $field_identifiers;
           }
@@ -627,7 +627,7 @@ function brapi_v1_germplasm_search_json() {
   // Check if identifiers should also be filtered.
   if (count(array_keys($identifiers))) {
     foreach ($identifiers as $object_key => $key_values) {
-      if (array_key_exists($object_key, $selectors)) {
+      if (isset($selectors[$object_key])) {
         $selectors[$object_key] =
           array_intersect(
             array_keys($key_values),
@@ -688,7 +688,7 @@ function brapi_v1_germplasm_search_json() {
     $debug_data[] = $tripal_message;
   }
 
-  if ($stocks && !is_array($stocks)) {
+  if (!is_array($stocks)) {
     $stocks = array($stocks);
   }
 
@@ -707,10 +707,18 @@ function brapi_v1_germplasm_search_json() {
     $metadata['status'] = $status;
   }
 
+  $data = array(
+    'result' => array('data' => $germplasm_list),
+  );
+  
+  $parameters = array(
+    'GET' => brapi_get_url_call_args(),
+    'POST' => $user_data,
+  );
+  brapi_aggregate_call($data, $metadata, $debug_data, $parameters);
+
   return brapi_output_json(
-    array(
-      'result' => array('data' => $germplasm_list),
-    ),
+    $data,
     $metadata,
     $debug_data
   );
@@ -869,11 +877,11 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 
   if (!$organism) {
     // Try to insert organism.
-    if (array_key_exists('commonCropName', $user_data)) {
+    if (isset($user_data['commonCropName'])) {
       $organism_selector['common_name'] = $user_data['commonCropName'];
     }
 
-    if (array_key_exists('abbreviation', $user_data)) {
+    if (isset($user_data['abbreviation'])) {
       $organism_selector['abbreviation'] = $user_data['abbreviation'];
     }
 
@@ -902,12 +910,12 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 
   // Check if the user specified a stock description.
   $description = '';
-  if (array_key_exists('description', $user_data)) {
+  if (isset($user_data['description'])) {
     $description = $user_data['description'];
   }
 
   // Check if the user specified a type_id.
-  if (array_key_exists('type_id', $user_data)) {
+  if (isset($user_data['type_id'])) {
     $type_id = $user_data['type_id'];
   }
   else {
@@ -955,7 +963,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 
   // @todo store other fields
   foreach ($optional_fields as $optional_field) {
-    if (array_key_exists($optional_field, $user_data)) {
+    if (isset($user_data[$optional_field])) {
       brapi_set_field(
         'germplasm',
         $stock,
@@ -982,9 +990,11 @@ function brapi_v1_read_germplasm_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = brapi_get_germplasm_details($stock);
+  $data = array('result' => array('data' => array($germplasm_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
 
   return brapi_output_json(
-    array('result' => array('data' => array($germplasm_data))),
+    $data,
     $metadata,
     $debug_data
   );
@@ -1034,8 +1044,8 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
   $stock_data = array();
 
   // Species to update?
-  $has_species = array_key_exists('species', $user_data);
-  $has_genus = array_key_exists('genus', $user_data);
+  $has_species = isset($user_data['species']);
+  $has_genus = isset($user_data['genus']);
   if ($has_species || $has_genus) {
     // Change stock organism.
     // Check if organism exists.
@@ -1072,17 +1082,17 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
   }
 
   // Check if the user specified a stock description.
-  if (array_key_exists('description', $user_data)) {
+  if (isset($user_data['description'])) {
     $stock_data['description'] = $user_data['description'];
   }
 
   // Check if the user specified a type_id.
-  if (array_key_exists('type_id', $user_data)) {
+  if (isset($user_data['type_id'])) {
     $stock_data['type_id'] = $user_data['type_id'];
   }
 
   // Check if the user specified a new name.
-  if (array_key_exists('defaultDisplayName', $user_data)) {
+  if (isset($user_data['defaultDisplayName'])) {
     $stock_data['name'] = $user_data['defaultDisplayName'];
   }
 
@@ -1119,7 +1129,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
   $updatable_fields = array('germplasmName', 'synonyms');
 
   foreach ($updatable_fields as $updatable_field) {
-    if (array_key_exists($updatable_field, $user_data)) {
+    if (isset($user_data[$updatable_field])) {
       brapi_set_field(
         'germplasm',
         $stock,
@@ -1165,6 +1175,42 @@ function brapi_v1_delete_germplasm_json($stock) {
     );
 
   return brapi_output_json(array(), $metadata, $debug_data);
+}
+
+
+/**
+ * Generic callback for BrAPI call not supported by Drupal BrAPI module.
+ *
+ * Those calls can be processed by external BrAPI services.
+ */
+function brapi_v1_external_call_json() {
+
+  // Init status and debug data.
+  $status = array();
+  $debug_data = array();
+  $metadata = brapi_prepare_metadata();
+
+  // Get JSON input if some.
+  try {
+    $user_data = brapi_get_user_json_input();
+  }
+  catch (Exception $e) {
+    $user_data = array();
+    $debug_data[] = $e->getMessage();
+  }
+
+  $parameters = array(
+    'GET' => brapi_get_url_call_args(),
+    'POST' => $user_data,
+  );
+  $data = array('result' => array('data' => array()));
+  brapi_aggregate_call($data, $metadata, $debug_data, $parameters);
+
+  return brapi_output_json(
+    $data,
+    $metadata,
+    $debug_data
+  );
 }
 
 

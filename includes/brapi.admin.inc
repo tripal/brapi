@@ -67,10 +67,7 @@ function brapi_admin_form($form, &$form_state) {
   }
 
   // Storage type selection for some specific fields.
-  $storage_options = variable_get('brapi_storage_options');
-  if (!$storage_options) {
-    $storage_options = array();
-  }
+  $storage_options = variable_get('brapi_storage_options', array());
   $form['storage_options'] = array(
     '#type'        => 'fieldset',
     '#title'       => t('Storage options'),
@@ -232,7 +229,7 @@ function brapi_admin_form($form, &$form_state) {
     '#type' => 'textfield',
     '#id' => 'brapi_custom_date_format',
     '#description' => t('If you use a custom format, specify the way dates are stored in database using the format describbed at <a href="http://php.net/manual/en/datetime.createfromformat.php">DateTime::createFromFormat PHP documentation</a>.'),
-    '#default_value' => variable_get('brapi_custom_date_format'),
+    '#default_value' => variable_get('brapi_custom_date_format', ''),
     '#title' => t('Custom date format specification'),
     '#title_display' => 'before',
     '#size' => 80,
@@ -404,7 +401,50 @@ function brapi_admin_form($form, &$form_state) {
     '#submit'      => array('brapi_reset_mcpd_form'),
   );
 
+  // Setup calls aggregation.
+  $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  $form['aggregation_options'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => t('Call aggregation options'),
+    '#collapsible' => TRUE,
+    '#collapsed'   => TRUE,
+  );
+  // Get the list of available BrAPI sites.
+  $brapi_sites = array();
+  $brapi_site_options = array();
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'brapi_site');
+  $results = $query->execute();
+  if (!empty($results)) {
+    // Load data about each connection.
+    $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+ 
+    foreach ($brapi_sites as $bsid => $entity) {
+      $brapi_site_options[$entity->machine_name] = $entity->title;
+    }
+  }
 
+  // Loop on calls.
+  foreach (brapi_get_calls() as $call_path => $call) {
+    if ($call['aggregatable']) {
+      $default_values =
+        isset($aggregation_options[$call_path]) ?
+          $aggregation_options[$call_path]
+          : array();
+      $form['aggregation_options']['aggr_' . $call_path] = array(
+          '#type' => 'select',
+          '#description' => t('Select a BrAPI site for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
+          '#options' => $brapi_site_options, 
+          '#default_value' => $default_values,
+          '#title' => "$call_path " . t('call aggregation'),
+          '#title_display' => 'before',
+          '#required' => FALSE,
+          '#multiple' => TRUE,
+      );
+    }
+  }
+
+  // Save button.
   $form['save_settings'] = array(
     '#type'        => 'submit',
     '#value'       => t('Save configuration'),
@@ -534,11 +574,23 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     }
   }
 
+  // Example options.
   $brapi_example_settings = array();
   foreach ($example_parameters as $example_parameter) {
     $brapi_example_settings[$example_parameter['name']] = $form_state['values'][$example_parameter['name']];
   }
   variable_set(BRAPI_EXAMPLE_SETTINGS, $brapi_example_settings);
+
+  // Aggrecation options.
+  $brapi_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  // Loop on calls.
+  foreach (brapi_get_calls() as $call_path => $call) {
+    if ($call['aggregatable']) {
+      $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path]);
+    }
+  }
+  variable_set(BRAPI_AGGREGATION_OPTIONS, $brapi_aggregation_options);
+
 }
 
 /**
