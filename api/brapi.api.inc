@@ -23,6 +23,56 @@
 require_once 'brapi.const.inc';
 
 /**
+ * BrAPI exception class for errors.
+ */
+class BrapiException extends Exception {
+
+  protected $http_error_code = 500;
+  protected $data = array();
+  protected $debug_data = array();
+  protected $is_raw = FALSE;
+
+  /**
+   * Constructs a BrAPI exception.
+   */
+  public function __construct(
+    $http_error_code,
+    $message,
+    $data = array(),
+    $debug_data = array(),
+    $is_raw = FALSE
+  ) {
+    parent::__construct($message);
+    $this->http_error_code = $http_error_code;
+    $this->data = $data;
+    $this->debug_data = $debug_data;
+    $this->is_raw = $is_raw;
+  }
+
+  /**
+   * Generates JSON output.
+   */
+  public function getJSONOutput() {
+    if ($this->is_raw) {
+      return brapi_raise_raw_error_json(
+        $http_error_code,
+        $data,
+        $debug_data
+      );
+    }
+    else {
+      return brapi_raise_error_json(
+        $http_error_code,
+        $this->getMessage(),
+        $data,
+        $debug_data
+      );
+    }
+  }
+
+}
+
+/**
  * Checks if an array contains the given values.
  *
  * @param mixed $mixed
@@ -76,9 +126,9 @@ function brapi_get_mcpd_settings() {
     if (!$mcpd_mapping) {
       $mcpd_mapping = brapi_get_mcpd_mapping();
     }
-    
+
     $mcpd_settings = array();
-    
+
     foreach ($mcpd_mapping as $brapi_term => $mapping) {
       $mcpd_settings[$brapi_term] = brapi_get_cvterm_id($mapping);
     }
@@ -616,7 +666,7 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
     if (isset($filter['cv']) && $filter['cv']) {
       $cv = $filter['cv'];
     }
-    
+
     if (isset($filter['name'])) {
       $id_found = array();
       if (is_array($filter['name'])) {
@@ -642,14 +692,14 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
         else {
           $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV;
         }
-        
+
         if (isset($filter['related']['relationship'])) {
           $relationship = $filter['related']['relationship'];
         }
         else {
           $relationship = 'is_a';
         }
-      
+
         if (is_array($filter['related']['name'])) {
           foreach ($filter['related']['name'] as $term_name) {
             $id_found[] = brapi_get_related_cvterm_id(
@@ -672,7 +722,7 @@ function brapi_get_cvterm_id($filter, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
         "Invalid CV term filter: no valid key found in filter array!"
       ));
     }
-    
+
     if (empty($id_found)) {
       $id_found = NULL;
     }
@@ -729,7 +779,7 @@ function brapi_get_related_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSP
   foreach ($cvterm_relationship as $result) {
     $term_ids[] = $result->subject_id;
   }
-  
+
   if (empty($term_ids)) {
     // We add a fake cvterm_id if none found because returning an empty array
     // in future (Tripal) queries would not be taken into account.
@@ -763,7 +813,7 @@ function brapi_parse_date($stored_value, $format = NULL) {
   if (!$date_setting) {
     $date_setting = variable_get('brapi_date_format');
   }
-  
+
   if (!$format) {
     $format = $date_setting;
   }
@@ -785,10 +835,10 @@ function brapi_parse_date($stored_value, $format = NULL) {
       $parsed_date = $stored_value;
       break;
   }
-  
+
   return $parsed_date;
 }
- 
+
 /**
  * Formats the given BrAPI date (xsd format) into the requested format or the
  * default date format setup in the settings.
@@ -809,7 +859,7 @@ function brapi_encode_date($brapi_date, $format = NULL) {
   if (!$date_setting) {
     $date_setting = variable_get('brapi_date_format');
   }
-  
+
   if (!$format) {
     $format = $date_setting;
   }
@@ -832,10 +882,10 @@ function brapi_encode_date($brapi_date, $format = NULL) {
       $encoded_date = $brapi_date;
       break;
   }
-  
+
   return $encoded_date;
 }
- 
+
 /**
  * Returns a Tripal field selector.
  *
@@ -924,7 +974,7 @@ function brapi_decode_value($value, $type) {
           '@value' => $value,
         )
       ));
-      break; 
+      break;
   }
   return $value;
 }
@@ -953,7 +1003,7 @@ function brapi_encode_value($value, $type) {
     case 'date':
       $single_value = brapi_encode_date($single_value);
       break;
-      
+
     case 'cvterm':
       if ($term = tripal_get_cvterm(array('name' => $single_value))) {
         $current_value = $term->cvterm_id;
@@ -1117,7 +1167,7 @@ function brapi_get_field(
           $values[] = $current_value;
         }
       }
-      
+
       // Check for fallback.
       if (empty($values)
           && isset($field_fetcher['fallback'])
@@ -2021,7 +2071,7 @@ function brapi_get_call_filters($call_name) {
         case "string":
           $germplasm_search[$field_name] = 'string';
           break;
-      
+
        case "array":
           switch ($field_fetcher['field_type']) {
             case 'string':
@@ -2079,17 +2129,17 @@ function brapi_get_call_filters($call_name) {
               break;
           }
           break;
-       
+
        case "object":
           break;
-       
+
        default:
           break;
       }
     }
     $call_filters['/germplasm-search'] = array('POST' => &$germplasm_search);
   }
-    
+
   if (isset($call_filters[$call_name])) {
     return $call_filters[$call_name];
   }
@@ -2289,4 +2339,69 @@ function brapi_merge_array($a, $b) {
   // Returns merged array.
   return $a;
 }
- 
+
+/**
+ * Example implementation of hook_brapi_CALL_FUNC_NAME_alter.
+ *
+ * This implementation adds a source_db field set to 'brapi' to any call result
+ * data.
+ *
+ * <CALL_FUNC_NAME> should be replaced by the basic call path with non-word
+ * characters being replaced by underscores. Available call path can be found
+ * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
+ * are the actual call path.
+ *
+ * @param array $data
+ *   The $data variable contains the structure of the result part of the call
+ *   result.
+ * @param array $context
+ *   'metadata' and 'debug' structures can be accessed and modified
+ *   through $context['metadata'] and $context['debug'] fields.
+ *
+ * @see brapi_get_calls()
+ */
+function hook_brapi_CALL_FUNC_NAME_alter(&$data, &$context) {
+  $data['result']['data']['source_db'] = 'brapi';
+}
+
+/**
+ * Example implementation of hook_brapi_CALL_FUNC_NAME_brapi_error_alter.
+ *
+ * Allows other modules to alter error raised by BrAPI in any BrAPI call.
+ *
+ * <CALL_FUNC_NAME> should be replaced by the basic call path with non-word
+ * characters being replaced by underscores. Available call path can be found
+ * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
+ * are the actual call path.
+ *
+ * @param $message
+ *   contains the error content displayed to the user. To change
+ *   the status code returned, implementation should use
+ *   drupal_add_http_header('Status', $http_error_code).
+ *
+ * @see brapi_get_calls()
+ */
+function hook_brapi_CALL_FUNC_NAME_brapi_error_alter(&$message) {
+  $message = '<div>It seems a BrAPI error occured!</div>';
+}
+
+/**
+ * Example implementation of hook_brapi_CALL_FUNC_NAME_error_alter.
+ *
+ * Allows other modules to alter any non-BrAPI error in any BrAPI call.
+ *
+ * <CALL_FUNC_NAME> should be replaced by the basic call path with non-word
+ * characters being replaced by underscores. Available call path can be found
+ * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
+ * are the actual call path.
+ *
+ * @param $message
+ *   contains the error content displayed to the user. To change
+ *   the status code returned, implementation should use
+ *   drupal_add_http_header('Status', $http_error_code).
+ *
+ * @see brapi_get_calls()
+ */
+function hook_brapi_CALL_FUNC_NAME_error_alter(&$message) {
+  $message = '<div>It seems an error occured!</div>';
+}

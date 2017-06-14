@@ -230,14 +230,14 @@ function brapi_menu() {
     $items[$call_url] = array(
       'title' => $call_data['title'],
       'description' => $call_data['description'],
-      'page callback' => $call_data['page callback'],
+      'page callback' => 'brapi_call_wrapper',
+      'page arguments' => array(preg_replace('/\W+/', '_', $call_name), $call_data['page callback']),
       'access callback' => 'user_access',
       'access arguments' => array($call_data['methods']['GET']),
       'type' => MENU_CALLBACK,
     );
     // Manage optional arguments.
     if (array_key_exists('arguments', $call_data)) {
-      $items[$call_url]['page arguments'] = array();
       foreach ($call_data['arguments'] as $argument => $argdata) {
         $items[$call_url]['page arguments'][] = $argument;
       }
