@@ -106,7 +106,7 @@ function brapi_v1_about_json() {
         'www'   => $base_url . '/',
       ),
     ),
-    array()
+    array(),
   );
 }
 
@@ -165,7 +165,7 @@ function brapi_v1_authentication_json() {
 
   // Enforce HTTPS use.
   if (!$_SERVER['HTTPS']) {
-    throw BrapiException(
+    throw new BrapiException(
       426,
       '',
       array(
@@ -202,7 +202,7 @@ function brapi_v1_authentication_json() {
     return array(
       array('result' => $authentication_data),
       $metadata,
-      $debug_data
+      $debug_data,
     );
   }
   // POST: login process.
@@ -213,7 +213,7 @@ function brapi_v1_authentication_json() {
       $user_data = brapi_get_user_json_input();
     }
     catch (Exception $e) {
-      throw BrapiException(
+      throw new BrapiException(
         400,
         $e->getMessage()
       );
@@ -229,7 +229,7 @@ function brapi_v1_authentication_json() {
     // BRAPI OAuth2 support only allows "password" grant type
     // and if not set, assume "password".
     if (!empty($grant_type) && ('password' != $grant_type)) {
-      throw BrapiException(
+      throw new BrapiException(
         501,
         '',
         array('error' => t('Only "password" grant type is supported.')),
@@ -240,7 +240,7 @@ function brapi_v1_authentication_json() {
 
     // Stop if already logged in.
     if (user_is_logged_in()) {
-      throw BrapiException(
+      throw new BrapiException(
         400,
         '',
         array(
@@ -272,7 +272,7 @@ function brapi_v1_authentication_json() {
     }
     else {
       // Not authenticated, issue an error.
-      throw BrapiException(
+      throw new BrapiException(
         400,
         '',
         array('error' => t('Authentication failed!')),
@@ -316,7 +316,7 @@ function brapi_v1_authentication_json() {
   }
   // Unsupported.
   else {
-    throw BrapiException(
+    throw new BrapiException(
       400,
       '',
       array('error' => t('Unsupported method!')),
@@ -350,9 +350,24 @@ function brapi_v1_call_json($selected_call_name) {
   $args = brapi_get_url_call_args();
   $datatype_filter = isset($args['datatype']) ? $args['datatype'] : FALSE;
 
-  // GET: get current user.
+  static $aggregation_options;
+  // Get call aggregation settings.
+  if (!isset($aggregation_options)) {
+    $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  }
+
+  // GET: get list of calls.
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
+      // Check proxied-only calls.
+      if ('brapi_v1_external_call_json' == $call_settings['page callback']) {
+        if (!isset($aggregation_options[$call_name])
+            || !count($aggregation_options[$call_name])) {
+          continue;
+        }
+        // @todo Check properties of remote calls?
+      }
+
       // Check call name.
       // Remove leading slash in name.
       $call_name = substr($call_name, 1);
@@ -361,7 +376,6 @@ function brapi_v1_call_json($selected_call_name) {
         $has_requested_name = ($selected_call_name == $call_name);
       }
 
-
       // Check call supported datatypes.
       $supported_datatypes = array();
       if (isset($call_settings['datatypes'])) {
@@ -369,7 +383,10 @@ function brapi_v1_call_json($selected_call_name) {
       }
       $has_requested_filters = TRUE;
       if ($datatype_filter) {
-        $has_requested_filters = brapi_array_contains($datatype_filter, $supported_datatypes);
+        $has_requested_filters = brapi_array_contains(
+          $datatype_filter,
+          $supported_datatypes
+        );
       }
 
       if ($call_name && $has_requested_name && $has_requested_filters) {
@@ -378,6 +395,7 @@ function brapi_v1_call_json($selected_call_name) {
           'datatypes' => $call_settings['datatypes'],
           'methods' => array_keys($call_settings['methods']),
         );
+        // @todo Manage current user permission for methods (except for /token).
       }
     }
     $metadata = brapi_prepare_metadata(count($call_data));
@@ -385,12 +403,12 @@ function brapi_v1_call_json($selected_call_name) {
     return array(
       array('result' => array('data' => $call_data)),
       $metadata,
-      $debug_data
+      $debug_data,
     );
   }
   // Unsupported.
   else {
-    throw BrapiException(
+    throw new BrapiException(
       400,
       '',
       array('error' => t('Unsupported method!')),
@@ -600,7 +618,7 @@ function brapi_v1_germplasm_search_json() {
               break;
 
             default:
-              throw BrapiException(
+              throw new BrapiException(
                 400,
                 t(
                   "Bad request! Invalid field '@field' configuration type '@field_type'!",
@@ -635,7 +653,7 @@ function brapi_v1_germplasm_search_json() {
                 'result' => array('data' => array()),
               ),
               $metadata,
-              $debug_data
+              $debug_data,
             );
           }
           else {
@@ -667,7 +685,7 @@ function brapi_v1_germplasm_search_json() {
                   'result' => array('data' => array()),
                 ),
                 $metadata,
-                $debug_data
+                $debug_data,
               );
             }
           }
@@ -793,7 +811,7 @@ function brapi_v1_germplasm_search_json() {
   return array(
     $data,
     $metadata,
-    $debug_data
+    $debug_data,
   );
 }
 
@@ -915,7 +933,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
 
   foreach ($required_fields as $required_field) {
     if (empty($user_data[$required_field])) {
-      throw BrapiException(
+      throw new BrapiException(
         400,
         t("Missing germplasm @field!", array('@field' => $required_field))
       );
@@ -928,7 +946,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   }
   // Make sure we got a uniquename.
   if (!$uniquename) {
-    throw BrapiException(
+    throw new BrapiException(
       400,
       t("Missing germplasm germplasmDbId!")
     );
@@ -963,7 +981,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     $organism = chado_insert_record('organism', $organism_selector);
     $tripal_message = ob_get_clean();
     if (empty($organism) || !$organism['organism_id']) {
-      throw BrapiException(
+      throw new BrapiException(
         500,
         t(
           "Unable to insert new species!\n@tripal_message",
@@ -996,7 +1014,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   }
   // Make sure we got a type_id.
   if (!$type_id) {
-    throw BrapiException(
+    throw new BrapiException(
       400,
       t("Unable to insert new germplasm! Missing a type_id. You can either provide it in your JSON data (as \"'type_id': Chado cvterm_id,\") or in the default setting page of BrAPI.")
     );
@@ -1015,7 +1033,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
   $stock = chado_insert_record('stock', $values);
   $tripal_message = ob_get_clean();
   if (empty($stock) || !$stock['stock_id']) {
-    throw BrapiException(
+    throw new BrapiException(
       500,
       t(
         "Unable to insert new germplasm!\n@tripal_message",
@@ -1069,7 +1087,7 @@ function brapi_v1_read_germplasm_json($stock) {
   return array(
     $data,
     $metadata,
-    $debug_data
+    $debug_data,
   );
 }
 
@@ -1145,7 +1163,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     }
 
     if (empty($organism) || !$organism->organism_id) {
-      throw BrapiException(
+      throw new BrapiException(
         404,
         t("Unable to update germplasm: the given species was not found!")
       );
@@ -1180,7 +1198,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     );
   $tripal_message = ob_get_clean();
   if (!$updated) {
-    throw BrapiException(
+    throw new BrapiException(
       404,
       t(
         "Failed to update germplasm genus/species!\n@tripal_message",
@@ -1232,7 +1250,7 @@ function brapi_v1_delete_germplasm_json($stock) {
   ob_start();
   if (!chado_delete_record('stock', array('stock_id' => $stock->stock_id))) {
     $tripal_message = ob_get_clean();
-    throw BrapiException(
+    throw new BrapiException(
       500,
       t(
         "Unable to remove germplasm!\n@tripal_message",
@@ -1249,7 +1267,6 @@ function brapi_v1_delete_germplasm_json($stock) {
 
   return array(array(), $metadata, $debug_data);
 }
-
 
 /**
  * Generic callback for BrAPI call not supported by Drupal BrAPI module.
@@ -1277,12 +1294,15 @@ function brapi_v1_external_call_json() {
     'POST' => $user_data,
   );
   $data = array('result' => array('data' => array()));
-  brapi_aggregate_call($data, $metadata, $debug_data, $parameters);
-
+  if (!brapi_aggregate_call($data, $metadata, $debug_data, $parameters)) {
+    // Not implemented.
+    throw new BrapiException(501, "Not implemented!");
+  }
+  
   return array(
     $data,
     $metadata,
-    $debug_data
+    $debug_data,
   );
 }
 
@@ -1985,7 +2005,7 @@ function brapi_v1_crops_json() {
  *
  * /
 function brapi_v1_markerprofiles_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 
@@ -1994,7 +2014,7 @@ function brapi_v1_markerprofiles_json() {
  *
  * /
 function brapi_v1_markerprofiles_details_json($markerprofile_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 
@@ -2003,7 +2023,7 @@ function brapi_v1_markerprofiles_details_json($markerprofile_id) {
  *
  * /
 function brapi_v1_allelematrices_json($allelematrix_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 
@@ -2012,7 +2032,7 @@ function brapi_v1_allelematrices_json($allelematrix_id) {
  *
  * /
 function brapi_v1_traits_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2020,7 +2040,7 @@ function brapi_v1_traits_json() {
  *
  * /
 function brapi_v1_germplasm_list_by_trialdbid_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2028,7 +2048,7 @@ function brapi_v1_germplasm_list_by_trialdbid_json() {
  *
  * /
 function brapi_v1_attributes_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2036,7 +2056,7 @@ function brapi_v1_attributes_json() {
  *
  * /
 function brapi_v1_attribute_categories_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2094,7 +2114,7 @@ function brapi_v1_germplasm_attributes_json($germplasm_id) {
  *
  * /
 function brapi_v1_study_types_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2102,7 +2122,7 @@ function brapi_v1_study_types_json() {
  *
  * /
 function brapi_v1_study_instances_json($study_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2179,7 +2199,7 @@ function brapi_v1_studies_json() {
  *
  * /
 function brapi_v1_study_json($study_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2187,7 +2207,7 @@ function brapi_v1_study_json($study_id) {
  *
  * /
 function brapi_v1_study_details_json($study_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2213,7 +2233,7 @@ function brapi_v1_study_table_json($study_id) {
       //+FIXME: not logged in => 400, invalid_token
       if (!user_access(BRAPI_UPDATE_PERMISSION)) {
           // insufficient_scope
-        throw BrapiException(401, "Access denied!");
+        throw new BrapiException(401, "Access denied!");
       }
       $putdata_stream = fopen("php://input", "r");
       $user_data = '';
@@ -2224,14 +2244,14 @@ function brapi_v1_study_table_json($study_id) {
       $json_data = json_decode($user_data, TRUE);
       if (!isset($json_data) || !is_array($json_data)) {
         // invalid json data provided
-        throw BrapiException(400, "Invalid JSON data!");
+        throw new BrapiException(400, "Invalid JSON data!");
       }
       //+FIXME: implementation missing
-      throw BrapiException(501, "Not implemented!");
+      throw new BrapiException(501, "Not implemented!");
     }
     elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
       if (!user_access(BRAPI_UPDATE_PERMISSION)) { // user_access('administer site configuration')
-        throw BrapiException(401, "Access denied!");
+        throw new BrapiException(401, "Access denied!");
       }
       //+FIXME: DELETE not supported yet
     }
@@ -2259,7 +2279,7 @@ function brapi_v1_study_table_json($study_id) {
  *
  * /
 function brapi_v1_study_layout_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2267,7 +2287,7 @@ function brapi_v1_study_layout_json() {
  *
  * /
 function brapi_v1_study_plot_json($study_id, $observation_variable) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2275,7 +2295,7 @@ function brapi_v1_study_plot_json($study_id, $observation_variable) {
  *
  * /
 function brapi_v1_phenotypes_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2283,7 +2303,7 @@ function brapi_v1_phenotypes_json() {
  *
  * /
 function brapi_v1_phenotype_metadata_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2291,7 +2311,7 @@ function brapi_v1_phenotype_metadata_json() {
  *
  * /
 function brapi_v1_phenotype_hierarchical_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2299,7 +2319,7 @@ function brapi_v1_phenotype_hierarchical_json() {
  *
  * /
 function brapi_v1_trait_details_json($trait_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2307,7 +2327,7 @@ function brapi_v1_trait_details_json($trait_id) {
  *
  * /
 function brapi_v1_data_types_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2315,7 +2335,7 @@ function brapi_v1_data_types_json() {
  *
  * /
 function brapi_v1_variables_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2323,7 +2343,7 @@ function brapi_v1_variables_json() {
  *
  * /
 function brapi_v1_variable_detail_json($variable_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2331,7 +2351,7 @@ function brapi_v1_variable_detail_json($variable_id) {
  *
  * /
 function brapi_v1_genome_map_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2339,7 +2359,7 @@ function brapi_v1_genome_map_json() {
  *
  * /
 function brapi_v1_genome_map_details_json($map_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2347,7 +2367,7 @@ function brapi_v1_genome_map_details_json($map_id) {
  *
  * /
 function brapi_v1_genome_map_data_json($map_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2355,7 +2375,7 @@ function brapi_v1_genome_map_data_json($map_id) {
  *
  * /
 function brapi_v1_genome_map_data_by_range_on_linkagegroup_json($map_id, $linkagegroup_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2363,7 +2383,7 @@ function brapi_v1_genome_map_data_by_range_on_linkagegroup_json($map_id, $linkag
  *
  * /
 function brapi_v1_observation_levels_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2371,7 +2391,7 @@ function brapi_v1_observation_levels_json() {
  *
  * /
 function brapi_v1_collection_json($study_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2379,7 +2399,7 @@ function brapi_v1_collection_json($study_id) {
  *
  * /
 function brapi_v1_observation_sets_json($observation_id) {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2387,7 +2407,7 @@ function brapi_v1_observation_sets_json($observation_id) {
  *
  * /
 function brapi_v1_locations_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 
 / **
@@ -2395,6 +2415,6 @@ function brapi_v1_locations_json() {
  *
  * /
 function brapi_v1_programs_json() {
-  throw BrapiException(501, "Not implemented!");
+  throw new BrapiException(501, "Not implemented!");
 }
 */

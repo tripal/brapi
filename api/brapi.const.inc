@@ -159,22 +159,10 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_about_json',
         'aggregatable' => FALSE,
       ),
-      '/token'      => array(
-        'title'          => 'Authentication',
-        'description'    => 'User authentication in OAuth2 style',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_USE_PERMISSION,
-          'DELETE' => BRAPI_USE_PERMISSION,
-        ),
-        'page callback'  => 'brapi_v1_authentication_json',
-        'aggregatable' => FALSE,
-      ),
       '/calls'      => array(
         'title'          => 'Call search',
         'description'    => 'Supported Breeding API calls',
-        'datatypes'      => array('json'),
+        'datatypes'      => array(),
         'methods'        => array(
           'GET' => BRAPI_USE_PERMISSION,
         ),
@@ -189,22 +177,10 @@ function brapi_get_calls() {
         ),
         'aggregatable' => FALSE,
       ),
-      '/germplasm-search' => array(
-        'title'          => 'Germplasm Search',
-        'description'    => 'Germplasm search call',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'page callback'  => 'brapi_v1_germplasm_search_json',
-        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregatable' => TRUE,
-      ),
       '/germplasm'      => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
-        'datatypes'      => array('json'),
+        'datatypes'      => array(),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
@@ -223,6 +199,30 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregatable' => TRUE,
       ),
+      '/germplasm-search' => array(
+        'title'          => 'Germplasm Search',
+        'description'    => 'Germplasm search call',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_germplasm_search_json',
+        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+        'aggregatable' => TRUE,
+      ),
+      '/token'      => array(
+        'title'          => 'Authentication',
+        'description'    => 'User authentication in OAuth2 style',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+          'POST'   => BRAPI_USE_PERMISSION,
+          'DELETE' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_authentication_json',
+        'aggregatable' => FALSE,
+      ),
       // Externalized calls.
       '/allelematrix-search'      => array(
         'title'          => 'Allele matrix search',
@@ -235,10 +235,21 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/markers'      => array(
-        'title'          => 'Markers',
-        'description'    => 'Markers',
-        'datatypes'      => array('json'),
+      '/crops'      => array(
+        'title'          => 'Crops',
+        'description'    => 'Crops',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/locations'      => array(
+        'title'          => 'Locations',
+        'description'    => 'Locations',
+        'datatypes'      => array(),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -261,6 +272,171 @@ function brapi_get_calls() {
         'title'          => 'Marker profiles',
         'description'    => 'Marker profiles',
         'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/markers'      => array(
+        'title'          => 'Markers',
+        'description'    => 'Markers',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/observationLevels' => array(
+        'title'          => 'Observation levels',
+        'description'    => 'Observation levels',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/ontologies' => array(
+        'title'          => 'Ontologies',
+        'description'    => 'Ontologies',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/phenotypes-search'      => array(
+        'title'          => 'Phenotypes search',
+        'description'    => 'Phenotypes search',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/programs'      => array(
+        'title'          => 'Programs',
+        'description'    => 'Programs',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/samples'      => array(
+        'title'          => 'Samples',
+        'description'    => 'Samples',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/seasons'      => array(
+        'title'          => 'Seasons',
+        'description'    => 'Seasons',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/studies'      => array(
+        'title'          => 'Studies',
+        'description'    => 'Studies',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/studies-search'      => array(
+        'title'          => 'Studies search',
+        'description'    => 'Studies search',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/studyTypes'      => array(
+        'title'          => 'Study types',
+        'description'    => 'Study types',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/traits'      => array(
+        'title'          => 'Traits',
+        'description'    => 'Traits',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/trials'      => array(
+        'title'          => 'Trials',
+        'description'    => 'Trials',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/variables'      => array(
+        'title'          => 'Variables',
+        'description'    => 'Variables',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/variables-search' => array(
+        'title'          => 'Variables search',
+        'description'    => 'Variables search',
+        'datatypes'      => array(),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'aggregatable' => TRUE,
+      ),
+      '/variables/datatypes' => array(
+        'title'          => 'Variables datatypes',
+        'description'    => 'Variables datatypes',
+        'datatypes'      => array(),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,

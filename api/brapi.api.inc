@@ -55,18 +55,19 @@ class BrapiException extends Exception {
   public function getJSONOutput() {
     if ($this->is_raw) {
       return brapi_raise_raw_error_json(
-        $http_error_code,
-        $data,
-        $debug_data
+        $this->http_error_code,
+        $this->data,
+        $this->debug_data
       );
     }
     else {
-      return brapi_raise_error_json(
-        $http_error_code,
+      $return = brapi_raise_error_json(
+        $this->http_error_code,
         $this->getMessage(),
-        $data,
-        $debug_data
+        $this->data,
+        $this->debug_data
       );
+      return $return;
     }
   }
 
@@ -1075,7 +1076,7 @@ function brapi_get_field(
   }
   // Make sure we got a mapping defined.
   if (!isset($data_mapping[$data_type])) {
-    return brapi_raise_error_json(
+    throw new BrapiException(
       400,
       t(
         "Bad request! Unknown data type '@type'!",
@@ -1085,7 +1086,7 @@ function brapi_get_field(
   }
 
   if (!isset($data_mapping[$data_type]['fields'][$field_name])) {
-    return brapi_raise_error_json(
+    throw new BrapiException(
       400,
       t(
         "Bad request! Unknown field '@field' for data type '@type'!",
@@ -1151,7 +1152,7 @@ function brapi_get_field(
             $current_value = brapi_decode_value($current_value, $field_fetcher['field_type']);
           }
           catch (Exception $e) {
-            return brapi_raise_error_json(
+            throw new BrapiException(
               400,
               t(
                 "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
@@ -1223,7 +1224,7 @@ function brapi_get_field(
       break;
 
     default:
-      return brapi_raise_error_json(
+      throw new BrapiException(
         400,
         t(
           "Bad request! Invalid field '@field' configuration for data type '@type' (field type '@fetcher')!",
@@ -1275,7 +1276,7 @@ function brapi_set_field(
   $data_mapping = brapi_get_data_mapping();
   // Make sure we got a mapping defined.
   if (!isset($data_mapping[$data_type])) {
-    return brapi_raise_error_json(
+    throw new BrapiException(
       400,
       t(
         "Bad request! Unknown data type '@type'!",
@@ -1284,7 +1285,7 @@ function brapi_set_field(
     );
   }
   if (!isset($data_mapping[$data_type]['fields'][$field_name])) {
-    return brapi_raise_error_json(
+    throw new BrapiException(
       400,
       t(
         "Bad request! Unknown field '@field' for data type '@type'!",
@@ -1326,7 +1327,7 @@ function brapi_set_field(
           );
           if (!$deleted_record) {
             $tripal_message = ob_get_clean();
-            return brapi_raise_error_json(
+            throw new BrapiException(
               500,
               t(
                 "Unable to remove previous field values before update!\n@tripal_message",
@@ -1347,7 +1348,7 @@ function brapi_set_field(
             $single_value = brapi_encode_value($single_value, $data_mapping[$data_type]['fields'][$field_name]['field_type']);
           }
           catch (Exception $e) {
-            return brapi_raise_error_json(
+            throw new BrapiException(
               400,
               t(
                 "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
@@ -1371,7 +1372,7 @@ function brapi_set_field(
              )
           )) {
             $tripal_message = ob_get_clean();
-            return brapi_raise_error_json(
+            throw new BrapiException(
               400,
               t(
                 "Failed to save field '@field'!\n@tripal_message",
@@ -1405,7 +1406,7 @@ function brapi_set_field(
           $field_value = brapi_encode_value($field_value, $data_mapping[$data_type]['fields'][$field_name]['field_type']);
         }
         catch (Exception $e) {
-          return brapi_raise_error_json(
+          throw new BrapiException(
             400,
             t(
               "Bad request! Invalid field '@field' configuration for data type '@type' (returns field data type '@field_type')!\n@error_message",
@@ -1448,7 +1449,7 @@ function brapi_set_field(
            )
         )) {
           $tripal_message = ob_get_clean();
-          return brapi_raise_error_json(
+          throw new BrapiException(
             400,
             t(
               "Failed to save field '@field'!\n@tripal_message",
@@ -1471,7 +1472,7 @@ function brapi_set_field(
       break;
 
     default:
-      return brapi_raise_error_json(
+      throw new BrapiException(
         400,
         t(
           "Bad request! Invalid field '@field' configuration for data type '@type' (field type '@fetcher')!",
@@ -1536,30 +1537,30 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
 
   // Check method.
   if (!isset($call_settings['methods'][$_SERVER['REQUEST_METHOD']])) {
-    return brapi_raise_error_json(403, t("Invalid HTTP method!"));
+    throw new BrapiException(403, t("Invalid HTTP method!"));
   }
 
   // Check access permission.
   if (!user_access($call_settings['methods'][$_SERVER['REQUEST_METHOD']])) {
-    return brapi_raise_error_json(401, t("Access denied!"));
+    throw new BrapiException(401, t("Access denied!"));
   }
 
   // Setup default actions.
   $default_actions = array(
     'create' => function ($user_data, $id = NULL) {
-      return brapi_raise_error_json(501, t("Create not implemented!"));
+      throw new BrapiException(501, t("Create not implemented!"));
     },
     'read'   => function ($object) {
-      return brapi_raise_error_json(501, t("Get object not implemented!"));
+      throw new BrapiException(501, t("Get object not implemented!"));
     },
     'update' => function ($user_data, $object) {
-      return brapi_raise_error_json(501, t("Update not implemented!"));
+      throw new BrapiException(501, t("Update not implemented!"));
     },
     'delete' => function ($object) {
-      return brapi_raise_error_json(501, t("Delete not implemented!"));
+      throw new BrapiException(501, t("Delete not implemented!"));
     },
     'list'   => function () {
-      return brapi_raise_error_json(501, t("Listing not implemented!"));
+      throw new BrapiException(501, t("Listing not implemented!"));
     },
   );
   $actions = array_merge($default_actions, $actions);
@@ -1580,7 +1581,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
     $user_data = brapi_get_user_json_input();
   }
   catch (Exception $e) {
-    return brapi_raise_error_json(
+    throw new BrapiException(
       400,
       $e->getMessage()
     );
@@ -1605,7 +1606,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
           }
           else {
             // Not found.
-            return brapi_raise_error_json(404, t("Object not found!"));
+            throw new BrapiException(404, t("Object not found!"));
           }
         }
         break;
@@ -1614,7 +1615,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
         if (empty($id)) {
           // Without ID.
           if (empty($user_data)) {
-            return brapi_raise_error_json(400, t("Missing input data!"));
+            throw new BrapiException(400, t("Missing input data!"));
           }
           // Create new object.
           $mode = 'create';
@@ -1624,7 +1625,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
           // With ID.
           if ($object) {
             if (empty($user_data)) {
-              return brapi_raise_error_json(400, t("Missing input data!"));
+              throw new BrapiException(400, t("Missing input data!"));
             }
             // Update object if exists.
             $mode = 'update';
@@ -1632,7 +1633,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
           }
           else {
             // Not found.
-            return brapi_raise_error_json(404, t("Object not found!"));
+            throw new BrapiException(404, t("Object not found!"));
           }
         }
         break;
@@ -1640,12 +1641,12 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
       case 'PUT':
         if (empty($id)) {
           // Without ID: error.
-          return brapi_raise_error_json(400, t("Object identifier is missing!"));
+          throw new BrapiException(400, t("Object identifier is missing!"));
         }
         else {
           // With ID.
           if (empty($user_data)) {
-            return brapi_raise_error_json(400, t("Missing input data!"));
+            throw new BrapiException(400, t("Missing input data!"));
           }
           if ($object) {
             // Update object.
@@ -1663,7 +1664,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
       case 'DELETE':
         if (empty($id)) {
           // Without ID: error.
-          return brapi_raise_error_json(400, t("Object identifier is missing!"));
+          throw new BrapiException(400, t("Object identifier is missing!"));
         }
         else {
           // With ID.
@@ -1674,14 +1675,17 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
           }
           else {
             // Not found.
-            return brapi_raise_error_json(404, t("Object not found!"));
+            throw new BrapiException(404, t("Object not found!"));
           }
         }
         break;
 
       default:
-        return brapi_raise_error_json(500, t("Invalid HTTP method not checked properly!"));
+        throw new BrapiException(500, t("Invalid HTTP method not checked properly!"));
     }
+  }
+  catch (BrapiException $be) {
+    throw $be;
   }
   catch (Exception $e) {
     $error_message =
@@ -1691,7 +1695,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
       );
   }
 
-  return brapi_raise_error_json(
+  throw new BrapiException(
     500,
     t(
       "CRUD error! @error",
@@ -1939,10 +1943,12 @@ function brapi_output_json(
 
   $args = drupal_get_query_parameters();
 
+  if (!isset($data)) {
+    $data = array();
+  }
   if (!isset($metadata)) {
     $metadata = brapi_prepare_metadata(0);
   }
-
   // Check if have metadata (either default or specified non-empty one).
   if (count($metadata)) {
     // Combine data and metadata.
@@ -2167,6 +2173,9 @@ function brapi_get_call_filters($call_name) {
  *   BrAPI call to use at remote BrAPI instance. Can be set to a FALSE value to
  *   have it guessed automatically. It may contain identifiers.
  *
+ * @return int
+ *  Returns the number of external site queried that successfully answered.
+ *
  * @ingroup brapi_api
  */
 function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = array(), $call = NULL) {
@@ -2175,6 +2184,8 @@ function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = ar
   if (!isset($aggregation_options)) {
     $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
   }
+
+  $queried_site_count = 0;
 
   // Get call menu path used by Drupal.
   $call_base = substr(menu_get_item()['path'], strlen(BRAPI_SERVICE_PREFIX_V1));
@@ -2273,6 +2284,8 @@ function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = ar
           if (isset($call_result_json)) {
             $call_result = json_decode($call_result_json, TRUE);
             if (isset($call_result)) {
+              // Count the answer.
+              ++$queried_site_count;
               $data = brapi_merge_array($data, $call_result);
               //unset($data['metadata']);
               // @todo +FIXME: take into account metadata (pager, files).
@@ -2287,6 +2300,8 @@ function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = ar
       $metadata['aggregated_from'] = $aggregated_from_list;
     }
   }
+  
+  return $queried_site_count;
 }
 
 /**
