@@ -50,6 +50,13 @@ class BrapiException extends Exception {
   }
 
   /**
+   * Returns exception HTTP status code.
+   */
+  public function getStatusCode() {
+    return $this->http_error_code;
+  }
+
+  /**
    * Generates JSON output.
    */
   public function getJSONOutput() {
@@ -2178,7 +2185,12 @@ function brapi_get_call_filters($call_name) {
  *
  * @ingroup brapi_api
  */
-function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = array(), $call = NULL) {
+function brapi_aggregate_call(
+  &$data,
+  &$metadata,
+  &$debug_data,
+  $parameters = array(),
+  $call = NULL) {
   static $aggregation_options;
   // Get call aggregation settings.
   if (!isset($aggregation_options)) {
@@ -2187,10 +2199,12 @@ function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = ar
 
   $queried_site_count = 0;
 
-  // Get call menu path used by Drupal.
-  $call_base = substr(menu_get_item()['path'], strlen(BRAPI_SERVICE_PREFIX_V1));
+  // Get call menu used by Drupal.
+  $menu_call_mapping = brapi_get_menu_call_mapping();
+  $call_name = $menu_call_mapping['menu_to_call'][menu_get_item()['path']];
 
-  // Set complete call path if omitted by caller.
+  // Set complete call path if omitted by caller. It will include parameters but
+  // not query string.
   if (!$call) {
     $call = substr(current_path(), strlen(BRAPI_SERVICE_PREFIX_V1));
   }
@@ -2216,12 +2230,12 @@ function brapi_aggregate_call(&$data, &$metadata, &$debug_data, $parameters = ar
   $parameters['GET']['callers'] = implode(',', $callers);
 
   // Check if call has aggregation.
-  if (isset($aggregation_options[$call_base])
-      && !empty($aggregation_options[$call_base])) {
+  if (isset($aggregation_options[$call_name])
+      && !empty($aggregation_options[$call_name])) {
     // Get data from other sites.
     $query = new EntityFieldQuery();
     $query->entityCondition('entity_type', 'brapi_site')
-      ->propertyCondition('machine_name', $aggregation_options[$call_base])
+      ->propertyCondition('machine_name', $aggregation_options[$call_name])
       ->propertyOrderBy('weight', 'ASC');
     $results = $query->execute();
     if (!empty($results)) {
@@ -2419,4 +2433,48 @@ function hook_brapi_CALL_FUNC_NAME_brapi_error_alter(&$message) {
  */
 function hook_brapi_CALL_FUNC_NAME_error_alter(&$message) {
   $message = '<div>It seems an error occured!</div>';
+}
+
+/**
+ * Returns a hash containing BrAPI calls and Drupal menu mapping.
+ *
+ * @param bool $reset
+ *   If true, reset the cache and re-compute the mapping.
+ *
+ * @return array
+ *   Returns a hash with 2 entries, 'call_to_menu' and 'menu_to_call' that both
+ *   contain a hash that associate to a given entry in a system (Drupal menu or
+ *   BrAPI call) its corresponding entry in the other system.
+ */
+function brapi_get_menu_call_mapping($reset = FALSE) {
+  static $menu_call_mapping;
+
+  if (!isset($menu_call_mapping) || $reset) {
+    if (!$reset
+        && ($cache = cache_get('BRAPI_MENU_CALL_MAPPING'))
+        && !empty($cache->data)) {
+      $menu_call_mapping = $cache->data;
+    }
+    else {
+      $menu_call_mapping = array(
+        'call_to_menu' => array(),
+        'menu_to_call' => array(),
+      );
+      foreach (brapi_get_calls() as $call_name => $call_data) {
+        $call_url = BRAPI_SERVICE_PREFIX_V1 . $call_name;
+        // Remove trailing slash if one.
+        if ('/' == $call_url[strlen($call_url) - 1]) {
+          $call_url = substr($call_url, 0, -1);
+        }
+        // Replace place holders.
+        $call_url = preg_replace('/\{\w+\}/', '%', $call_url);
+        $menu_call_mapping['call_to_menu'][$call_name] = $call_url;
+        $menu_call_mapping['menu_to_call'][$call_url] = $call_name;
+      }
+
+      cache_set('BRAPI_MENU_CALL_MAPPING', $menu_call_mapping);
+    }
+  }
+
+  return $menu_call_mapping;
 }

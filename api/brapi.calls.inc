@@ -371,6 +371,8 @@ function brapi_v1_call_json($selected_call_name) {
       // Check call name.
       // Remove leading slash in name.
       $call_name = substr($call_name, 1);
+      // Clear place holder decoration.
+      $call_name = str_replace(array('{', '}'), '', $call_name);
       $has_requested_name = TRUE;
       if ($selected_call_name) {
         $has_requested_name = ($selected_call_name == $call_name);
@@ -886,7 +888,7 @@ function brapi_v1_germplasm_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_germplasm_details_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
 
   $actions = array(
     'create' => 'brapi_v1_create_germplasm_json',
@@ -896,7 +898,7 @@ function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode =
     // X 'list'   => function (), .
   );
 
-  return brapi_process_crud('/germplasm', $actions, 'germplasm', $germplasm_id);
+  return brapi_process_crud('/germplasm/{id}', $actions, 'germplasm', $germplasm_id);
 }
 
 /**

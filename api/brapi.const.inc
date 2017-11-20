@@ -34,6 +34,7 @@ define('BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV', 'multicrop passport ontology');
 define('BRAPI_DEFAULT_PAGE_SIZE', 30);
 define('BRAPI_ESCAPE_CHARACTER', "\\");
 define('BRAPI_XSD_DATE_FORMAT', "Y-m-d");
+define('BRAPI_MENU_CALL_MAPPING', "brapi_menu_call_mapping");
 
 /**
  * Returns an array of CV terms used by the Breeding API that are not part of
@@ -177,7 +178,7 @@ function brapi_get_calls() {
         ),
         'aggregatable' => FALSE,
       ),
-      '/germplasm'      => array(
+      '/germplasm/{id}' => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
         'datatypes'      => array(),
@@ -187,7 +188,7 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_germplasm_json',
+        'page callback'  => 'brapi_v1_germplasm_details_json',
         'arguments'      => array(
           3 => array(
             'name' => 'germplasmDbId',

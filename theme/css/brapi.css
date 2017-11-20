@@ -24,11 +24,11 @@
 }
 
 .brapi-argument::before {
-  content: "<";
+  content: "{";
 }
 
 .brapi-argument::after {
-  content: ">";
+content: "}";
 }
 
 .brapi-argument {

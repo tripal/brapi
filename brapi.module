@@ -219,13 +219,10 @@ function brapi_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu_call_mapping = brapi_get_menu_call_mapping();
   // Generate Drupal URL menu for supported BrAPI calls.
   foreach (brapi_get_calls() as $call_name => $call_data) {
-    $call_url = BRAPI_SERVICE_PREFIX_V1 . $call_name;
-    // Remove trailing slash if one.
-    if ('/' == $call_url[strlen($call_url) - 1]) {
-      $call_url = substr($call_url, 0, -1);
-    }
+    $call_url = $menu_call_mapping['call_to_menu'][$call_name];
     // Add call.
     $items[$call_url] = array(
       'title' => $call_data['title'],
@@ -234,7 +231,7 @@ function brapi_menu() {
       // Add default arguments for brapi_call_wrapper(). Other arguments will be
       // added below after.
       'page arguments' => array(
-        preg_replace('/\W+/', '_', $call_name),
+        preg_replace('/[^\w\{\}]+/', '_', $call_name),
         $call_data['page callback'],
       ),
       'access callback' => 'user_access',

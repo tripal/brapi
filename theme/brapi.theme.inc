@@ -186,7 +186,9 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
     // Replace URL arguments if some.
     if (array_key_exists('arguments', $brapi_call_data)) {
       $example_url_parts = $call_url_parts = explode('/', $call_url);
-      foreach ($brapi_call_data['arguments'] as $arg_index => $argument) {
+      foreach ($brapi_call_data['arguments'] as $abs_arg_index => $argument) {
+        // Substract the index of BRAPI_SERVICE_PREFIX_V1 parts.
+        $arg_index = $abs_arg_index - 1;
         $call_url_parts[$arg_index] =
           '<span class="brapi-argument" title="type: '
           . $argument['type'] . '; '
