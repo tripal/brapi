@@ -94,6 +94,23 @@ function brapi_install() {
 }
 
 /**
+ * Update aggregation option variable to remove the first '/' of calls.
+ *
+ * @ingroup brapi
+ */
+function brapi_update_7100(&$sandbox) {
+  $old_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  $new_aggregation_options = array();
+  foreach ($old_aggregation_options as $call_path => $aggregation_option) {
+    // Remove leading slash.
+    $call_path = preg_replace('/^\//', '', $call_path);
+    $new_aggregation_options[$call_path] = $aggregation_option;
+  }
+  variable_set(BRAPI_AGGREGATION_OPTIONS, $new_aggregation_options);
+}
+
+
+/**
  * Implements hook_uninstall().
  *
  * @ingroup brapi

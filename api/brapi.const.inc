@@ -150,7 +150,7 @@ function brapi_get_calls() {
   static $brapi_calls;
   if (!isset($brapi_calls)) {
     $brapi_calls = array(
-      '/'               => array(
+      ''               => array(
         'title'          => 'About',
         'description'    => 'About Breeding API Drupal implementation',
         'datatypes'      => array(),
@@ -160,7 +160,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_about_json',
         'aggregatable' => FALSE,
       ),
-      '/calls'      => array(
+      'calls'      => array(
         'title'          => 'Call search',
         'description'    => 'Supported Breeding API calls',
         'datatypes'      => array(),
@@ -178,7 +178,7 @@ function brapi_get_calls() {
         ),
         'aggregatable' => FALSE,
       ),
-      '/germplasm/{id}' => array(
+      'germplasm/{germplasmDbId}' => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
         'datatypes'      => array(),
@@ -200,7 +200,7 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregatable' => TRUE,
       ),
-      '/germplasm-search' => array(
+      'germplasm-search' => array(
         'title'          => 'Germplasm Search',
         'description'    => 'Germplasm search call',
         'datatypes'      => array(),
@@ -212,7 +212,7 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregatable' => TRUE,
       ),
-      '/token'      => array(
+      'token'      => array(
         'title'          => 'Authentication',
         'description'    => 'User authentication in OAuth2 style',
         'datatypes'      => array(),
@@ -225,7 +225,7 @@ function brapi_get_calls() {
         'aggregatable' => FALSE,
       ),
       // Externalized calls.
-      '/allelematrix-search'      => array(
+      'allelematrix-search'      => array(
         'title'          => 'Allele matrix search',
         'description'    => 'Allele matrix search',
         'datatypes'      => array('json'),
@@ -236,7 +236,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/crops'      => array(
+      'crops'      => array(
         'title'          => 'Crops',
         'description'    => 'Crops',
         'datatypes'      => array(),
@@ -247,7 +247,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/locations'      => array(
+      'locations'      => array(
         'title'          => 'Locations',
         'description'    => 'Locations',
         'datatypes'      => array(),
@@ -258,7 +258,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/maps'      => array(
+      'maps'      => array(
         'title'          => 'Maps',
         'description'    => 'Maps',
         'datatypes'      => array('json'),
@@ -269,7 +269,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/markerprofiles'      => array(
+      'markerprofiles'      => array(
         'title'          => 'Marker profiles',
         'description'    => 'Marker profiles',
         'datatypes'      => array('json'),
@@ -280,7 +280,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/markers'      => array(
+      'markers'      => array(
         'title'          => 'Markers',
         'description'    => 'Markers',
         'datatypes'      => array('json'),
@@ -291,7 +291,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/observationLevels' => array(
+      'observationLevels' => array(
         'title'          => 'Observation levels',
         'description'    => 'Observation levels',
         'datatypes'      => array(),
@@ -302,7 +302,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/ontologies' => array(
+      'ontologies' => array(
         'title'          => 'Ontologies',
         'description'    => 'Ontologies',
         'datatypes'      => array(),
@@ -313,7 +313,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/phenotypes-search'      => array(
+      'phenotypes-search'      => array(
         'title'          => 'Phenotypes search',
         'description'    => 'Phenotypes search',
         'datatypes'      => array(),
@@ -324,7 +324,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/programs'      => array(
+      'programs'      => array(
         'title'          => 'Programs',
         'description'    => 'Programs',
         'datatypes'      => array(),
@@ -335,7 +335,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/samples'      => array(
+      'samples'      => array(
         'title'          => 'Samples',
         'description'    => 'Samples',
         'datatypes'      => array(),
@@ -346,7 +346,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/seasons'      => array(
+      'seasons'      => array(
         'title'          => 'Seasons',
         'description'    => 'Seasons',
         'datatypes'      => array(),
@@ -357,7 +357,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/studies'      => array(
+      'studies'      => array(
         'title'          => 'Studies',
         'description'    => 'Studies',
         'datatypes'      => array(),
@@ -368,7 +368,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/studies-search'      => array(
+      'studies-search'      => array(
         'title'          => 'Studies search',
         'description'    => 'Studies search',
         'datatypes'      => array(),
@@ -379,7 +379,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/studyTypes'      => array(
+      'studyTypes'      => array(
         'title'          => 'Study types',
         'description'    => 'Study types',
         'datatypes'      => array(),
@@ -390,7 +390,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/traits'      => array(
+      'traits'      => array(
         'title'          => 'Traits',
         'description'    => 'Traits',
         'datatypes'      => array(),
@@ -401,7 +401,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/trials'      => array(
+      'trials'      => array(
         'title'          => 'Trials',
         'description'    => 'Trials',
         'datatypes'      => array(),
@@ -412,7 +412,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/variables'      => array(
+      'variables'      => array(
         'title'          => 'Variables',
         'description'    => 'Variables',
         'datatypes'      => array(),
@@ -423,7 +423,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/variables-search' => array(
+      'variables-search' => array(
         'title'          => 'Variables search',
         'description'    => 'Variables search',
         'datatypes'      => array(),
@@ -434,7 +434,7 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      '/variables/datatypes' => array(
+      'variables/datatypes' => array(
         'title'          => 'Variables datatypes',
         'description'    => 'Variables datatypes',
         'datatypes'      => array(),

@@ -316,7 +316,9 @@ function brapi_admin_form($form, &$form_state) {
     if (array_key_exists($term_name, $brapi_cv_settings)) {
       $default_ids = $brapi_cv_settings[$term_name];
       if ($default_ids) {
-        $default_ids = array_map('trim', explode(',', $default_ids));
+        if (!is_array($default_ids)) {
+          $default_ids = array_map('trim', explode(',', $default_ids));
+        }
       }
       else {
         $default_ids = array();
@@ -431,7 +433,8 @@ function brapi_admin_form($form, &$form_state) {
         isset($aggregation_options[$call_path]) ?
           $aggregation_options[$call_path]
           : array();
-      $form['aggregation_options']['aggr_' . $call_path] = array(
+      $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
+      $form['aggregation_options']['aggr_' . $call_path_form_name] = array(
           '#type' => 'select',
           '#description' => t('Select a BrAPI site for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
           '#options' => $brapi_site_options, 
@@ -581,12 +584,13 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   }
   variable_set(BRAPI_EXAMPLE_SETTINGS, $brapi_example_settings);
 
-  // Aggrecation options.
+  // Aggregation options.
   $brapi_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
   // Loop on calls.
   foreach (brapi_get_calls() as $call_path => $call) {
     if ($call['aggregatable']) {
-      $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path]);
+      $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
+      $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path_form_name]);
     }
   }
   variable_set(BRAPI_AGGREGATION_OPTIONS, $brapi_aggregation_options);

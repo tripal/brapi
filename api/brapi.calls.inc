@@ -35,7 +35,7 @@ require_once 'brapi.const.inc';
  * characters being replaced by underscores. Available call path can be found
  * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
  * are the actual call path.
- * For instance, in order to alter '/germplasm-search' call, the xbrapi module
+ * For instance, in order to alter 'germplasm-search' call, the xbrapi module
  * should implement:
  * @code
  * function xbrapi_brapi_germplasm_search_alter($data, $context) {}
@@ -53,20 +53,27 @@ require_once 'brapi.const.inc';
  */
 function brapi_call_wrapper($call_name, $call_func) {
   $args = array_slice(func_get_args(), 2);
+  // Replace slash and other non-word characters by '_' and lower-case string.
+  $alter_name = strtolower(preg_replace('/\W+/g', '_', $call_name));
+  // Remove leading and trailing underscores.
+  $alter_name = preg_replace('/^_+/', '', $alter_name);
+  $alter_name = preg_replace('/_+$/', '', $alter_name);
   try {
     list($data, $metadata, $debug_data) = call_user_func_array($call_func, $args);
+    $debug_data[] = "Call name: $call_name";
+    $debug_data[] = "Handling function: $call_func";
     // Allow other modules to alter output.
     $context = array(
       'metadata' => &$metadata,
       'debug_data' => &$debug_data,
     );
-    drupal_alter('brapi' . $call_name, $data, $context);
+    drupal_alter('brapi_' . $alter_name, $data, $context);
     $output = brapi_output_json($data, $metadata, $debug_data);
   }
   catch (BrapiException $be) {
     // Drupal alter
     $output = $be->getJSONOutput();
-    drupal_alter('brapi' . $call_name . '_brapi_error', $output);
+    drupal_alter('brapi_' . $alter_name . '_brapi_error', $output);
   }
   catch (Exception $e) {
     // Drupal alter
@@ -74,7 +81,7 @@ function brapi_call_wrapper($call_name, $call_func) {
       500,
       $e->getMessage()
     );
-    drupal_alter('brapi' . $call_name . '_error', $output);
+    drupal_alter('brapi_' . $alter_name . '_error', $output);
   }
 
   return $output;
@@ -369,10 +376,6 @@ function brapi_v1_call_json($selected_call_name) {
       }
 
       // Check call name.
-      // Remove leading slash in name.
-      $call_name = substr($call_name, 1);
-      // Clear place holder decoration.
-      $call_name = str_replace(array('{', '}'), '', $call_name);
       $has_requested_name = TRUE;
       if ($selected_call_name) {
         $has_requested_name = ($selected_call_name == $call_name);
@@ -898,7 +901,7 @@ function brapi_v1_germplasm_details_json($germplasm_id, $view_mode = 'full', $la
     // X 'list'   => function (), .
   );
 
-  return brapi_process_crud('/germplasm/{id}', $actions, 'germplasm', $germplasm_id);
+  return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
 }
 
 /**

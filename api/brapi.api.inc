@@ -1499,7 +1499,7 @@ function brapi_set_field(
  * Handles CRUD calls.
  *
  * Handles CRUD (Create-Read-Update-Delete) HTTP calls according to BrAPI
- * settings set in brapi_get_calls(). It also handles user persmission. Here is
+ * settings set in brapi_get_calls(). It also handles user permissions. Here is
  * how we map CRUD operations and HTTP methods:
  *
  * * Create: POST without an ID (a new ID is generated) or PUT with the new ID
@@ -2054,7 +2054,7 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
 
 
 /**
- * Returns the list of parameters that can be used to filter cal results.
+ * Returns the list of parameters that can be used to filter call results.
  *
  * @param string $call_name
  *   A BrAPI call name.
@@ -2075,7 +2075,7 @@ function brapi_get_call_filters($call_name) {
   if (!isset($call_filters)) {
     $call_filters = array();
 
-    $call_filters['/calls'] = array('GET' => array('datatype' => 'string'));
+    $call_filters['calls'] = array('GET' => array('datatype' => 'string'));
 
     $germplasm_search = array();
     $germplasm_fields = $data_mapping['germplasm']['fields'];
@@ -2150,7 +2150,7 @@ function brapi_get_call_filters($call_name) {
           break;
       }
     }
-    $call_filters['/germplasm-search'] = array('POST' => &$germplasm_search);
+    $call_filters['germplasm-search'] = array('POST' => &$germplasm_search);
   }
 
   if (isset($call_filters[$call_name])) {
@@ -2376,9 +2376,13 @@ function brapi_merge_array($a, $b) {
  * data.
  *
  * <CALL_FUNC_NAME> should be replaced by the basic call path with non-word
- * characters being replaced by underscores. Available call path can be found
- * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
- * are the actual call path.
+ * characters being replaced by underscores and all lower-cased. Available call
+ * path can be found in brapi.const.inc "brapi_get_calls()" function: keys of
+ * the returned array are the actual call path.
+ * Ex.:
+ * * call 'germplasm-search' --> MY_MODULE_brapi_germplasm_search_alter
+ * * call 'germplasm/{germplasmDbId}' -->
+ *   MY_MODULE_brapi_germplasm_germplasmdbid_alter
  *
  * @param array $data
  *   The $data variable contains the structure of the result part of the call
@@ -2402,6 +2406,11 @@ function hook_brapi_CALL_FUNC_NAME_alter(&$data, &$context) {
  * characters being replaced by underscores. Available call path can be found
  * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
  * are the actual call path.
+ * Ex.:
+ * * call 'germplasm-search' -->
+ *   MY_MODULE_brapi_germplasm_search_brapi_error_alter
+ * * call 'germplasm/{germplasmDbId}' -->
+ *   MY_MODULE_brapi_germplasm_germplasmdbid_brapi_error_alter
  *
  * @param $message
  *   contains the error content displayed to the user. To change
@@ -2423,6 +2432,10 @@ function hook_brapi_CALL_FUNC_NAME_brapi_error_alter(&$message) {
  * characters being replaced by underscores. Available call path can be found
  * in brapi.const.inc "brapi_get_calls()" function: keys of the returned array
  * are the actual call path.
+ * Ex.:
+ * * call 'germplasm-search' --> MY_MODULE_brapi_germplasm_search_error_alter
+ * * call 'germplasm/{germplasmDbId}' -->
+ *   MY_MODULE_brapi_germplasm_germplasmdbid_error_alter
  *
  * @param $message
  *   contains the error content displayed to the user. To change
@@ -2461,7 +2474,7 @@ function brapi_get_menu_call_mapping($reset = FALSE) {
         'menu_to_call' => array(),
       );
       foreach (brapi_get_calls() as $call_name => $call_data) {
-        $call_url = BRAPI_SERVICE_PREFIX_V1 . $call_name;
+        $call_url = BRAPI_SERVICE_PREFIX_V1 . '/' . $call_name;
         // Remove trailing slash if one.
         if ('/' == $call_url[strlen($call_url) - 1]) {
           $call_url = substr($call_url, 0, -1);

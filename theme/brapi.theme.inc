@@ -174,10 +174,10 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
   global $base_url;
   $rows = array();
   // Get settings.
-  $brapi_example_settings = variable_get(BRAPI_EXAMPLE_SETTINGS);
+  $brapi_example_settings = variable_get(BRAPI_EXAMPLE_SETTINGS, array());
   // Process each call.
   foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
-    $call_url = $brapi_call;
+    $call_url = '/' . $brapi_call;
     // Remove trailing slash if one and not root.
     if ((1 < strlen($call_url)) && ('/' == $call_url[strlen($call_url) - 1])) {
       $call_url = substr($call_url, 0, -1);
@@ -254,7 +254,7 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
       }
       
       // handle special case of login
-      if ('/token' == $brapi_call) {
+      if ('token' == $brapi_call) {
         $methods = 'LOGIN, LOGOUT';
       }
     }
@@ -315,7 +315,8 @@ function brapi_theme_prepare_cv_table() {
 
     $terms = array();
     foreach ($cvterm_ids as $cvterm_id) {
-      if ($term = tripal_get_cvterm(array('cvterm_id' => $cvterm_id))) {
+      $term = tripal_get_cvterm(array('cvterm_id' => $cvterm_id));
+      if ($term) {
         $terms[] =
           '<span class="brapi-cvterm" title="'
           . htmlentities($term->definition)
@@ -327,7 +328,7 @@ function brapi_theme_prepare_cv_table() {
           . $term->cvterm_id
           . ')</small></span>';
       }
-      elseif ($term->cvterm_id) {
+      elseif ($cvterm_id) {
         $terms[] =
           '<i class="brapi-missing">'
           . t(
@@ -341,7 +342,7 @@ function brapi_theme_prepare_cv_table() {
           '<i class="brapi-missing">' . t('no term set') . '</i>';
       }
     }
-    $overridable = ($term->cv_id->name == BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) ?
+    $overridable = ($term && $term->cv_id->name == BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV) ?
       'brapi-yes">' . t('yes')
       : 'brapi-no">' . t('no');
     $rows[] =

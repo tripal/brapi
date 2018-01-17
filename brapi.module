@@ -231,7 +231,7 @@ function brapi_menu() {
       // Add default arguments for brapi_call_wrapper(). Other arguments will be
       // added below after.
       'page arguments' => array(
-        preg_replace('/[^\w\{\}]+/', '_', $call_name),
+        $call_name,
         $call_data['page callback'],
       ),
       'access callback' => 'user_access',
