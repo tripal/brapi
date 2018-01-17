@@ -153,7 +153,7 @@ function brapi_get_calls() {
       ''               => array(
         'title'          => 'About',
         'description'    => 'About Breeding API Drupal implementation',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET' => 'access content',
         ),
@@ -163,7 +163,7 @@ function brapi_get_calls() {
       'calls'      => array(
         'title'          => 'Call search',
         'description'    => 'Supported Breeding API calls',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET' => BRAPI_USE_PERMISSION,
         ),
@@ -181,7 +181,7 @@ function brapi_get_calls() {
       'germplasm/{germplasmDbId}' => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
@@ -203,7 +203,7 @@ function brapi_get_calls() {
       'germplasm-search' => array(
         'title'          => 'Germplasm Search',
         'description'    => 'Germplasm search call',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -215,7 +215,7 @@ function brapi_get_calls() {
       'token'      => array(
         'title'          => 'Authentication',
         'description'    => 'User authentication in OAuth2 style',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_USE_PERMISSION,
@@ -239,7 +239,7 @@ function brapi_get_calls() {
       'crops'      => array(
         'title'          => 'Crops',
         'description'    => 'Crops',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -250,7 +250,7 @@ function brapi_get_calls() {
       'locations'      => array(
         'title'          => 'Locations',
         'description'    => 'Locations',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -294,7 +294,7 @@ function brapi_get_calls() {
       'observationLevels' => array(
         'title'          => 'Observation levels',
         'description'    => 'Observation levels',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -305,7 +305,7 @@ function brapi_get_calls() {
       'ontologies' => array(
         'title'          => 'Ontologies',
         'description'    => 'Ontologies',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -316,7 +316,7 @@ function brapi_get_calls() {
       'phenotypes-search'      => array(
         'title'          => 'Phenotypes search',
         'description'    => 'Phenotypes search',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -327,7 +327,7 @@ function brapi_get_calls() {
       'programs'      => array(
         'title'          => 'Programs',
         'description'    => 'Programs',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -338,7 +338,7 @@ function brapi_get_calls() {
       'samples'      => array(
         'title'          => 'Samples',
         'description'    => 'Samples',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -349,7 +349,7 @@ function brapi_get_calls() {
       'seasons'      => array(
         'title'          => 'Seasons',
         'description'    => 'Seasons',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -360,7 +360,7 @@ function brapi_get_calls() {
       'studies'      => array(
         'title'          => 'Studies',
         'description'    => 'Studies',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -371,7 +371,7 @@ function brapi_get_calls() {
       'studies-search'      => array(
         'title'          => 'Studies search',
         'description'    => 'Studies search',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -382,7 +382,7 @@ function brapi_get_calls() {
       'studyTypes'      => array(
         'title'          => 'Study types',
         'description'    => 'Study types',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -393,7 +393,7 @@ function brapi_get_calls() {
       'traits'      => array(
         'title'          => 'Traits',
         'description'    => 'Traits',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -404,7 +404,7 @@ function brapi_get_calls() {
       'trials'      => array(
         'title'          => 'Trials',
         'description'    => 'Trials',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -415,7 +415,7 @@ function brapi_get_calls() {
       'variables'      => array(
         'title'          => 'Variables',
         'description'    => 'Variables',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -426,7 +426,7 @@ function brapi_get_calls() {
       'variables-search' => array(
         'title'          => 'Variables search',
         'description'    => 'Variables search',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
@@ -437,7 +437,7 @@ function brapi_get_calls() {
       'variables/datatypes' => array(
         'title'          => 'Variables datatypes',
         'description'    => 'Variables datatypes',
-        'datatypes'      => array(),
+        'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
