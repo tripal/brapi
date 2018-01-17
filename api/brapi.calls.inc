@@ -54,7 +54,7 @@ require_once 'brapi.const.inc';
 function brapi_call_wrapper($call_name, $call_func) {
   $args = array_slice(func_get_args(), 2);
   // Replace slash and other non-word characters by '_' and lower-case string.
-  $alter_name = strtolower(preg_replace('/\W+/g', '_', $call_name));
+  $alter_name = strtolower(preg_replace('/\W+/', '_', $call_name));
   // Remove leading and trailing underscores.
   $alter_name = preg_replace('/^_+/', '', $alter_name);
   $alter_name = preg_replace('/_+$/', '', $alter_name);

@@ -35,7 +35,7 @@
     if ($call_structure['filters']) {
       echo t('Filters:') . "<br/>\n";
       foreach (array('GET', 'POST') as $method) {
-        if ($call_structure['filters'][$method]) {
+        if (isset($call_structure['filters'][$method])) {
           $method_class = strtolower($method);
           echo "<ol>\n";
           foreach ($call_structure['filters'][$method] as $filter_name => $value_type) {

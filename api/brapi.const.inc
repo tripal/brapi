@@ -675,7 +675,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => $cv_settings['countryOfOriginCode (property type)'],
+              'type_id' => $cv_settings['countryOfOriginCode'],
             ),
             'field_type' => 'string',
           ),
@@ -683,7 +683,7 @@ function brapi_get_data_mapping() {
             'table' => 'stock_cvterm',
             'column' => 'cvterm_id',
             'selector' => array(
-              'cvterm_id' => $cv_settings['countryOfOriginCode(children CV terms)'],
+              'cvterm_id' => $cv_settings['countryOfOriginCode'],
               'is_not' => FALSE,
             ),
             'field_type' => 'cvterm',

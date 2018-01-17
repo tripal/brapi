@@ -440,6 +440,10 @@ function brapi_preprocess_brapi_query(&$variables) {
     if (array_key_exists('arguments', $brapi_call_data)) {
       $call_args = $brapi_call_data['arguments'];
     }
+    // Add '/' to root call.
+    if ('' === $brapi_call) {
+      $brapi_call = '/';
+    }
     $variables['calls'][$brapi_call] = array(
       'arguments' => $call_args,
       'filters' => brapi_get_call_filters($brapi_call),
