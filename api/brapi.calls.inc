@@ -1210,10 +1210,6 @@ function brapi_v1_germplasm_pedigree_json($germplasm_id, $view_mode = 'full', $l
  *   a JSON array containing the stock details.
  */
 function brapi_v1_read_germplasm_pedigree_json($stock) {
-  // get call parameters
-  $args = drupal_get_query_parameters();
-  $cv_settings = brapi_get_cv_settings();
-
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = array();
@@ -1230,41 +1226,55 @@ function brapi_v1_read_germplasm_pedigree_json($stock) {
       brapi_get_field('germplasm', $stock, $field_name);
   }
 
-  //@todo: handle notation
-  $notation   = isset($args['notation']) ? $args['notation'] : 'purdy';
-
-//  // Get parents.
-//  $table_options = array(
-//    'include_fk' => array(
-//      'type_id' => array(
-//        'cv_id' => 1,
-//      ),
-//      'object_id' => array(
-//      ),
-//    ),
-//  );
-//  $stock = chado_expand_var($stock, 'table', 'stock_relationship', $table_options);
-//
-//  $rank0_pedigree = array();
-//  foreach ($stock->stock_relationship->object_id as $relationship) {
-//    if (0 == $relationship->rank) {
-//      if ('female_parent_of' == $relationship->type_id->name) {
-//        $rank0_pedigree['parent1Id'] = $relationship->subject_id->uniquename;
-//      }
-//      elseif ('male_parent' == $relationship->type_id->name) {
-//        $rank0_pedigree['parent2Id'] = $relationship->subject_id->uniquename;
-//      }
-//    }
-//  }
-//
-//  $rank0_pedigree['pedigreeString'] = '';
-//  if ($rank0_pedigree['parent1Id'] || $rank0_pedigree['parent2Id']) {
-//    $rank0_pedigree['pedigreeString'] = $rank0_pedigree['parent1Id'] . ' / ' . $rank0_pedigree['parent2Id'];
-//  }
-//
-//  $germplasm_data = array(array_merge($germplasm_data, $rank0_pedigree));
-
   $data = array('result' => array('data' => array($germplasm_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Crops call.
+ *
+ * BRAPI: Crops
+ * URL: brapi/v1/crops
+ * Displays list of supported crops.
+ *
+ * GET: returns suppoted crop list.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/crops
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Crops/ListCrops.md
+ *
+ * @todo: add option to include all species, only stock species, just a static
+ *   list, filter sub-species.
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+
+  $sql_query = "
+    SELECT species
+    FROM organism o
+    WHERE EXISTS
+      (SELECT TRUE FROM stock s WHERE s.organism_id = o.organism_id LIMIT 1)
+    ORDER BY species;";
+  $crop_result = chado_query($sql_query);
+  $crop_list = array();
+  while ($crop = $crop_result->fetchAssoc()) {
+    $crop_list[] = $crop['species'];
+  }
+  $data = array('result' => array('data' => $crop_list));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(

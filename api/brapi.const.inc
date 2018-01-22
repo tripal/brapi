@@ -280,7 +280,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_crops_json',
         'aggregatable' => TRUE,
       ),
       'locations'      => array(
@@ -633,7 +633,6 @@ function brapi_get_data_mapping() {
             if ($female_parent || $male_parent) {
               $pedigree = "$female_parent / $male_parent";
             }
-            
             return $pedigree;
           },
           'seedSource' => array(
