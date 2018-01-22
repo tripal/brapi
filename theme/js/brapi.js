@@ -67,7 +67,14 @@ $(function() {
               && output.result.data.length) {
             var output_html = $brapi_form.find('input[name="brapi_html"]').val();
             if (!output_html) {
-              output_html = 'BrAPI';
+              $brapi_form.find('input').not('.brapi-query-filter-post').remove();
+              output_html = encodeURIComponent(
+                '<a href="'
+                + $brapi_form.attr('action')
+                + ($brapi_form.attr('action').match(/\?/) ? '&' : '?')
+                + $brapi_form.serialize()
+                + '">BrAPI match</a>'
+              );
             }
             // Replace each property place-holder by its value.
             for (var prop in output.result.data[0]) {
