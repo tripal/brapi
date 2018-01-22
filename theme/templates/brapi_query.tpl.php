@@ -19,8 +19,10 @@
 <h4>Calls</h4>
 <?php
   foreach ($calls as $call_name => $call_structure) {
+    $call_url = $local_brapi_url . ($call_name == '/' ? '/' : "/$call_name");
+    $call_url = preg_replace('/\{.+/', '', $call_url);
 ?>
-  <form class="brapi-query" action="<?php echo $local_brapi_url;?>" method="post" accept-charset="UTF-8">
+  <form class="brapi-query" action="<?php echo $call_url;?>" method="post" accept-charset="UTF-8">
     <fieldset>
       <legend>Call "<strong class="brapi-call-name"><?php echo $call_name ?></strong>" </legend>
 <?php

@@ -13,7 +13,30 @@
 /******************************************************************************/
 $(function() {
 
-  // Auto-process page BrAPI queries: display matching accession name.
+  /**
+  * Auto-process page BrAPI queries: display matching accession name.
+  *
+  * A form to auto-process should look like that:
+  * @code
+  * <form class="brapi-autoquery" action="https://BRAPI_SERVER/brapi/v1/SERVICE?PARAMETERS..." method="GET">
+  *   <input type="hidden" name="brapi_html" value="URL_ENCODED_HTML_STRING"/>
+  *   <input type="submit" name="submit" value="Get BrAPI data"/>
+  * </form>
+  * @endcode
+  * where "BRAPI_SERVER" is the BrAPI server name, "SERVICE?PARAMETERS..." is
+  * the BrAPI service to query with its optional parameters and values and 
+  * "URL_ENCODED_HTML_STRING" is the URL-encoded HTML code to use to replace
+  * the form. In this string, not encoded place-holder string will be replaced
+  * by properties of the (first) JSON object returned. A place-holder is a
+  * the property name as described in the BrAPI specs inside square-braquets.
+  * For instance "[germplasmName]" (for the "germplasm-search" call) will be
+  * replace by the germplasm name of the first germplasm returned by the call.
+  * Note: array or object properties can not be used here.
+  *
+  * The form can contain additional call parameters using hidden input or select
+  * fields wrapped by an HTML element having the CSS class
+  * "brapi-query-filter-post".
+  */
   $('form.brapi-autoquery')
     .not('.brapi-processed')
     .addClass('brapi-processed')
@@ -41,15 +64,19 @@ $(function() {
           if (output
               && output.result
               && output.result.data
-              && output.result.data.length
-              && output.result.data[0].germplasmName) {
-            $brapi_form.html(
-              '<a href="https://musabase.org/stock/'
-              + output.result.data[0].germplasmDbId
-              + '/view" title="Link to MusaBase data">'
-              + output.result.data[0].germplasmName
-              + '</a>'
-            );
+              && output.result.data.length) {
+            var output_html = $brapi_form.find('input[name="brapi_html"]').val();
+            if (!output_html) {
+              output_html = 'BrAPI';
+            }
+            // Replace each property place-holder by its value.
+            for (var prop in output.result.data[0]) {
+              if (output.result.data[0].hasOwnProperty(prop)) {
+                var regex = new RegExp('\\[' + prop + '\\]', 'g');
+                output_html = output_html.replace(regex, output.result.data[0][prop]);
+              }
+            }
+            $brapi_form.html(decodeURIComponent(output_html));
           }
           else {
             $brapi_form.html('n/a');

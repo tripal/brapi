@@ -47,7 +47,7 @@ $(function() {
         var $form = $(this);
         // Check and fix URL (make sure we got http/https and no trailing '/' on
         // the service URL).
-        var service_url = $('#brapi_query_url').val() + $select.val();
+        var service_url = $('#brapi_query_url').val() + '/' + $select.val();
         if (!service_url.match(/^https?:\/\//i)) {
           alert('Invalid BrAPI Service URL!');
           $('#brapi_query_url').focus();
@@ -129,7 +129,8 @@ $(function() {
         });
       })
       .each(function (index, element) {
-        $('<option>' + $(element).find('legend .brapi-call-name').text() + '</option>')
+        var service = $(element).find('legend .brapi-call-name').text();
+        $('<option value="' + (service == '/' ? '' : service) + '">' + service + '</option>')
           .appendTo($select)
           .data('form', $(element));
       }
