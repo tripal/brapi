@@ -28,7 +28,7 @@ $(function() {
   * "URL_ENCODED_HTML_STRING" is the URL-encoded HTML code to use to replace
   * the form. In this string, not encoded place-holder string will be replaced
   * by properties of the (first) JSON object returned. A place-holder is a
-  * the property name as described in the BrAPI specs inside square-braquets.
+  * the property name as described in the BrAPI specs inside square-brackets.
   * For instance "[germplasmName]" (for the "germplasm-search" call) will be
   * replace by the germplasm name of the first germplasm returned by the call.
   * Note: array or object properties can not be used here.
@@ -54,7 +54,7 @@ $(function() {
       else {
         filter_data = JSON.stringify(filter_data, null, '\t');
       }
-      // get from Ajax
+      // Get from Ajax.
       $.ajax({
         url: $brapi_form.attr('action'),
         type: $brapi_form.attr('method'),
@@ -91,7 +91,6 @@ $(function() {
         },
         error: function(jqXHR, textStatus, errorThrown) {
           $brapi_form.html('n/a (error)');
-          // alert('Failed to run BrAPI query: ' + textStatus);
         }
       });
     })

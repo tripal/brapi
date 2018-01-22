@@ -467,64 +467,9 @@ function brapi_v1_call_json($selected_call_name) {
  *   brapi/v1/germplasm-search?name=ITC060?&matchMethod=wildcard&include=&pageSize=2&page=1
  *
  * @return array
- *   a JSON structure with the following variable (some can be embeded):
- *   Variable          | Datatype         | Required | Description
- *   -----------------------------------------------------
- *   metadata          | object           |        Y | pagination, status
- *   pagination        | object           |        Y | pageSize, currentPage, totalCount,
- *                     |                  |          | totalPages
- *   status            | list             |        Y | code, message
- *   result            | object           |        Y | data
- *   data              | array of objects |        Y | Array (possibly empty) of germplasm
- *                     |                  |          | records
- *   germplasmDbId     | string           |        Y | Internal db identifier
- *   defaultDisplayName| string           |        Y | A string representing the germplasm
- *                     |                  |          | that will be meaningful to the user
- *   germplasmName     | string           |          | Name of the germplasm. It can be the
- *                     |                  |          | prefered name and does not have to
- *                     |                  |          | be unique
- *   accessionNumber   | string           |          | This is the unique identifier for
- *                     |                  |          | accessions within a genebank, and is
- *                     |                  |          | assigned when a sample is entered
- *                     |                  |          | into the genebank collection
- *   germplasmPUI      | string           |          | Permanent identifier (e.g. URI, DOI,
- *                     |                  |          | LSID)
- *   pedigree          | string           |          | Cross name with optional selection
- *                     |                  |          | history.
- *   seedSource        | string           |          | Seed source
- *   synonyms          | array of string  |          | List of other germplasm names
+ *   a JSON structure. See official BrAPI documentation.
  *
- *   Example:
- *       {
- *         "metadata": {
- *           "status": [],
- *           "pagination": {
- *             "pageSize": "2",
- *             "currentPage": 0,
- *             "totalCount": 25,
- *             "totalPages": 13
- *           },
- *           "queryName": "ITC060?"
- *         },
- *         "result": {
- *           "data": [
- *             {
- *               "accessionNumber": "ITC0605",
- *               "germplasmDbId": "01BEL084605",
- *               "defaultDisplayName": "Japaraka no.2",
- *               "germplasmName": "Japaraka no.2",
- *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084605"
- *             },
- *             {
- *               "accessionNumber": "PNG064",
- *               "germplasmDbId": "01AUS04388",
- *               "defaultDisplayName": "Somani",
- *               "germplasmName": "Somani",
- *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01AUS04388"
- *             }
- *           ]
- *         }
- *       }
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Germplasm/GermplasmSearchPOST.md
  *
  * @ingroup brapi
  */
@@ -834,60 +779,9 @@ function brapi_v1_germplasm_search_json() {
  *   brapi/v1/germplasm/01BEL084609
  *
  * @return array
- *   a JSON structure with the following variable (some can be embeded):
+ *   a JSON structure. See official BrAPI documentation.
  *
- *   Variable           | Datatype         | Required | Description
- *  ----------------------------------------------------------------
- *   metadata           | object           |        Y | pagination, status
- *   pagination         | object           |        Y | pageSize, currentPage, totalCount,
- *                      |                  |          | totalPages
- *   status             | list             |        Y | code, message
- *   result             | object           |        Y | data
- *   data               | array of objects |        Y | Array of 0 or 1 germplasm records
- *   germplasmDbId      | string           |        Y | Internal db identifier
- *   defaultDisplayName | string           |        Y | A string representing the germplasm
- *                      |                  |          | that will be meaningful to the user
- *   germplasmName      | string           |          | Name of the germplasm. It can be the
- *                      |                  |          | prefered name and does not have to
- *                      |                  |          | be unique
- *   accessionNumber    | string           |          | This is the unique identifier for
- *                      |                  |          | accessions within a genebank, and is
- *                      |                  |          | assigned when a sample is entered
- *                      |                  |          | into the genebank collection
- *   germplasmPUI       | string           |          | Permanent identifier (e.g. URI, DOI,
- *                      |                  |          | LSID)
- *   pedigree           | string           |          | Cross name with optional selection
- *                      |                  |          | history.
- *   seedSource         | string           |          | Seed source
- *   synonyms           | array of string  |          | List of other germplasm names
- *
- *   Example:
- *       {
- *         "metadata": {
- *           "status": [],
- *           "pagination": {
- *             "pageSize": 1000,
- *             "currentPage": 0,
- *             "totalCount": 1,
- *             "totalPages": 1
- *           }
- *         },
- *         "result": {
- *           "data": [
- *             {
- *               "germplasmDbId": "01BEL084609",
- *               "defaultDisplayName": "Pahang",
- *               "germplasmName": "Pahang",
- *               "accessionNumber": "ITC0609",
- *               "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
- *               "synonyms": [
- *                 "01BEL084609",
- *                 "ITC0609"
- *               ]
- *             }
- *           ]
- *         }
- *       }
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Germplasm/GermplasmDetailsByGermplasmDbId.md
  *
  * @ingroup brapi
  */
@@ -1057,7 +951,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     WATCHDOG_DEBUG
   );
 
-  // @todo store other fields
+  // @todo store other fields.
   foreach ($optional_fields as $optional_field) {
     if (isset($user_data[$optional_field])) {
       brapi_set_field(
@@ -1271,6 +1165,113 @@ function brapi_v1_delete_germplasm_json($stock) {
     );
 
   return array(array(), $metadata, $debug_data);
+}
+
+/**
+ * Germplasm pedigree call.
+ *
+ * BRAPI: Germplasm Pedigree
+ * URL: brapi/v1/germplasm/\<id\>/pedigree
+ * Displays pedigree of a germplasm.
+ *
+ * GET: returns pedigree of the given accession.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/germplasm/01BEL084609
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Germplasm/GermplasmDetailsByGermplasmDbId.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_germplasm_pedigree_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+
+  $actions = array(
+    // X 'create' => 'brapi_v1_create_germplasm_json', .
+    'read'   => 'brapi_v1_read_germplasm_pedigree_json',
+    // X 'update' => 'brapi_v1_update_germplasm_json', .
+    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
+    // X 'list'   => function (), .
+  );
+
+  return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
+}
+
+/**
+ * Returns a JSON array containing the details of a given germplasm.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   a JSON array containing the stock details.
+ */
+function brapi_v1_read_germplasm_pedigree_json($stock) {
+  // get call parameters
+  $args = drupal_get_query_parameters();
+  $cv_settings = brapi_get_cv_settings();
+
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $germplasm_data = array();
+
+  $fields = array(
+    'germplasmDbId',
+    'defaultDisplayName',
+    'parent1DbId',
+    'parent2DbId',
+    'pedigree',
+  );
+  foreach ($fields as $field_name) {
+    $germplasm_data[$field_name] =
+      brapi_get_field('germplasm', $stock, $field_name);
+  }
+
+  //@todo: handle notation
+  $notation   = isset($args['notation']) ? $args['notation'] : 'purdy';
+
+//  // Get parents.
+//  $table_options = array(
+//    'include_fk' => array(
+//      'type_id' => array(
+//        'cv_id' => 1,
+//      ),
+//      'object_id' => array(
+//      ),
+//    ),
+//  );
+//  $stock = chado_expand_var($stock, 'table', 'stock_relationship', $table_options);
+//
+//  $rank0_pedigree = array();
+//  foreach ($stock->stock_relationship->object_id as $relationship) {
+//    if (0 == $relationship->rank) {
+//      if ('female_parent_of' == $relationship->type_id->name) {
+//        $rank0_pedigree['parent1Id'] = $relationship->subject_id->uniquename;
+//      }
+//      elseif ('male_parent' == $relationship->type_id->name) {
+//        $rank0_pedigree['parent2Id'] = $relationship->subject_id->uniquename;
+//      }
+//    }
+//  }
+//
+//  $rank0_pedigree['pedigreeString'] = '';
+//  if ($rank0_pedigree['parent1Id'] || $rank0_pedigree['parent2Id']) {
+//    $rank0_pedigree['pedigreeString'] = $rank0_pedigree['parent1Id'] . ' / ' . $rank0_pedigree['parent2Id'];
+//  }
+//
+//  $germplasm_data = array(array_merge($germplasm_data, $rank0_pedigree));
+
+  $data = array('result' => array('data' => array($germplasm_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
 }
 
 /**

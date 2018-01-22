@@ -200,6 +200,42 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregatable' => TRUE,
       ),
+      'germplasm/{germplasmDbId}/markerprofiles' => array(
+        'title'          => 'Markerprofiles',
+        'description'    => 'Markerprofiles by germplasmDbId',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_external_call_json',
+        'arguments'      => array(
+          3 => array(
+            'name' => 'germplasmDbId',
+            'type' => 'string',
+            'description' => 'correspond to a Chado stock.uniquename value',
+            'required' => FALSE,
+          ),
+        ),
+        'aggregatable' => TRUE,
+      ),
+      'germplasm/{germplasmDbId}/pedigree' => array(
+        'title'          => 'Germplasm Pedigree',
+        'description'    => 'Pedigree by germplasmDbId',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_germplasm_pedigree_json',
+        'arguments'      => array(
+          3 => array(
+            'name' => 'germplasmDbId',
+            'type' => 'string',
+            'description' => 'correspond to a Chado stock.uniquename value',
+            'required' => FALSE,
+          ),
+        ),
+        'aggregatable' => TRUE,
+      ),
       'germplasm-search' => array(
         'title'          => 'Germplasm Search',
         'description'    => 'Germplasm search call',
@@ -549,6 +585,18 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'int',
           ),
+          'parent1DbId' => function ($data_type, $stock, $field_name, $op) {
+            $parent_stock_id = brapi_get_field(
+              $data_type,
+              $stock,
+              'femaleParentStockId'
+            );
+            $parent = chado_generate_var(
+              'stock',
+              array('stock_id' => $parent_stock_id)
+            );
+            return ($parent ? $parent->uniquename : '');
+          },
           'maleParentStockId' => array(
             'table' => 'stock_relationship',
             'column' => 'subject_id',
@@ -558,32 +606,34 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'int',
           ),
+          'parent2DbId' => function ($data_type, $stock, $field_name, $op) {
+            $parent_stock_id = brapi_get_field(
+              $data_type,
+              $stock,
+              'maleParentStockId'
+            );
+            $parent = chado_generate_var(
+              'stock',
+              array('stock_id' => $parent_stock_id)
+            );
+            return ($parent ? $parent->uniquename : '');
+          },
           'pedigree' => function ($data_type, $stock, $field_name, $op) {
             $pedigree = '';
-            $female_parent_stock_id = brapi_get_field(
+            $female_parent = brapi_get_field(
               $data_type,
               $stock,
-              'femaleParentStockId'
+              'parent1DbId'
             );
-            $female_parent = chado_generate_var(
-              'stock',
-              array('stock_id' => $female_parent_stock_id)
-            );
-            if ($female_parent) {
-              $pedigree .= $female_parent->name;
-            }
-            $pedigree .= '/';
-            $male_parent_stock_id = brapi_get_field(
+            $male_parent = brapi_get_field(
               $data_type,
               $stock,
-              'maleParentStockId');
-            $male_parent = chado_generate_var(
-              'stock',
-              array('stock_id' => $male_parent_stock_id)
+              'parent2DbId'
             );
-            if ($male_parent) {
-              $pedigree .= $male_parent->name;
+            if ($female_parent || $male_parent) {
+              $pedigree = "$female_parent / $male_parent";
             }
+            
             return $pedigree;
           },
           'seedSource' => array(
