@@ -1735,6 +1735,34 @@ function brapi_get_url_call_args() {
 }
 
 /**
+ * Add fields specified by the 'include' argument to a field list.
+ *
+ * Returns an array with all the given fields plus the ones specified by the
+ * include argument in the URL.
+ *
+ * @return array
+ *   a list of fields.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_merge_fields_to_include($field_list) {
+  $args = brapi_get_url_call_args();
+  if (isset($args['include'])) {
+    // Make sure we start working on a string even with multiple values.
+    if (is_array($args['include'])) {
+      $args['include'] = implode(',', $args['include']);
+    }
+    // Trim spaces.
+    $args['include'] = trim($args['include']);
+    $args['include'] = preg_replace('/\s*,\s*/', ',', $args['include']);
+    // Turn includes into an array.
+    $args['include'] = explode(',', $args['include']);
+    $field_list = array_filter(array_unique(array_merge($field_list, $args['include'])));
+  }
+  return $field_list;
+}
+
+/**
  * Returns a PHP structure containing user input (POST, PUT) for a call.
  *
  * @return array

@@ -156,13 +156,19 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     // Check if the field is available.
     if (isset($data_mapping[$object_type]['fields'][$field])) {
       $field_fetcher = $data_mapping[$object_type]['fields'][$field];
+      // @todo: add support to matchMethod using 'SIMILAR TO' in queries
+      //        and hook_chado_query_alter().
       switch (gettype($field_fetcher)) {
         case 'string':
           // Field is in object table.
+          if (is_array($values)) {
+            $values = implode(',', $values);
+          }
+          $values = explode(',', $values);
           $selectors[$field_fetcher] = $values;
           $debug_data[] = "Filter on field '$field' ($field_fetcher)"
             . " with value(s): "
-            . (is_array($values) ? implode(', ', $values) : $values);
+            . implode(', ', $values);
           break;
 
         case 'array':
@@ -1075,6 +1081,10 @@ function brapi_get_germplasm_details($stock) {
     'genus', 'species', 'speciesAuthority', 'subtaxa', 'subtaxaAuthority',
     'donors', 'acquisitionDate',
   );
+
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+  
   foreach ($fields as $field_name) {
     $germplasm_data[$field_name] =
       brapi_get_field('germplasm', $stock, $field_name);
@@ -1402,6 +1412,10 @@ function brapi_get_marker_details($feature) {
     'refAlt',
     'analysisMethods',
   );
+  
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+
   foreach ($fields as $field_name) {
     $marker_data[$field_name] =
       brapi_get_field('marker', $feature, $field_name);
