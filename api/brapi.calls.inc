@@ -88,6 +88,357 @@ function brapi_call_wrapper($call_name, $call_func) {
 }
 
 /**
+ * Generic object search call.
+ *
+ * Returns a list (possibliy empty) of object matching the user filters.
+ *
+ * Supported GET parameters:
+ * - matchMethod string
+ *     Whether to restrict the search to exact (case insensitive) or wildcard.
+ *     '\' can be used to escape characters matches.
+ *     Possible values are:
+ *       'exact': exact character match (but case insensitive);
+ *       'wildcard': Wildcard uses both '*' or percent ('%') sign for any number
+ *         of character and '?' for one character matching.
+ *     Default is 'exact'.
+ *     Example: 'matchMethod=wildcard'.
+ *
+ * - include string
+ *     Whether to include synonyms in the output.
+ *     Possible values are:
+ *       'synonyms': also search in synonyms.
+ *     Default: empty (does not include synonyms)
+ *     Example: 'include=synonyms'.
+ *
+ * @return array
+ *   an array of objects.
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_object_search_json($object_type, $parameters) {
+
+  // Init status and debug data.
+  $status = array();
+  $debug_data = array();
+  $metadata = brapi_prepare_metadata();
+
+  // Get JSON input if some.
+  try {
+    $user_data = brapi_get_user_json_input();
+  }
+  catch (Exception $e) {
+    $user_data = array();
+    $debug_data[] = $e->getMessage();
+  }
+
+  // Combine call parameters.
+  $filters = array_merge(
+    $user_data,
+    brapi_get_url_call_args()
+  );
+
+  $cv_settings = brapi_get_cv_settings();
+  $data_mapping = brapi_get_data_mapping();
+
+  if (isset($parameters['selectors'])) {
+    $selectors = $parameters['selectors'];
+  }
+  else {
+    $selectors = array();
+  }
+  // Prepare the list of post-filtering functions.
+  $post_filters = array();
+  // Hash of identifiers.
+  $identifiers = array();
+  $id_field = $data_mapping[$object_type]['identifier'];
+  foreach ($filters as $field => $values) {
+    $field_identifiers = array();
+    // Check if the field is available.
+    if (isset($data_mapping[$object_type]['fields'][$field])) {
+      $field_fetcher = $data_mapping[$object_type]['fields'][$field];
+      switch (gettype($field_fetcher)) {
+        case 'string':
+          // Field is in object table.
+          $selectors[$field_fetcher] = $values;
+          $debug_data[] = "Filter on field '$field' ($field_fetcher)"
+            . " with value(s): "
+            . (is_array($values) ? implode(', ', $values) : $values);
+          break;
+
+        case 'array':
+          $debug_data[] = "Filter on linked field '$field' with value(s): "
+            . (is_array($values) ? implode(', ', $values) : $values);
+          // Get available values from database mapping.
+          if (isset($field_fetcher['foreign_key'])) {
+            $foreign_key = $field_fetcher['foreign_key'];
+          }
+          else {
+            $foreign_key = $id_field;
+          }
+          // @todo fix values according to data types.
+          switch ($field_fetcher['field_type']) {
+            case 'bool':
+              break;
+
+            case 'int':
+              break;
+
+            case 'date':
+              break;
+
+            case 'string':
+              break;
+
+            case 'cvterm':
+              // Get terms cvterm_id.
+              $term_ids = array();
+              if (!is_array($values)) {
+                $values = array($values);
+              }
+              // Loop on each value.
+              foreach ($values as $value) {
+                // Try to get term.
+                $term = brapi_get_cvterm($value, FALSE);
+                if ($term) {
+                  $term_ids[$term->cvterm_id] = TRUE;
+                }
+                else {
+                  $sanitized_value = urlencode($value);
+                  $status[] = array(
+                    'code' => 'warning',
+                    'message' => t(
+                      "Term '@value' not found for field '@field'!",
+                      array('@value' => $sanitized_value, '@field' => $field)
+                    ),
+                  );
+                }
+              }
+              $values = array_keys($term_ids);
+              break;
+
+            default:
+              throw new BrapiException(
+                400,
+                t(
+                  "Bad request! Invalid field '@field' configuration type '@field_type'!",
+                  array(
+                    '@field'      => $field,
+                    '@field_type' => $field_fetcher['field_type'],
+                  )
+                )
+              );
+          }
+
+          $selector = array_merge(
+            $field_fetcher['selector'],
+            array($field_fetcher['column'] => $values)
+          );
+
+          // We capture output buffer for Tripal error messages.
+          ob_start();
+          $records = chado_select_record(
+             $field_fetcher['table'],
+             array($foreign_key),
+             $selector
+          );
+          if ($tripal_message = ob_get_clean()) {
+            $debug_data[] = $tripal_message;
+          }
+
+          if (empty($records)) {
+            // No matching result for current field, stop here.
+            return array(
+              array(
+                'result' => array('data' => array()),
+              ),
+              $metadata,
+              $debug_data,
+            );
+          }
+          else {
+            // Force Tripal return value to be an array for easier management.
+            if ($records && !is_array($records)) {
+              $records = array($records);
+            }
+            foreach ($records as $record) {
+              $rec_id_value = $record->$foreign_key;
+              $field_identifiers[$rec_id_value] = TRUE;
+            }
+          }
+
+          // Check for intersection.
+          if (!isset($identifiers[$foreign_key])) {
+            // Not set yet.
+            $identifiers[$foreign_key] = $field_identifiers;
+          }
+          else {
+            // Make sure we intersect objects matching other fields.
+            $identifiers[$foreign_key] = array_intersect_key(
+              $identifiers[$foreign_key],
+              $field_identifiers
+            );
+            if (0 == count($identifiers)) {
+              // No intersection between fields, stop here.
+              return array(
+                array(
+                  'result' => array('data' => array()),
+                ),
+                $metadata,
+                $debug_data,
+              );
+            }
+          }
+          break;
+
+        case 'object':
+          if (brapi_data_field_supports($object_type, $field, 'filter')) {
+            $debug_data[] = "Filter on extra field '$field' with value(s): "
+              . (is_array($values) ? implode(', ', $values) : $values);
+            // Prepare post-filter.
+            $post_filters[] = function ($objects) use (
+              $field_fetcher,
+              $object_type,
+              $field,
+              $values
+            ) {
+              return $field_fetcher($object_type, $objects, $field, 'filter', $values);
+            };
+          }
+          else {
+            // Not supported.
+            $debug_data[] = "Field '$field' not supported for filtering.";
+          }
+          break;
+
+        default:
+          $debug_data[] = "Field '$field' not supported for filtering (unsupported type " . gettype($field_fetcher) . ")";
+          // Ends type switch.
+      }
+      // Ends existing fields check.
+    }
+    else {
+      $sanitized_field = urlencode($field);
+      $debug_data[] = "Field '$sanitized_field' not found for filtering";
+      $status[] = array(
+        'code' => 'warning',
+        'message' => t(
+          "unknown field '@field' ignored",
+          array('@field' => $sanitized_field)
+        ),
+      );
+    }
+    // Ends field loop.
+  }
+
+  // Check if identifiers should also be filtered.
+  if (count(array_keys($identifiers))) {
+    foreach ($identifiers as $object_key => $key_values) {
+      if (isset($selectors[$object_key])) {
+        $selectors[$object_key] =
+          array_intersect(
+            array_keys($key_values),
+            $selectors[$object_key]
+          );
+      }
+      else {
+        $selectors[$object_key] = array_keys($key_values);
+      }
+    }
+  }
+
+  $debug_data[] = "Filter: " . print_r($selectors, TRUE);
+
+  $options = array(
+    'order_by' => array($data_mapping[$object_type]['accession'] => 'ASC'),
+  );
+
+  // We capture output buffer for Tripal error messages.
+  ob_start();
+  try {
+    // Setup pager data.
+    $count_result = chado_select_record(
+      $data_mapping[$object_type]['table'],
+      array('count(1)'),
+      $selectors
+    );
+    $total_count = $count_result[0]->count;
+    $metadata = brapi_prepare_metadata($total_count);
+
+    if (isset($metadata['pagination']['pageSize'])
+        && isset($metadata['pagination']['currentPage'])) {
+      // Use client page selection.
+      $options['pager'] = array(
+        'limit' => $metadata['pagination']['pageSize'],
+        'element' => $metadata['pagination']['currentPage'],
+      );
+    }
+    else {
+      // Default paging.
+      $options['pager'] = array(
+        'limit' => BRAPI_DEFAULT_PAGE_SIZE,
+        'element' => 0,
+      );
+    }
+
+    // Support pager and sorting.
+    $chado_objects = chado_generate_var(
+      $data_mapping[$object_type]['table'],
+      $selectors,
+      $options
+    );
+  }
+  catch (Exception $e) {
+    $debug_data[] = $e->getMessage();
+  }
+  if ($tripal_message = ob_get_clean()) {
+    $debug_data[] = $tripal_message;
+  }
+
+  if (!is_array($chado_objects)) {
+    $chado_objects = array($chado_objects);
+  }
+  
+  // Process post-filtering.
+  foreach ($post_filters as $post_filter) {
+    $chado_objects = $post_filter($chado_objects);
+  }
+
+  $debug_data[] = "Got " . count($chado_objects) . "result(s).";
+
+  // Generate Chado object data.
+  $object_list = array();
+  foreach ($chado_objects as $chado_object) {
+    $object_list[] = call_user_func(
+      $parameters['get_object_details'],
+      $chado_object
+    );
+  }
+
+  if (is_array($metadata['status'])) {
+    $metadata['status'] = array_merge($metadata['status'], $status);
+  }
+  else {
+    $metadata['status'] = $status;
+  }
+
+  $data = array(
+    'result' => array('data' => $object_list),
+  );
+
+  $agg_parameters = array(
+    'GET' => brapi_get_url_call_args(),
+    'POST' => $user_data,
+  );
+  brapi_aggregate_call($data, $metadata, $debug_data, $agg_parameters);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
  * About Breeding API call.
  *
  * BRAPI: About
@@ -474,295 +825,10 @@ function brapi_v1_call_json($selected_call_name) {
  * @ingroup brapi
  */
 function brapi_v1_germplasm_search_json() {
-
-  // Init status and debug data.
-  $status = array();
-  $debug_data = array();
-  $metadata = brapi_prepare_metadata();
-
-  // Get JSON input if some.
-  try {
-    $user_data = brapi_get_user_json_input();
-  }
-  catch (Exception $e) {
-    $user_data = array();
-    $debug_data[] = $e->getMessage();
-  }
-
-  // Combine call parameters.
-  $filters = array_merge(
-    $user_data,
-    brapi_get_url_call_args()
-  );
-
-  $cv_settings = brapi_get_cv_settings();
-  $data_mapping = brapi_get_data_mapping();
-
-  $selectors = array();
-  // Hash of identifiers.
-  $identifiers = array();
-  $id_field = $data_mapping['germplasm']['identifier'];
-  foreach ($filters as $field => $values) {
-    $field_identifiers = array();
-    // Check if the field is available.
-    if (isset($data_mapping['germplasm']['fields'][$field])) {
-      $field_fetcher = $data_mapping['germplasm']['fields'][$field];
-      switch (gettype($field_fetcher)) {
-        case 'string':
-          // Field is in object table.
-          $selectors[$field_fetcher] = $values;
-          $debug_data[] = "Filter on field '$field' ($field_fetcher)"
-            . " with value(s): "
-            . (is_array($values) ? implode(', ', $values) : $values);
-          break;
-
-        case 'array':
-          $debug_data[] = "Filter on linked field '$field' with value(s): "
-            . (is_array($values) ? implode(', ', $values) : $values);
-          // Get available values from database mapping.
-          if (isset($field_fetcher['foreign_key'])) {
-            $foreign_key = $field_fetcher['foreign_key'];
-          }
-          else {
-            $foreign_key = $id_field;
-          }
-          // @todo fix values according to data types
-          switch ($field_fetcher['field_type']) {
-            case 'bool':
-              break;
-
-            case 'int':
-              break;
-
-            case 'date':
-              break;
-
-            case 'string':
-              break;
-
-            case 'cvterm':
-              // Get terms cvterm_id.
-              $term_ids = array();
-              if (!is_array($values)) {
-                $values = array($values);
-              }
-              // Loop on each value.
-              foreach ($values as $value) {
-                // Try to get term.
-                $term = brapi_get_cvterm($value, FALSE);
-                if ($term) {
-                  $term_ids[$term->cvterm_id] = TRUE;
-                }
-                else {
-                  $sanitized_value = urlencode($value);
-                  $status[] = array(
-                    'code' => 'warning',
-                    'message' => t(
-                      "Term '@value' not found for field '@field'!",
-                      array('@value' => $sanitized_value, '@field' => $field)
-                    ),
-                  );
-                }
-              }
-              $values = array_keys($term_ids);
-              break;
-
-            default:
-              throw new BrapiException(
-                400,
-                t(
-                  "Bad request! Invalid field '@field' configuration type '@field_type'!",
-                  array(
-                    '@field'      => $field,
-                    '@field_type' => $field_fetcher['field_type'],
-                  )
-                )
-              );
-          }
-
-          $selector = array_merge(
-            $field_fetcher['selector'],
-            array($field_fetcher['column'] => $values)
-          );
-
-          // We capture output buffer for Tripal error messages.
-          ob_start();
-          $records = chado_select_record(
-             $field_fetcher['table'],
-             array($foreign_key),
-             $selector
-          );
-          if ($tripal_message = ob_get_clean()) {
-            $debug_data[] = $tripal_message;
-          }
-
-          if (empty($records)) {
-            // No matching result for current field, stop here.
-            return array(
-              array(
-                'result' => array('data' => array()),
-              ),
-              $metadata,
-              $debug_data,
-            );
-          }
-          else {
-            // Force Tripal return value to be an array for easier management.
-            if ($records && !is_array($records)) {
-              $records = array($records);
-            }
-            foreach ($records as $record) {
-              $rec_id_value = $record->$foreign_key;
-              $field_identifiers[$rec_id_value] = TRUE;
-            }
-          }
-
-          // Check for intersection.
-          if (!isset($identifiers[$foreign_key])) {
-            // Not set yet.
-            $identifiers[$foreign_key] = $field_identifiers;
-          }
-          else {
-            // Make sure we intersect objects matching other fields.
-            $identifiers[$foreign_key] = array_intersect_key(
-              $identifiers[$foreign_key],
-              $field_identifiers
-            );
-            if (0 == count($identifiers)) {
-              // No intersection between fields, stop here.
-              return array(
-                array(
-                  'result' => array('data' => array()),
-                ),
-                $metadata,
-                $debug_data,
-              );
-            }
-          }
-          break;
-
-        case 'object':
-          // Not supported.
-          $debug_data[] = "Field '$field' not supported for filtering";
-          break;
-
-        default:
-          // Ends type switch.
-      }
-      // Ends existing fields check.
-    }
-    else {
-      $sanitized_field = urlencode($field);
-      $debug_data[] = "Field '$sanitized_field' not found for filtering";
-      $status[] = array(
-        'code' => 'warning',
-        'message' => t(
-          "unknown field '@field' ignored",
-          array('@field' => $sanitized_field)
-        ),
-      );
-    }
-    // Ends field loop.
-  }
-
-  // Check if identifiers should also be filtered.
-  if (count(array_keys($identifiers))) {
-    foreach ($identifiers as $object_key => $key_values) {
-      if (isset($selectors[$object_key])) {
-        $selectors[$object_key] =
-          array_intersect(
-            array_keys($key_values),
-            $selectors[$object_key]
-          );
-      }
-      else {
-        $selectors[$object_key] = array_keys($key_values);
-      }
-    }
-  }
-
-  $debug_data[] = "Filter: " . print_r($selectors, TRUE);
-
-  $options = array(
-    'order_by' => array($data_mapping['germplasm']['accession'] => 'ASC'),
-  );
-
-  // We capture output buffer for Tripal error messages.
-  ob_start();
-  try {
-    // Setup pager data.
-    $count_result = chado_select_record(
-      $data_mapping['germplasm']['table'],
-      array('count(1)'),
-      $selectors
-    );
-    $total_count = $count_result[0]->count;
-    $metadata = brapi_prepare_metadata($total_count);
-
-    if (isset($metadata['pagination']['pageSize'])
-        && isset($metadata['pagination']['currentPage'])) {
-      // Use client page selection.
-      $options['pager'] = array(
-        'limit' => $metadata['pagination']['pageSize'],
-        'element' => $metadata['pagination']['currentPage'],
-      );
-    }
-    else {
-      // Default paging.
-      $options['pager'] = array(
-        'limit' => BRAPI_DEFAULT_PAGE_SIZE,
-        'element' => 0,
-      );
-    }
-
-    // Support pager and sorting.
-    $stocks = chado_generate_var(
-      $data_mapping['germplasm']['table'],
-      $selectors,
-      $options
-    );
-  }
-  catch (Exception $e) {
-    $debug_data[] = $e->getMessage();
-  }
-  if ($tripal_message = ob_get_clean()) {
-    $debug_data[] = $tripal_message;
-  }
-
-  if (!is_array($stocks)) {
-    $stocks = array($stocks);
-  }
-
-  $debug_data[] = "Got " . count($stocks) . "result(s).";
-
-  // Generate stock data.
-  $germplasm_list = array();
-  foreach ($stocks as $stock) {
-    $germplasm_list[] = brapi_get_germplasm_details($stock);
-  }
-
-  if (is_array($metadata['status'])) {
-    $metadata['status'] = array_merge($metadata['status'], $status);
-  }
-  else {
-    $metadata['status'] = $status;
-  }
-
-  $data = array(
-    'result' => array('data' => $germplasm_list),
-  );
-
   $parameters = array(
-    'GET' => brapi_get_url_call_args(),
-    'POST' => $user_data,
+    'get_object_details' => 'brapi_get_germplasm_details',
   );
-  brapi_aggregate_call($data, $metadata, $debug_data, $parameters);
-
-  return array(
-    $data,
-    $metadata,
-    $debug_data,
-  );
+  return brapi_v1_object_search_json('germplasm', $parameters);
 }
 
 /**
@@ -1282,6 +1348,128 @@ function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NUL
     $metadata,
     $debug_data,
   );
+}
+
+/**
+ * Marker call.
+ *
+ * BRAPI: Markers
+ * URL: brapi/v1/markers/<id>
+ * Displays markers.
+ *
+ * GET: returns markers.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/markers
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Markers/MarkerDetailsByMarkerDbId.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_markers_json($marker_id, $view_mode = 'full', $langcode = NULL) {
+  $actions = array(
+    // X 'create' => 'brapi_v1_create_germplasm_json', .
+    'read'   => 'brapi_v1_read_markers_json',
+    // X 'update' => 'brapi_v1_update_germplasm_json', .
+    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
+    // X 'list'   => function (), .
+  );
+
+  return brapi_process_crud('markers/{markerDbId}', $actions, 'marker', $marker_id);
+}
+
+/**
+ * Returns marker details in an associative array.
+ *
+ * @param object $feature
+ *   A Tripal Chado feature object.
+ *
+ * @return array
+ *   the marker details in an associative array.
+ */
+function brapi_get_marker_details($feature) {
+  $marker_data = array();
+
+  $fields = array(
+    'markerDbId',
+    'defaultDisplayName',
+    'type',
+    'synonyms',
+    'refAlt',
+    'analysisMethods',
+  );
+  foreach ($fields as $field_name) {
+    $marker_data[$field_name] =
+      brapi_get_field('marker', $feature, $field_name);
+  }
+  return $marker_data;
+}
+
+/**
+ * Returns a JSON array containing the details of a given marker.
+ *
+ * @param object $feature
+ *   A Tripal Chado feature object.
+ *
+ * @return array
+ *   a JSON array containing the feature details.
+ */
+function brapi_v1_read_markers_json($feature) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $marker_data = array();
+
+  // Check marker type.
+  $cv_settings = brapi_get_cv_settings();
+  $marker_type_ids = is_array($cv_settings['MarkerType']) ?
+    $cv_settings['MarkerType']
+    : array($cv_settings['MarkerType']);
+  if (!in_array($feature->type_id->cvterm_id, $marker_type_ids)) {
+    throw new BrapiException(404, t("Not a marker!"));
+  }
+
+  $marker_data = brapi_get_marker_details($feature);
+  $data = array('result' => array('data' => array($marker_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Markers search call.
+ *
+ * BRAPI: Markers Search
+ * URL: brapi/v1/markers-search
+ * Returns a list of markers.
+ *
+ * GET: search and returns name-matching markers.
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Markers/MarkerSearch_GET.md
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Markers/MarkerSearch_POST.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_markers_search_json() {
+  $cv_settings = brapi_get_cv_settings();
+  $parameters = array(
+    'selectors' => array(
+      'type_id' => $cv_settings['MarkerType'],
+    ),
+    'get_object_details' => 'brapi_get_marker_details',
+  );
+
+  return brapi_v1_object_search_json('marker', $parameters);
 }
 
 /**

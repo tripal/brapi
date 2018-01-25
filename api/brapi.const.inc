@@ -53,6 +53,8 @@ function brapi_get_cv() {
     'MaleParentOf'   => 'Male parent relationship (subject stock is the male parent of the object stock)',
     'SeedSource'     => 'Name or identifier of the seed provider',
     'Germplasm'      => 'Germplasm type (default stock.type_id)',
+    'MarkerType'     => 'Marker type names (marker feature.type_id, default to SO term "genetic_marker").',
+    'MarkerSynonym'  => 'Marker name synonym (marker featureprop.type_id).',
   );
 }
 
@@ -316,15 +318,33 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
-      'markers'      => array(
-        'title'          => 'Markers',
-        'description'    => 'Markers',
+      'markers/{markerDbId}' => array(
+        'title'          => 'Marker Details',
+        'description'    => 'Markers details by markerDbId',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_markers_json',
+        'arguments'      => array(
+          3 => array(
+            'name' => 'markerDbId',
+            'type' => 'string',
+            'description' => 'correspond to a Chado feature.uniquename value for feature type "genetic_marker"',
+            'required' => FALSE,
+          ),
+        ),
+        'aggregatable' => TRUE,
+      ),
+      'markers-search'      => array(
+        'title'          => 'Markers Search',
+        'description'    => 'Markers Search',
         'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_markers_search_json',
         'aggregatable' => TRUE,
       ),
       'observationLevels' => array(
@@ -526,12 +546,17 @@ function brapi_get_calls() {
  *     following arguments:
  *      - $data_type: the type of record in the BrAPI terminology (germplasm,
  *        study, ...);
- *      - $object: the corresponding Chado object loaded from database;
+ *      - $object: the corresponding Chado object loaded from database or an
+ *        array of objects for the 'filter' operation;
  *      - $field_name: the name of the record field to work on;
- *      - $op: the operation to perform. Can be one of 'create', 'read', 'update',
- *        'delete'. If not provided, 'read' is assumed;
+ *      - $op: the operation to perform. Can be one of 'create', 'read',
+ *         'update', 'delete' and 'filter'. If not provided, 'read' is assumed;
  *      - $value (not provided for 'read' $op and optional for 'delete' $op): the
- *        new field value (or value to delete in case of 'delete' $op).
+ *        new field value (or value to delete in case of 'delete' $op) or the
+ *        values to use for filtering.
+ *     If the function is called with a NULL operation, the function must return
+ *     an associative array with the supported operations as keys and TRUE as
+ *     values.
  *
  * @see brapi_get_cv_settings()
  * @see brapi_get_mcpd_settings()
@@ -567,14 +592,23 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'germplasmPUI' => function ($data_type, $stock, $field_name) {
+          'germplasmPUI' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             global $base_url;
-            if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
-              return $base_url . '/' . drupal_get_path_alias('node/' . $nid);
+            $germplasm_pui = '';
+            switch ($op) {
+              case NULL:
+                $germplasm_pui = array('read' => TRUE);
+                break;
+
+              case 'read':
+                if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
+                  $germplasm_pui = $base_url . '/' . drupal_get_path_alias('node/' . $nid);
+                }
+                break;
+
+              default:
             }
-            else {
-              return '';
-            }
+            return $germplasm_pui;
           },
           'femaleParentStockId' => array(
             'table' => 'stock_relationship',
@@ -585,17 +619,28 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'int',
           ),
-          'parent1DbId' => function ($data_type, $stock, $field_name, $op) {
-            $parent_stock_id = brapi_get_field(
-              $data_type,
-              $stock,
-              'femaleParentStockId'
-            );
-            $parent = chado_generate_var(
-              'stock',
-              array('stock_id' => $parent_stock_id)
-            );
-            return ($parent ? $parent->uniquename : '');
+          'parent1DbId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $parent1_db_id = '';
+            switch ($op) {
+              case NULL:
+                $parent1_db_id = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $parent_stock_id = brapi_get_field(
+                  $data_type,
+                  $stock,
+                  'femaleParentStockId'
+                );
+                $parent = chado_generate_var(
+                  'stock',
+                  array('stock_id' => $parent_stock_id)
+                );
+                $parent1_db_id = ($parent ? $parent->uniquename : '');
+
+              default:
+            }
+            return $parent1_db_id;
           },
           'maleParentStockId' => array(
             'table' => 'stock_relationship',
@@ -606,32 +651,58 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'int',
           ),
-          'parent2DbId' => function ($data_type, $stock, $field_name, $op) {
-            $parent_stock_id = brapi_get_field(
-              $data_type,
-              $stock,
-              'maleParentStockId'
-            );
-            $parent = chado_generate_var(
-              'stock',
-              array('stock_id' => $parent_stock_id)
-            );
-            return ($parent ? $parent->uniquename : '');
+          'parent2DbId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $parent2_db_id = '';
+            switch ($op) {
+              case NULL:
+                $parent2_db_id = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $parent_stock_id = brapi_get_field(
+                  $data_type,
+                  $stock,
+                  'maleParentStockId'
+                );
+                $parent = chado_generate_var(
+                  'stock',
+                  array('stock_id' => $parent_stock_id)
+                );
+                $parent2_db_id = ($parent ? $parent->uniquename : '');
+                break;
+
+              default:
+            }
+            
+            return $parent2_db_id;
           },
-          'pedigree' => function ($data_type, $stock, $field_name, $op) {
+          'pedigree' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             $pedigree = '';
-            $female_parent = brapi_get_field(
-              $data_type,
-              $stock,
-              'parent1DbId'
-            );
-            $male_parent = brapi_get_field(
-              $data_type,
-              $stock,
-              'parent2DbId'
-            );
-            if ($female_parent || $male_parent) {
-              $pedigree = "$female_parent / $male_parent";
+            switch ($op) {
+              case NULL:
+                $pedigree = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $female_parent = brapi_get_field(
+                  $data_type,
+                  $stock,
+                  'parent1DbId'
+                );
+                $male_parent = brapi_get_field(
+                  $data_type,
+                  $stock,
+                  'parent2DbId'
+                );
+                if ($female_parent || $male_parent) {
+                  $pedigree = "$female_parent / $male_parent";
+                }
+                else {
+                  $pedigree = $female_parent . $male_parent;
+                }
+                break;
+
+              default:
             }
             return $pedigree;
           },
@@ -679,15 +750,25 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
           ),
           // if not specified through MCPD, uses stockcollection.uniquename
-          'instituteCodeStockCollection' => function ($data_type, $stock, $field_name, $op) {
-            $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
-            if (isset($stock->stockcollection_stock)
-                && isset($stock->stockcollection_stock->stockcollection_id)) {
-              return $stock->stockcollection_stock->stockcollection_id->uniquename;
+          'instituteCodeStockCollection' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $institute_code_stock_collection = NULL;
+            switch ($op) {
+              case NULL:
+                $institute_code_stock_collection = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
+                if (isset($stock->stockcollection_stock)
+                    && isset($stock->stockcollection_stock->stockcollection_id)) {
+                  $institute_code_stock_collection = $stock->stockcollection_stock->stockcollection_id->uniquename;
+                }
+                break;
+
+              default:
             }
-            else {
-              return NULL;
-            }
+            return $institute_code_stock_collection;
+
           },
           // Note: the use of MCPD 'institute code' should be priviledged
           // against the use of 'Breeding institute name'. If 'institute code'
@@ -701,15 +782,24 @@ function brapi_get_data_mapping() {
             'field_type' => 'string',
           ),
           // if not specified through MCPD, uses stockcollection.name
-          'instituteNameStockCollection' => function ($data_type, $stock, $field_name, $op) {
-            $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
-            if (isset($stock->stockcollection_stock)
-                && isset($stock->stockcollection_stock->stockcollection_id)) {
-              return $stock->stockcollection_stock->stockcollection_id->name;
+          'instituteNameStockCollection' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $institute_name_stock_collection = NULL;
+            switch ($op) {
+              case NULL:
+                $institute_name_stock_collection = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $stock = chado_expand_var($stock, 'table', 'stockcollection_stock');
+                if (isset($stock->stockcollection_stock)
+                    && isset($stock->stockcollection_stock->stockcollection_id)) {
+                  $institute_name_stock_collection = $stock->stockcollection_stock->stockcollection_id->name;
+                }
+                break;
+
+              default:
             }
-            else {
-              return NULL;
-            }
+            return $institute_name_stock_collection;
           },
           'biologicalStatusOfAccessionCode' => array(
             'table' => 'stock_cvterm',
@@ -826,18 +916,113 @@ function brapi_get_data_mapping() {
           ),
         ),
       ),
-      'markerprofiles' => array(),
-      'allelematrix'   => array(),
-      'traits'         => array(),
-      'studies'        => array(),
-      'attributes'     => array(),
-      'programs'       => array(),
-      'studyTypes'     => array(),
-      'phenotypes'     => array(),
-      'variables'      => array(),
-      'maps'           => array(),
-      'observation'    => array(),
-      'locations'      => array(),
+      'marker' => array(
+        'table' => 'feature',
+        'identifier' => 'feature_id',
+        'accession' => 'uniquename',
+        'fields' => array(
+          'markerDbId' => 'uniquename',
+          'defaultDisplayName' => 'name',
+          'type' => array(
+            'table' => 'cvterm',
+            'foreign_key' => 'cvterm_id',
+            'object_key' => 'type_id',
+            'column' => 'name',
+            'selector' => array(),
+            'field_type' => 'string',
+          ),
+          'synonyms' => array(
+            'table' => 'featureprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['MarkerSynonym'],
+            ),
+            'field_type' => 'string',
+          ),
+          'residues' => 'residues',
+          'refAlt' =>  function ($data_type, $feature, $field_name, $op, $values = NULL) {
+            $ref_alt = array();
+            switch ($op) {
+              case NULL:
+                $ref_alt = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $residues = brapi_get_field(
+                  $data_type,
+                  $feature,
+                  'residues'
+                );
+                // @todo: replace UPAC codes by corresponding list of nucleotides.
+                $ref_alt = array($residues);
+                break;
+
+              default:
+            }
+            return $ref_alt;
+          },
+          'analysisMethods' => function ($data_type, $feature, $field_name, $op, $values = NULL) {
+            $analysis = array();
+            switch ($op) {
+              case NULL:
+                $analysis = array(
+                  'read' => TRUE,
+                  'filter' => TRUE,
+                );
+                break;
+
+              case 'read':
+                $feature = chado_expand_var($feature, 'table', 'analysisfeature');
+                $analysisfeatures = $feature->analysisfeature;
+                if ($analysisfeatures) {
+                  if (is_array($analysisfeatures)) {
+                    foreach ($analysisfeatures as $analysisfeature) {
+                      $analysis[] = $analysisfeature->analysis_id->name;
+                    }
+                  }
+                  else {
+                    $analysis[] = $analysisfeatures->analysis_id->name;
+                  }
+                }
+                break;
+
+              case 'filter':
+                // Get possible values as an array.
+                if (is_array($values)) {
+                  $values = implode(',', $values);
+                }
+                $values = explode(',', $values);
+                // Check each object.
+                foreach ($feature as $tocheck) {
+                  $analysis_methods = brapi_get_field(
+                    $data_type,
+                    $tocheck,
+                    'analysisMethods'
+                  );
+                  if (array_intersect($analysis_methods, $values)) {
+                    $analysis[] = $tocheck;
+                  }
+                }
+                break;
+
+              default:
+            }
+
+            return $analysis;
+          },
+        ),
+      ),
+      'allelematrix' => array(),
+      'trait'        => array(),
+      'study'        => array(),
+      'attribute'    => array(),
+      'program'      => array(),
+      'studyType'    => array(),
+      'phenotype'    => array(),
+      'variable'     => array(),
+      'map'          => array(),
+      'observation'  => array(),
+      'location'     => array(),
     );
 
     // Alter default settings.

@@ -1225,7 +1225,8 @@ function brapi_get_field(
 
     case 'object':
       // Get from a function.
-      if ('Closure' == get_class($field_fetcher)) {
+      // if ('Closure' == get_class($field_fetcher)) {
+      if (is_callable($field_fetcher)) {
         $value = $field_fetcher($data_type, $object, $field_name, 'read');
       }
       break;
@@ -2052,6 +2053,49 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
   return drupal_json_output($data);
 }
 
+/**
+ * Tells if a given field of a given data type supports a given operation type.
+ *
+ * @param $object_type string
+ *   type of object/data. eg. 'germplasm'
+ * @param $field string
+ *   name of the field. eg. 'germplasmPUI'
+ * @param $operation string
+ *   type of operation to check. Possible values are 'create', 'read',
+ *   'update', 'delete' and 'filter'.
+ *
+ * @return bool
+ *  TRUE if the operation is supported and FALSE otherwise.
+ */
+function brapi_data_field_supports($object_type, $field, $operation) {
+  $data_mapping = brapi_get_data_mapping();
+  if (!isset($data_mapping[$object_type]['fields'][$field])) {
+    return FALSE;
+  }
+  $field_fetcher = $data_mapping[$object_type]['fields'][$field];
+  switch (gettype($field_fetcher)) {
+    case 'string':
+    case 'array':
+      return TRUE;
+      break;
+    case 'object':
+      if (is_callable($field_fetcher)) {
+        // Check if the function supports filtering.
+        $supported_ops = $field_fetcher($object_type, NULL, $field, NULL);
+        if (!$supported_ops) {
+          return FALSE;
+        }
+        return isset($supported_ops[$operation]) ?
+          $supported_ops[$operation]
+          : FALSE;
+      }
+      return FALSE;
+      break;
+    default:
+      return FALSE;
+  };
+  
+}
 
 /**
  * Returns the list of parameters that can be used to filter call results.
@@ -2307,7 +2351,7 @@ function brapi_aggregate_call(
           }
         }
         catch (Exception $error_handle) {
-          drupal_set_message('ERROR: ' . $error_handle->getMessage(), 'error');
+          drupal_set_message("ERROR calling '$url': " . $error_handle->getMessage(), 'error');
         }
       }
       // Add to metadata the list of caller URLs.
