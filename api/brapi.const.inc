@@ -187,6 +187,18 @@ function brapi_get_calls() {
         ),
         'aggregatable' => FALSE,
       ),
+      'germplasm' => array(
+        'title'          => 'Germplasm List',
+        'description'    => 'Germplasm list call',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_germplasm_json',
+        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+        'aggregatable' => TRUE,
+      ),
       'germplasm/{germplasmDbId}' => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm Details by germplasmDbId',
@@ -197,7 +209,7 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_germplasm_details_json',
+        'page callback'  => 'brapi_v1_germplasm_json',
         'arguments'      => array(
           3 => array(
             'name' => 'germplasmDbId',
@@ -300,7 +312,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_locations_json',
+        'page callback'  => 'brapi_v1_location_json',
         'aggregatable' => TRUE,
       ),
       'locations/{locationDbId}' => array(
@@ -318,7 +330,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'page callback'  => 'brapi_v1_locations_json',
+        'page callback'  => 'brapi_v1_location_json',
         'aggregatable' => TRUE,
       ),
       'maps'      => array(
@@ -343,6 +355,17 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_external_call_json',
         'aggregatable' => TRUE,
       ),
+      'markers' => array(
+        'title'          => 'Markers List',
+        'description'    => 'Markers List call',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_marker_json',
+        'aggregatable' => TRUE,
+      ),
       'markers/{markerDbId}' => array(
         'title'          => 'Marker Details',
         'description'    => 'Markers details by markerDbId',
@@ -350,7 +373,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_markers_json',
+        'page callback'  => 'brapi_v1_marker_json',
         'arguments'      => array(
           3 => array(
             'name' => 'markerDbId',

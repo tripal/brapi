@@ -857,14 +857,14 @@ function brapi_v1_germplasm_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_details_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
 
   $actions = array(
     'create' => 'brapi_v1_create_germplasm_json',
     'read'   => 'brapi_v1_read_germplasm_json',
     'update' => 'brapi_v1_update_germplasm_json',
     'delete' => 'brapi_v1_delete_germplasm_json',
-    // X 'list'   => function (), .
+    'list'   => 'brapi_v1_germplasm_search_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1266,11 +1266,7 @@ function brapi_v1_delete_germplasm_json($stock) {
 function brapi_v1_germplasm_pedigree_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
 
   $actions = array(
-    // X 'create' => 'brapi_v1_create_germplasm_json', .
     'read'   => 'brapi_v1_read_germplasm_pedigree_json',
-    // X 'update' => 'brapi_v1_update_germplasm_json', .
-    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
-    // X 'list'   => function (), .
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1367,7 +1363,7 @@ function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NUL
  * URL: brapi/v1/markers/<id>
  * Displays markers.
  *
- * GET: returns markers.
+ * GET: returns marker.
  *
  * Example:
  * - GET
@@ -1380,13 +1376,10 @@ function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NUL
  *
  * @ingroup brapi
  */
-function brapi_v1_markers_json($marker_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_marker_json($marker_id, $view_mode = 'full', $langcode = NULL) {
   $actions = array(
-    // X 'create' => 'brapi_v1_create_germplasm_json', .
-    'read'   => 'brapi_v1_read_markers_json',
-    // X 'update' => 'brapi_v1_update_germplasm_json', .
-    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
-    // X 'list'   => function (), .
+    'read'   => 'brapi_v1_read_marker_json',
+    'list'   => 'brapi_v1_markers_search_json',
   );
 
   return brapi_process_crud('markers/{markerDbId}', $actions, 'marker', $marker_id);
@@ -1432,7 +1425,7 @@ function brapi_get_marker_details($feature) {
  * @return array
  *   a JSON array containing the feature details.
  */
-function brapi_v1_read_markers_json($feature) {
+function brapi_v1_read_marker_json($feature) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $marker_data = array();
@@ -1506,12 +1499,9 @@ function brapi_v1_markers_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_locations_json($location_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_location_json($location_id, $view_mode = 'full', $langcode = NULL) {
   $actions = array(
-    // X 'create' => 'brapi_v1_create_germplasm_json', .
     'read' => 'brapi_v1_read_location_json',
-    // X 'update' => 'brapi_v1_update_germplasm_json', .
-    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
     'list' => 'brapi_v1_list_locations_json',
   );
 
@@ -2728,10 +2718,10 @@ function brapi_v1_observation_sets_json($observation_id) {
 }
 
 / **
- * brapi_v1_locations_json()
+ * brapi_v1_location_json()
  *
  * /
-function brapi_v1_locations_json() {
+function brapi_v1_location_json() {
   throw new BrapiException(501, "Not implemented!");
 }
 
