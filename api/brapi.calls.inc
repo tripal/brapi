@@ -1309,6 +1309,35 @@ function brapi_v1_read_germplasm_pedigree_json($stock) {
 }
 
 /**
+ * Returns a JSON array containing the germplasm attribute categories.
+ *
+ * @return array
+ *   a JSON array containing the germplasm attribute categories.
+ */
+function brapi_v1_categories_json() {
+  $germplasm_categories = variable_get(BRAPI_GERMPLASM_CATEGORIES, array());
+
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $categories_data = array();
+  foreach ($germplasm_categories as $i => $category) {
+    $categories_data[] = array(
+      'attributeCategoryDbId' => $i + 1,
+      'name' => $category['name'],
+    );
+  }
+
+  $data = array('result' => array('data' => array($categories_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
  * Crops call.
  *
  * BRAPI: Crops

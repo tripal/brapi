@@ -15,7 +15,7 @@
  *
  * @ingroup brapi
  */
-function brapi_admin_form($form, &$form_state) {
+function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form = array();
 
   // Default example entities settings.
@@ -298,7 +298,7 @@ function brapi_admin_form($form, &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed'   => TRUE,
   );
-  
+
   $form['chado_mcpd']['markup'] = array(
     '#markup' => t('Usually, the MCPD settings should not be changed as they correspond to adopted standards. However, in some cases, you may have used other terms than the recommanded ones so you may need to override MCPD default terms here.<br/><br/>'),
   );
@@ -404,6 +404,107 @@ function brapi_admin_form($form, &$form_state) {
     '#submit'      => array('brapi_reset_mcpd_form'),
   );
 
+  // Germplasm attributes.
+  $germplasm_categories = variable_get(
+    BRAPI_GERMPLASM_CATEGORIES,
+    array(
+      array(
+        'name'    => '',
+        'cv'      => '',
+        'cvterms' => '',
+        'storage' => 'stockprop',
+      ),
+    )
+  );
+
+  $form['germplasm_attributes'] = array(
+    '#type'        => 'fieldset',
+    '#attributes'  => array('class' => array('container-inline')),
+    '#title'       => t('Germplasm attribute settings'),
+    '#collapsible' => TRUE,
+    '#collapsed'   => TRUE,
+  );
+
+  $form['germplasm_attributes']['markup'] = array(
+    '#markup' => t('Germplasm attributes are stored as stock properties (stockprop) or stock CV terms (stock_cvterm) (while traits are stored as ND experiments).<br/><br/>'),
+  );
+
+  if (empty($form_state['category_count'])) {
+    $form_state['category_count'] = count($germplasm_categories);
+  }
+
+  $form['germplasm_attributes']['category'] = array(
+    '#type' => 'container',
+    '#prefix' => '<div id="categories-fieldset-wrapper">',
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+  );
+
+  for ($i = 0; $i < $form_state['category_count']; ++$i) {
+    $form['germplasm_attributes']['category'][$i] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Category settings'),
+    );
+    $form['germplasm_attributes']['category'][$i]['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Category name'),
+      '#title_display' => 'before',
+      '#default_value' => $germplasm_categories[$i]['name'],
+      '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 1024,
+      '#suffix' => '<br/><br/>',
+    );
+    $form['germplasm_attributes']['category'][$i]['cv'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Associated CV'),
+      '#title_display' => 'before',
+      '#default_value' => $germplasm_categories[$i]['cv'],
+      '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 1024,
+      '#suffix' => '<br/><br/>',
+      '#autocomplete_path' => 'brapi/cvs/autocomplete',
+    );
+    $form['germplasm_attributes']['category'][$i]['cvterms'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Associated CV terms'),
+      '#title_display' => 'before',
+      '#default_value' => $germplasm_categories[$i]['cvterms'],
+      '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 1024,
+      '#suffix' => '<br/><br/>',
+      '#autocomplete_path' => 'brapi/terms/autocomplete',
+    );
+    $form['germplasm_attributes']['category'][$i]['storage'] = array(
+      '#type' => 'radios',
+      '#title' => t('Storage mode'),
+      '#title_display' => 'before',
+      '#description' => t('Select the way those attributes are stored. '),
+      '#default_value' =>
+        isset($germplasm_categories[$i]['storage']) ?
+        $germplasm_categories[$i]['storage']
+        : 'stockprop',
+      '#suffix' => '<br/>',
+      '#field_suffix' => '<br/>&nbsp;&nbsp;&nbsp;',
+      '#options' => array(
+        'stockprop' => t('As stock properties (stockprop table)'),
+        'stock_cvterm' => t('As stock CV terms (stock_cvterm table)')
+      ),
+    );
+  }
+
+  $form['germplasm_attributes']['add_category'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add a category'),
+    '#submit' => array('brapi_add_category_add_one'),
+    '#ajax' => array(
+      'callback' => 'brapi_add_category_callback',
+      'wrapper' => 'categories-fieldset-wrapper',
+    ),
+  );
+
   // Setup calls aggregation.
   $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
   $form['aggregation_options'] = array(
@@ -456,6 +557,25 @@ function brapi_admin_form($form, &$form_state) {
   );
 
   return $form;
+}
+
+/**
+ * Callback for both ajax-enabled buttons.
+ *
+ * Selects and returns the fieldset with the names in it.
+ */
+function brapi_add_category_callback($form, $form_state) {
+  return $form['germplasm_attributes']['category'];
+}
+
+/**
+ * Submit handler for the "add-one-more" button.
+ *
+ * Increments the max counter and causes a rebuild.
+ */
+function brapi_add_category_add_one($form, &$form_state) {
+  $form_state['category_count']++;
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -536,6 +656,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       drupal_set_message('Term not found: "' . $term_label . '"', 'warning');
     }
   }
+
   // MCPD part.
   foreach (brapi_get_mcpd_settings() as $term_label => $term_mapping) {
     $user_terms = $form_state['values'][$term_label];
@@ -585,6 +706,17 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     $brapi_example_settings[$example_parameter['name']] = $form_state['values'][$example_parameter['name']];
   }
   variable_set(BRAPI_EXAMPLE_SETTINGS, $brapi_example_settings);
+
+  // Save germplasm attribute categories.
+  $germplasm_categories = array();
+  foreach ($form_state['values']['category'] as $category) {
+    if ($category['name']
+        && ($category['cv'] || $category['cvterms'])) {
+      $germplasm_categories[] = $category;
+    }
+        
+  }
+  variable_set(BRAPI_GERMPLASM_CATEGORIES, $germplasm_categories);
 
   // Aggregation options.
   $brapi_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());

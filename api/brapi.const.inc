@@ -26,6 +26,7 @@ define('BRAPI_DB', 'breeding api');
 define('BRAPI_CV', 'breeding api');
 define('BRAPI_CV_SETTINGS', 'brapi_cv_settings');
 define('BRAPI_EXAMPLE_SETTINGS', 'brapi_example_settings');
+define('BRAPI_GERMPLASM_CATEGORIES', 'brapi_germplasm_categories');
 define('BRAPI_AGGREGATION_OPTIONS', 'brapi_aggregation_options');
 define('BRAPI_USE_PERMISSION', 'use breeding api');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
@@ -168,6 +169,17 @@ function brapi_get_calls() {
         ),
         'page callback'  => 'brapi_v1_about_json',
         'aggregatable' => FALSE,
+      ),
+      'attributes/categories' => array(
+        'title'          => 'Germplasm Attribute Categories List',
+        'description'    => 'Germplasm attribute categories list call',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_categories_json',
+        'aggregatable' => TRUE,
       ),
       'calls'      => array(
         'title'          => 'Call search',

@@ -256,7 +256,54 @@ function brapi_get_cv_settings($reset = FALSE) {
 }
 
 /**
- * Autocompletefor Chado CV terms.
+ * Autocomplete for Chado CVs.
+ *
+ * Autocomplete helper function that returns suggestions of Chado CVs according
+ * to user inputs.
+ * It outputs a JSON array which keys are suggested CV names and cv_id as text
+ * (computer-processable) and values are corresponding CV names
+ * (human-readable).
+ *
+ * @param string $string
+ *   Part of the CV name to use for the CV search.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_cvs_autocomplete($string) {
+  $matches = array();
+
+  if ($string) {
+    $items = array_map('trim', explode(',', $string));
+    $last_item = array_pop($items);
+    $prefix = implode(', ', $items);
+
+    $sql_query = "
+        SELECT
+          cv.cv_id AS \"id\",
+          cv.name AS \"cv\"
+        FROM
+          cv cv
+        WHERE
+          cv.name ILIKE :user_input
+    ;";
+    $results = chado_query($sql_query, array(':user_input' => $last_item . '%'));
+
+    // Save the query to matches.
+    foreach ($results as $row) {
+      $value = (!empty($prefix) ? $prefix . ', ' : '') . $row->cv . ' (' . $row->id . ')';
+      $text = $row->cv . ' (' . $row->id . ')';
+      if ((!in_array($row->cv, $items)) && (!in_array($value, $items))) {
+        $matches[$value] = check_plain($text);
+      }
+    }
+  }
+
+  // Return the result to the form in json.
+  drupal_json_output($matches);
+}
+
+/**
+ * Autocomplete for Chado CV terms.
  *
  * Autocomplete helper function that returns suggestions of Chado CV terms
  * according to user inputs.

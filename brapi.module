@@ -210,6 +210,14 @@ function brapi_menu() {
   );
 
   // Autocomplete script.
+  $items['brapi/cvs/autocomplete'] = array(
+    'title' => 'Autocomplete for BrAPI CVs',
+    'page callback' => 'brapi_cvs_autocomplete',
+    // Only used by administrative interfaces (prevents access to private data).
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_CALLBACK,
+  );
   $items['brapi/terms/autocomplete'] = array(
     'title' => 'Autocomplete for BrAPI terms',
     'page callback' => 'brapi_terms_autocomplete',
@@ -217,6 +225,24 @@ function brapi_menu() {
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_CALLBACK,
+  );
+
+  // Add-more button that creates additional form elements.
+  // See ajax_example_graceful_degradation.inc.
+  $items['brapi/settings/add_category'] = array(
+    'title' => 'Add more germplasm attribute category',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('brapi_add_category'),
+    'access callback' => TRUE,
+    'file' => 'includes/brapi.admin.inc',
+  );
+  // The above example as it appears to users with no javascript.
+  $items['brapi/settings/add_category_no_js'] = array(
+    'title' => 'Add more germplasm attribute category',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('brapi_add_category', TRUE),
+    'access callback' => TRUE,
+    'file' => 'includes/brapi.admin.inc',
   );
 
   $menu_call_mapping = brapi_get_menu_call_mapping();
