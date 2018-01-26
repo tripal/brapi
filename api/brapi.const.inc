@@ -1266,7 +1266,7 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'additionalInfo' => function ($data_type, $geoloc, $field_name, $op, $values = NULL) {
+          'additionalInfo' => function ($data_type, $geoloc, $field_name, $op, $values = NULL) use ($cv_settings) {
             $info = array();
             switch ($op) {
               case NULL:

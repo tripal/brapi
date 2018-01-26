@@ -532,6 +532,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       $brapi_cv_settings[$term_label] = $cvterm_id;
     }
     else {
+      $brapi_cv_settings[$term_label] = 0;
       drupal_set_message('Term not found: "' . $term_label . '"', 'warning');
     }
   }
