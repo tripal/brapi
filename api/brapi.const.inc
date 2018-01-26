@@ -49,12 +49,19 @@ define('BRAPI_MENU_CALL_MAPPING', "brapi_menu_call_mapping");
  */
 function brapi_get_cv() {
   return array(
-    'FemaleParentOf' => 'Female parent relationship (subject stock is the female parent of the object stock)',
-    'MaleParentOf'   => 'Male parent relationship (subject stock is the male parent of the object stock)',
-    'SeedSource'     => 'Name or identifier of the seed provider',
-    'Germplasm'      => 'Germplasm type (default stock.type_id)',
-    'MarkerType'     => 'Marker type names (marker feature.type_id, default to SO term "genetic_marker").',
-    'MarkerSynonym'  => 'Marker name synonym (marker featureprop.type_id).',
+    'FemaleParentOf'   => 'Female parent relationship (subject stock is the female parent of the object stock)',
+    'MaleParentOf'     => 'Male parent relationship (subject stock is the male parent of the object stock)',
+    'SeedSource'       => 'Name or identifier of the seed provider',
+    'Germplasm'        => 'Germplasm type (default stock.type_id)',
+    'GermplasmSynonym' => 'Germplasm name synonym (germplasm stockprop.type_id)',
+    'MarkerType'       => 'Marker type names (marker feature.type_id, default to SO term "genetic_marker").',
+    'MarkerSynonym'    => 'Marker name synonym (marker featureprop.type_id).',
+    'LocationType'     => 'Geo-location location type type_id (nd_geolocationprop.type_id).',
+    'LocationAbbreviation' => 'Geo-location name abbreviation (nd_geolocationprop.type_id).',
+    'CountryCode'      => 'Geo-location country code (nd_geolocationprop.type_id).',
+    'CountryName'      => 'Geo-location country name (nd_geolocationprop.type_id).',
+    'InstituteName'    => 'Name of the institute(used by nd_geolocationprop.type_id).',
+    'InstituteAddress' => 'Address of the institute(used by nd_geolocationprop.type_id).',
   );
 }
 
@@ -285,15 +292,33 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_crops_json',
         'aggregatable' => TRUE,
       ),
-      'locations'      => array(
+      'locations' => array(
         'title'          => 'Locations',
-        'description'    => 'Locations',
+        'description'    => 'List Locations',
         'datatypes'      => array('json'),
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_locations_json',
+        'aggregatable' => TRUE,
+      ),
+      'locations/{locationDbId}' => array(
+        'title'          => 'Locations Details',
+        'description'    => 'Locations details',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+        ),
+        'arguments'      => array(
+          3 => array(
+            'name' => 'locationDbId',
+            'type' => 'string',
+            'description' => 'correspond to a Chado nd_geolocation.nd_geolocation_id value',
+            'required' => FALSE,
+          ),
+        ),
+        'page callback'  => 'brapi_v1_locations_json',
         'aggregatable' => TRUE,
       ),
       'maps'      => array(
@@ -560,6 +585,7 @@ function brapi_get_calls() {
  *
  * @see brapi_get_cv_settings()
  * @see brapi_get_mcpd_settings()
+ * @see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4795932/
  *
  * @ingroup brapi_const
  */
@@ -718,7 +744,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => $cv_settings['synonyms'],
+              'type_id' => $cv_settings['GermplasmSynonym'],
             ),
             'field_type' => 'string',
             'return_array' => TRUE,
@@ -1012,17 +1038,275 @@ function brapi_get_data_mapping() {
           },
         ),
       ),
-      'allelematrix' => array(),
-      'trait'        => array(),
-      'study'        => array(),
-      'attribute'    => array(),
-      'program'      => array(),
-      'studyType'    => array(),
-      'phenotype'    => array(),
-      'variable'     => array(),
-      'map'          => array(),
-      'observation'  => array(),
-      'location'     => array(),
+      'allelematrix' => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'trait'        => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'study'        => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'attribute'    => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'program'      => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'studyType'    => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'phenotype'    => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'variable'     => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'map'          => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'observation'  => array(
+        // 'table' => 'xxx',
+        // 'identifier' => 'xx_id',
+        // 'accession' => 'uniquename',
+        // 'fields' => array(
+        //   'xxxDbId' => 'uniquename',
+        //   'defaultDisplayName' => 'name',
+        //   'type' => array(
+        //     'table' => 'cvterm',
+        //     'foreign_key' => 'cvterm_id',
+        //     'object_key' => 'type_id',
+        //     'column' => 'name',
+        //     'selector' => array(),
+        //     'field_type' => 'string',
+        //   ),
+        // ),
+      ),
+      'location'     => array(
+        'table' => 'nd_geolocation',
+        'identifier' => 'nd_geolocation_id',
+        'accession' => 'nd_geolocation_id',
+        'fields' => array(
+          'locationDbId' => 'nd_geolocation_id',
+          'name' => 'description',
+          'locationType' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['LocationType'],
+            ),
+            'field_type' => 'string',
+          ),
+          'abbreviation' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['LocationAbbreviation'],
+            ),
+            'field_type' => 'string',
+          ),
+          'countryCode' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['CountryCode'],
+            ),
+            'field_type' => 'string',
+          ),
+          'countryName' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['CountryName'],
+            ),
+            'field_type' => 'string',
+          ),
+          'latitude' => 'latitude',
+          'longitude' => 'longitude',
+          'altitude' => 'altitude',
+          'instituteName' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['InstituteName'],
+            ),
+            'field_type' => 'string',
+          ),
+          'instituteAddress' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['InstituteAddress'],
+            ),
+            'field_type' => 'string',
+          ),
+          'additionalInfo' => function ($data_type, $geoloc, $field_name, $op, $values = NULL) {
+            $info = array();
+            switch ($op) {
+              case NULL:
+                $info = array(
+                  'read' => TRUE,
+                );
+                break;
+
+              case 'read':
+                $feature = chado_expand_var($geoloc, 'table', 'nd_geolocationprop');
+                $geolocationprops = $geoloc->nd_geolocationprop;
+                if (!$geolocationprops) {
+                  $geolocationprops = array();
+                }
+                else if (!is_array($geolocationprops)) {
+                  $geolocationprops = array($geolocationprops);
+                }
+                $used_types = array(
+                  $cv_settings['LocationType'],
+                  $cv_settings['LocationAbbreviation'],
+                  $cv_settings['CountryCode'],
+                  $cv_settings['CountryName'],
+                  $cv_settings['InstituteName'],
+                  $cv_settings['InstituteAddress'],
+                );
+                foreach ($geolocationprops as $geolocationprop) {
+                  // Make sure it is not a property already in use.
+                  if (!in_array($geolocationprop->type_id->cvterm_id, $used_types)) {
+                    $info[$geolocationprop->type_id->name] = $geolocationprop->value;
+                  }
+                }
+                break;
+
+              default:
+            }
+
+            return $info;
+          },
+        ),
+      ),
     );
 
     // Alter default settings.

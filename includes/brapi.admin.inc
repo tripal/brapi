@@ -253,6 +253,7 @@ function brapi_admin_form($form, &$form_state) {
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_name => $definition) {
     $default_id = 0;
+    $term = NULL;
 
     // Get from settings.
     if (array_key_exists($term_name, $brapi_cv_settings)) {

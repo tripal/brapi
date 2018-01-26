@@ -1487,6 +1487,100 @@ function brapi_v1_markers_search_json() {
 }
 
 /**
+ * Location call.
+ *
+ * BRAPI: Location
+ * URL: brapi/v1/locations/<id>
+ * Displays locations.
+ *
+ * GET: returns locations.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/locations
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Locations/LocationDetails.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_locations_json($location_id, $view_mode = 'full', $langcode = NULL) {
+  $actions = array(
+    // X 'create' => 'brapi_v1_create_germplasm_json', .
+    'read'   => 'brapi_v1_read_location_json',
+    // X 'update' => 'brapi_v1_update_germplasm_json', .
+    // X 'delete' => 'brapi_v1_delete_germplasm_json', .
+    // X 'list'   => function (), .
+  );
+
+  return brapi_process_crud('locations/{locationDbId}', $actions, 'location', $location_id);
+}
+
+/**
+ * Returns location details in an associative array.
+ *
+ * @param object $geolocation
+ *   A Tripal Chado nd_geolocation object.
+ *
+ * @return array
+ *   the location details in an associative array.
+ */
+function brapi_get_location_details($geolocation) {
+  $geolocation_data = array();
+
+  $fields = array(
+    'locationDbId',
+    'name',
+    'locationType',
+    'abbreviation',
+    'countryCode',
+    'countryName',
+    'latitude',
+    'longitude',
+    'altitude',
+    'instituteName',
+    'instituteAddress',
+    'additionalInfo',
+  );
+  
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+
+  foreach ($fields as $field_name) {
+    $geolocation_data[$field_name] =
+      brapi_get_field('location', $geolocation, $field_name);
+  }
+  return $geolocation_data;
+}
+
+/**
+ * Returns a JSON array containing the details of a given location.
+ *
+ * @param object $geolocation
+ *   A Tripal Chado nd_geolocation object.
+ *
+ * @return array
+ *   a JSON array containing the geolocation details.
+ */
+function brapi_v1_read_location_json($geolocation) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $geolocation_data = array();
+
+  $geolocation_data = brapi_get_location_details($geolocation);
+  $data = array('result' => array('data' => array($geolocation_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
  * Generic callback for BrAPI call not supported by Drupal BrAPI module.
  *
  * Those calls can be processed by external BrAPI services.
