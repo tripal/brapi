@@ -1509,10 +1509,10 @@ function brapi_v1_markers_search_json() {
 function brapi_v1_locations_json($location_id, $view_mode = 'full', $langcode = NULL) {
   $actions = array(
     // X 'create' => 'brapi_v1_create_germplasm_json', .
-    'read'   => 'brapi_v1_read_location_json',
+    'read' => 'brapi_v1_read_location_json',
     // X 'update' => 'brapi_v1_update_germplasm_json', .
     // X 'delete' => 'brapi_v1_delete_germplasm_json', .
-    // X 'list'   => function (), .
+    'list' => 'brapi_v1_list_locations_json',
   );
 
   return brapi_process_crud('locations/{locationDbId}', $actions, 'location', $location_id);
@@ -1578,6 +1578,19 @@ function brapi_v1_read_location_json($geolocation) {
     $metadata,
     $debug_data,
   );
+}
+
+/**
+ * Returns a JSON array containing the list of locations.
+ *
+ * @return array
+ *   a JSON array containing the geolocations.
+ */
+function brapi_v1_list_locations_json() {
+  $parameters = array(
+    'get_object_details' => 'brapi_get_location_details',
+  );
+  return brapi_v1_object_search_json('location', $parameters);
 }
 
 /**
