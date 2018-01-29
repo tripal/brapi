@@ -405,16 +405,18 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   );
 
   // Germplasm attributes.
-  $germplasm_categories = variable_get(
-    BRAPI_GERMPLASM_CATEGORIES,
+  $germplasm_attributes = variable_get(
+    BRAPI_GERMPLASM_ATTRIBUTES,
     array(
       array(
-        'name'    => '',
-        'cvs'     => '',
-        'cvterms' => '',
+        'name'     => '',
+        'category' => '',
+        'cvs'      => '',
+        'cvterms'  => '',
       ),
     )
   );
+  $germplasm_category_list = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
   $form['germplasm_attributes'] = array(
     '#type'        => 'fieldset',
@@ -437,10 +439,10 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   );
 
   if (empty($form_state['category_count'])) {
-    $form_state['category_count'] = count($germplasm_categories);
+    $form_state['category_count'] = count($germplasm_attributes);
   }
 
-  $form['germplasm_attributes']['category'] = array(
+  $form['germplasm_attributes']['attribute'] = array(
     '#type' => 'container',
     '#prefix' => '<div id="categories-fieldset-wrapper">',
     '#suffix' => '</div>',
@@ -448,21 +450,31 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   );
 
   for ($i = 0; $i < $form_state['category_count']; ++$i) {
-    $form['germplasm_attributes']['category'][$i] = array(
+    $form['germplasm_attributes']['attribute'][$i] = array(
       '#type' => 'fieldset',
-      '#title' => t('Category settings'),
+      '#title' => t('Attribute settings'),
     );
-    $form['germplasm_attributes']['category'][$i]['name'] = array(
+    $form['germplasm_attributes']['attribute'][$i]['name'] = array(
       '#type' => 'textfield',
-      '#title' => t('Category name'),
+      '#title' => t('Attribute name'),
       '#title_display' => 'before',
-      '#default_value' => $germplasm_categories[$i]['name'],
+      '#description' => t('Leave this field empty to remove this attribute settings.'),
+      '#default_value' => $germplasm_attributes[$i]['name'],
       '#required' => FALSE,
       '#size' => 80,
       '#maxlength' => 1024,
     );
-    $form['germplasm_attributes']['category'][$i]['cvs'] = array(
-      '#type' => 'textarea',
+    $form['germplasm_attributes']['attribute'][$i]['category'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Category name'),
+      '#title_display' => 'before',
+      '#default_value' => $germplasm_category_list[$germplasm_attributes[$i]['category']],
+      '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 1024,
+    );
+    $form['germplasm_attributes']['attribute'][$i]['cvs'] = array(
+      '#type' => 'textfield',
       '#title' => t('Associated CV(s)'),
       '#title_display' => 'before',
       '#description' => t(
@@ -471,20 +483,24 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
         the system. You can specify multiple CV with comas. All the terms of
         those CV will be used to match attributes.
       '),
-      '#default_value' => $germplasm_categories[$i]['cvs'],
+      '#default_value' => $germplasm_attributes[$i]['cvs'],
       '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 2048,
       '#autocomplete_path' => 'brapi/cvs/autocomplete',
     );
-    $form['germplasm_attributes']['category'][$i]['cvterms'] = array(
-      '#type' => 'textarea',
+    $form['germplasm_attributes']['attribute'][$i]['cvterms'] = array(
+      '#type' => 'textfield',
       '#title' => t('Associated CV term(s)'),
       '#title_display' => 'before',
       '#description' => t('
         Specify a list of CV term identifiers (cvterm.cvterm_id) that will be
         used to match attributes.
       '),
-      '#default_value' => $germplasm_categories[$i]['cvterms'],
+      '#default_value' => $germplasm_attributes[$i]['cvterms'],
       '#required' => FALSE,
+      '#size' => 80,
+      '#maxlength' => 2048,
       '#autocomplete_path' => 'brapi/terms/autocomplete',
     );
   }
@@ -559,7 +575,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
  * Selects and returns the fieldset with the names in it.
  */
 function brapi_add_category_callback($form, $form_state) {
-  return $form['germplasm_attributes']['category'];
+  return $form['germplasm_attributes']['attribute'];
 }
 
 /**
@@ -701,16 +717,34 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   }
   variable_set(BRAPI_EXAMPLE_SETTINGS, $brapi_example_settings);
 
-  // Save germplasm attribute categories.
-  $germplasm_categories = array();
-  foreach ($form_state['values']['category'] as $category) {
-    if ($category['name']
-        && ($category['cvs'] || $category['cvterms'])) {
-      $germplasm_categories[] = $category;
+  // Save germplasm attributes.
+  $germplasm_attributes = array();
+  $germplasm_category_list = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
+  $germplasm_categories = array_flip($germplasm_category_list);
+  foreach ($form_state['values']['attribute'] as $attribute) {
+    if ($attribute['name']
+        && ($attribute['cvs'] || $attribute['cvterms'])) {
+      // Replace category name by its index.
+      if (array_key_exists($attribute['category'], $germplasm_categories)) {
+        // Get existing index.
+        $attribute['category'] = $germplasm_categories[$attribute['category']];
+      }
+      else {
+        // Category does not exist, add it.
+        $germplasm_category_list[] = $attribute['category'];
+        // Place array index on last inserted key.
+        end($germplasm_category_list);
+        // Save index.
+        $attribute['category'] =
+          $germplasm_categories[$attribute['category']] =
+          key($germplasm_category_list);
+      }
+      $germplasm_attributes[] = $attribute;
     }
         
   }
-  variable_set(BRAPI_GERMPLASM_CATEGORIES, $germplasm_categories);
+  variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
+  variable_set(BRAPI_GERMPLASM_ATTR_CATEGORIES, $germplasm_category_list);
 
   // Aggregation options.
   $brapi_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());

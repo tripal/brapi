@@ -1315,35 +1315,32 @@ function brapi_v1_read_germplasm_pedigree_json($stock) {
  *   a JSON array containing the germplasm attribute categories.
  */
 function brapi_v1_attributes_json() {
-  $germplasm_categories = variable_get(BRAPI_GERMPLASM_CATEGORIES, array());
+  $germplasm_attributes = variable_get(BRAPI_GERMPLASM_ATTRIBUTES, array());
+  $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
   // Get call parameters.
   $args = brapi_get_url_call_args();
   $category_id = isset($args['attributeCategoryDbId']) ?
     intval($args['attributeCategoryDbId'])
     : 0;
-  if ((0 > $category_id) || (count($germplasm_categories) < $category_id)) {
-    $category_id = 0;
-  }
-  // Note: category_id is +1 than the real index in the array to avoid having
-  // a 0 ID. Therefore first category has attributeCategoryDbId 1 but is
-  // $germplasm_categories[0].
+  // Note: attributeCategoryDbId is +1 than the real index in the category array
+  // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
+  // 1 but is $germplasm_categories[0].
   
-  // Filter categories if needed.
-  if ($category_id) {
-    $germplasm_categories = array($category_id-1 => $germplasm_categories[$category_id-1]);
-  }
-
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $attributes_data = array();
-  foreach ($germplasm_categories as $category_index => $category) {
+  foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
+    // Filter categories if needed.
+    if ($category_id && ($category_id != $attribute_settings['category'] + 1)) {
+      continue;
+    }
     // Get all attributes for current category.
     $cvterm_ids = array();
     $cv_ids = array();
     // If we got a list of cvterms.
-    if ($category['cvterms']) {
-      $cvterm_refs = explode(',', $category['cvterms']);
+    if ($attribute_settings['cvterms']) {
+      $cvterm_refs = explode(',', $attribute_settings['cvterms']);
       foreach ($cvterm_refs as $cvterm_ref) {
         if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
           $cvterm_ids[$matches[1]] = TRUE;
@@ -1351,8 +1348,8 @@ function brapi_v1_attributes_json() {
       }
     }
     // Get terms from CV.
-    if ($category['cvs']) {
-      $cv_refs = explode(',', $category['cvs']);
+    if ($attribute_settings['cvs']) {
+      $cv_refs = explode(',', $attribute_settings['cvs']);
       foreach ($cv_refs as $cv_ref) {
         if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
           $cv_ids[$matches[1]] = TRUE;
@@ -1360,7 +1357,6 @@ function brapi_v1_attributes_json() {
       }
     }
 
-    $attribute = array();
     $filters = array(
         ':cvterm_ids' => array_keys($cvterm_ids),
         ':cv_ids' => array_keys($cv_ids),
@@ -1380,7 +1376,7 @@ function brapi_v1_attributes_json() {
       
       $sql_query = '
         SELECT
-          cv.name AS "code",
+          cv.name AS "name",
           cv.definition AS "description",
           db.urlprefix || accession AS "uri",
           \'stock_cvterm\' AS "datatype",
@@ -1401,7 +1397,7 @@ function brapi_v1_attributes_json() {
         . ') GROUP BY cv.name, cv.definition, "uri", "datatype"
         UNION
         SELECT
-          cvt.name AS "code",
+          cvt.name AS "name",
           cvt.definition AS "description",
           db.urlprefix || accession AS "uri",
           \'stockprop\' AS "datatype",
@@ -1417,8 +1413,9 @@ function brapi_v1_attributes_json() {
 
       $attribute_result = chado_query($sql_query, $filters);
       while ($attribute = $attribute_result->fetchAssoc()) {
-        $attribute['attributeCategoryDbId'] = $category_index + 1;
-        $attribute['name'] = $category['name'];
+        $attribute['attributeCategoryDbId'] = $attribute_settings['category'] + 1;
+        $attribute['code'] = $attribute_settings['name'];
+        // Note: datatypeshould be like Categorical, Numeric, Boolean,...
         // Check if we must split values.
         if ($attribute['values']
             && (!is_array($attribute['values']))
@@ -1448,6 +1445,7 @@ function brapi_v1_attributes_json() {
           $attribute['values'] = array();
           // Loop on matches.
           for ($match_index = 0; $match_index < count($attr_matches); ++$match_index) {
+            // Get the match either unquoted ([2]) or quoted ([1]).
             if (isset($attr_matches[$match_index][2])) {
               $attr_match = $attr_matches[$match_index][2];
             }
@@ -1484,7 +1482,7 @@ function brapi_v1_attributes_json() {
  *   a JSON array containing the germplasm attribute categories.
  */
 function brapi_v1_categories_json() {
-  $germplasm_categories = variable_get(BRAPI_GERMPLASM_CATEGORIES, array());
+  $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
@@ -1492,7 +1490,7 @@ function brapi_v1_categories_json() {
   foreach ($germplasm_categories as $category_index => $category) {
     $categories_data[] = array(
       'attributeCategoryDbId' => $category_index + 1,
-      'name' => $category['name'],
+      'name' => $category,
     );
   }
 
