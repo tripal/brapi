@@ -19,7 +19,7 @@
  * BREEDING API GLOBALS
  *******************************************************************************
  */
-define('BRAPI_SERVICE_VERSION', 'v1.0');
+define('BRAPI_SERVICE_VERSION', 'v1.2');
 define('BRAPI_SERVICE_PREFIX_V1', 'brapi/v1');
 define('BRAPI_MCPD_VERSION', '2.1');
 define('BRAPI_DB', 'breeding api');
@@ -243,6 +243,24 @@ function brapi_get_calls() {
           ),
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+        'aggregatable' => TRUE,
+      ),
+      'germplasm/{germplasmDbId}/attributes' => array(
+        'title'          => 'Germplasm attributes',
+        'description'    => 'Germplas attributes call',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'    => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_germplasm_attributes_json',
+        'arguments'      => array(
+          3 => array(
+            'name' => 'germplasmDbId',
+            'type' => 'string',
+            'description' => 'correspond to a Chado stock.uniquename value',
+            'required' => FALSE,
+          ),
+        ),
         'aggregatable' => TRUE,
       ),
       'germplasm/{germplasmDbId}/markerprofiles' => array(

@@ -1309,6 +1309,59 @@ function brapi_v1_read_germplasm_pedigree_json($stock) {
 }
 
 /**
+ * Helper function that returns CV/CV term filter for an attribute.
+ *
+ * @param $attribute_settings array
+ *   An array containing the attribute settings.
+ *
+ * @return array
+ *   2 elements: the first one is the WHERE clause, and the second one is the
+ *   associated values.
+ */
+function brapi_v1_get_attribute_filter($attribute_settings) {
+
+  // Get all attributes for current attribute settings.
+  $cvterm_ids = array();
+  $cv_ids = array();
+  // If we got a list of cvterms.
+  if ($attribute_settings['cvterms']) {
+    $cvterm_refs = explode(',', $attribute_settings['cvterms']);
+    foreach ($cvterm_refs as $cvterm_ref) {
+      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+        $cvterm_ids[$matches[1]] = TRUE;
+      }
+    }
+  }
+  // Get terms from CV.
+  if ($attribute_settings['cvs']) {
+    $cv_refs = explode(',', $attribute_settings['cvs']);
+    foreach ($cv_refs as $cv_ref) {
+      if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
+        $cv_ids[$matches[1]] = TRUE;
+      }
+    }
+  }
+
+  $filter_values = array(
+      ':cvterm_ids' => array_keys($cvterm_ids),
+      ':cv_ids' => array_keys($cv_ids),
+  );
+
+  $sql_filter = '';
+  if (count($cvterm_ids)) {
+    $sql_filter = 'cvt.cvterm_id IN (:cvterm_ids)';
+    if (count($cv_ids)) {
+      $sql_filter .= 'OR cvt.cv_id IN (:cv_ids)';
+    }
+  }
+  elseif (count($cv_ids)) {
+    $sql_filter = 'cvt.cv_id IN (:cv_ids)';
+  }
+
+  return array($sql_filter, $filter_values);
+}
+
+/**
  * Returns a JSON array containing the germplasm attribute categories.
  *
  * @return array
@@ -1335,45 +1388,12 @@ function brapi_v1_attributes_json() {
     if ($category_id && ($category_id != $attribute_settings['category'] + 1)) {
       continue;
     }
-    // Get all attributes for current category.
-    $cvterm_ids = array();
-    $cv_ids = array();
-    // If we got a list of cvterms.
-    if ($attribute_settings['cvterms']) {
-      $cvterm_refs = explode(',', $attribute_settings['cvterms']);
-      foreach ($cvterm_refs as $cvterm_ref) {
-        if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
-          $cvterm_ids[$matches[1]] = TRUE;
-        }
-      }
-    }
-    // Get terms from CV.
-    if ($attribute_settings['cvs']) {
-      $cv_refs = explode(',', $attribute_settings['cvs']);
-      foreach ($cv_refs as $cv_ref) {
-        if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
-          $cv_ids[$matches[1]] = TRUE;
-        }
-      }
-    }
+    list($term_filter, $filter_values) =
+      brapi_v1_get_attribute_filter($attribute_settings);
 
-    $filters = array(
-        ':cvterm_ids' => array_keys($cvterm_ids),
-        ':cv_ids' => array_keys($cv_ids),
-    );
     // Only query if we got CVs or CV terms.
-    if (count($cvterm_ids) || count($cv_ids)) {
-      $term_filter = '';
-      if (count($cvterm_ids)) {
-        $term_filter = 'cvt.cvterm_id IN (:cvterm_ids)';
-        if (count($cv_ids)) {
-          $term_filter .= 'OR cvt.cv_id IN (:cv_ids)';
-        }
-      }
-      elseif (count($cv_ids)) {
-        $term_filter = 'cvt.cv_id IN (:cv_ids)';
-      }
-      
+    if (count($filter_values[':cvterm_ids'])
+        || count($filter_values[':cv_ids'])) {
       $sql_query = '
         SELECT
           cv.name AS "name",
@@ -1411,10 +1431,13 @@ function brapi_v1_attributes_json() {
         . ') GROUP BY cvt.name, cvt.definition, "uri", "datatype"
       ;';
 
-      $attribute_result = chado_query($sql_query, $filters);
+      $attribute_result = chado_query($sql_query, $filter_values);
       while ($attribute = $attribute_result->fetchAssoc()) {
+        // Add some fields.
+        $attribute['attributeDbId'] = $attribute_index + 1;
         $attribute['attributeCategoryDbId'] = $attribute_settings['category'] + 1;
         $attribute['code'] = $attribute_settings['name'];
+        
         // Note: datatypeshould be like Categorical, Numeric, Boolean,...
         // Check if we must split values.
         if ($attribute['values']
@@ -1495,6 +1518,131 @@ function brapi_v1_categories_json() {
   }
 
   $data = array('result' => array('data' => array($categories_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Germplasm attributes call.
+ *
+ * BRAPI: Germplasm Attributes
+ * URL: brapi/v1/germplasm/\<id\>/attributes
+ * Displays attributes of a germplasm.
+ *
+ * GET: returns attributes of the given accession.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/germplasm/01BEL084609/attributes
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/GermplasmAttributes/GermplasmAttributeValuesByGermplasmDbId.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_germplasm_attributes_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+
+  $actions = array(
+    'read'   => 'brapi_v1_read_germplasm_attributes_json',
+  );
+
+  return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
+}
+
+/**
+ * Returns a JSON array containing the attributes of a given germplasm.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   a JSON array containing the stock attributes (stock_cvterm+stockprop).
+ */
+function brapi_v1_read_germplasm_attributes_json($stock) {
+  $germplasm_attributes = variable_get(BRAPI_GERMPLASM_ATTRIBUTES, array());
+  $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
+
+  // Get call parameters.
+  $args = brapi_get_url_call_args();
+  $attribute_list = isset($args['attributeList']) ?
+    explode(',', $args['attributeList'])
+    : FALSE;
+  // Note: $attribute_list is a list of attributeDbId. Each id correspond to a
+  // 0-indexed $germplasm_attributes the following way:
+  // $germplasm_attributes[$attribute_db_id - 1] (be aware of the " - 1" part).
+  if ($attribute_list) {
+    $new_germplasm_attributes = array();
+    foreach ($attribute_list as $attribute_id) {
+      $attribute_index = $attribute_id - 1;
+      $new_germplasm_attributes[$attribute_index] =
+        $germplasm_attributes[$attribute_index];
+    }
+    $germplasm_attributes = $new_germplasm_attributes;
+  }
+  
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $germplasm_data = array();
+
+  $fields = array(
+    'germplasmDbId',
+  );
+  foreach ($fields as $field_name) {
+    $germplasm_data[$field_name] =
+      brapi_get_field('germplasm', $stock, $field_name);
+  }
+  // Attributes data.
+  $germplasm_data['data'] = array();
+
+  foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
+    list($term_filter, $filter_values) =
+      brapi_v1_get_attribute_filter($attribute_settings);
+    $filter_values[':stock_id'] = $stock->stock_id;
+    $sql_query = '
+      SELECT
+        cv.name AS "name",
+        CASE
+          WHEN scvt.is_not = TRUE THEN \'NOT \' || cvt.name
+          ELSE cvt.name
+        END AS "value"
+      FROM {stock} s
+        JOIN {stock_cvterm} scvt ON (s.stock_id = scvt.stock_id)
+        JOIN {cvterm} cvt ON (cvt.cvterm_id = scvt.cvterm_id)
+        JOIN {cv} cv ON (cv.cv_id = cvt.cv_id)
+      WHERE
+        s.stock_id = :stock_id AND ('
+      . $term_filter
+      . ')
+      UNION
+      SELECT
+        cvt.name AS "name",
+        sp.value AS "value"
+      FROM {stock} s
+        JOIN {stockprop} sp ON (s.stock_id = sp.stock_id)
+        JOIN {cvterm} cvt ON (cvt.cvterm_id = sp.type_id)
+      WHERE
+        s.stock_id = :stock_id AND ('
+      . $term_filter
+      . ')
+    ;';
+
+    $attribute_result = chado_query($sql_query, $filter_values);
+    while ($attribute_value = $attribute_result->fetchAssoc()) {
+      $attribute_value['attributeDbId'] = $attribute_index+1;
+      $attribute_value['code'] = $attribute_settings['name'];
+      $attribute_value['determinedDate'] = NULL;
+      $germplasm_data['data'][] = $attribute_value;
+    }
+  }
+
+  $data = array('result' => array('data' => array($germplasm_data)));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
