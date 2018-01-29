@@ -170,6 +170,17 @@ function brapi_get_calls() {
         'page callback'  => 'brapi_v1_about_json',
         'aggregatable' => FALSE,
       ),
+      'attributes' => array(
+        'title'          => 'Germplasm Attribute List',
+        'description'    => 'Germplasm attribute list call',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'page callback'  => 'brapi_v1_attributes_json',
+        'aggregatable' => TRUE,
+      ),
       'attributes/categories' => array(
         'title'          => 'Germplasm Attribute Categories List',
         'description'    => 'Germplasm attribute categories list call',

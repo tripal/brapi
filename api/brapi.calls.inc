@@ -1314,15 +1314,184 @@ function brapi_v1_read_germplasm_pedigree_json($stock) {
  * @return array
  *   a JSON array containing the germplasm attribute categories.
  */
+function brapi_v1_attributes_json() {
+  $germplasm_categories = variable_get(BRAPI_GERMPLASM_CATEGORIES, array());
+
+  // Get call parameters.
+  $args = brapi_get_url_call_args();
+  $category_id = isset($args['attributeCategoryDbId']) ?
+    intval($args['attributeCategoryDbId'])
+    : 0;
+  if ((0 > $category_id) || (count($germplasm_categories) < $category_id)) {
+    $category_id = 0;
+  }
+  // Note: category_id is +1 than the real index in the array to avoid having
+  // a 0 ID. Therefore first category has attributeCategoryDbId 1 but is
+  // $germplasm_categories[0].
+  
+  // Filter categories if needed.
+  if ($category_id) {
+    $germplasm_categories = array($category_id-1 => $germplasm_categories[$category_id-1]);
+  }
+
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $attributes_data = array();
+  foreach ($germplasm_categories as $category_index => $category) {
+    // Get all attributes for current category.
+    $cvterm_ids = array();
+    $cv_ids = array();
+    // If we got a list of cvterms.
+    if ($category['cvterms']) {
+      $cvterm_refs = explode(',', $category['cvterms']);
+      foreach ($cvterm_refs as $cvterm_ref) {
+        if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+          $cvterm_ids[$matches[1]] = TRUE;
+        }
+      }
+    }
+    // Get terms from CV.
+    if ($category['cvs']) {
+      $cv_refs = explode(',', $category['cvs']);
+      foreach ($cv_refs as $cv_ref) {
+        if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
+          $cv_ids[$matches[1]] = TRUE;
+        }
+      }
+    }
+
+    $attribute = array();
+    $filters = array(
+        ':cvterm_ids' => array_keys($cvterm_ids),
+        ':cv_ids' => array_keys($cv_ids),
+    );
+    // Only query if we got CVs or CV terms.
+    if (count($cvterm_ids) || count($cv_ids)) {
+      $term_filter = '';
+      if (count($cvterm_ids)) {
+        $term_filter = 'cvt.cvterm_id IN (:cvterm_ids)';
+        if (count($cv_ids)) {
+          $term_filter .= 'OR cvt.cv_id IN (:cv_ids)';
+        }
+      }
+      elseif (count($cv_ids)) {
+        $term_filter = 'cvt.cv_id IN (:cv_ids)';
+      }
+      
+      $sql_query = '
+        SELECT
+          cv.name AS "code",
+          cv.definition AS "description",
+          db.urlprefix || accession AS "uri",
+          \'stock_cvterm\' AS "datatype",
+          array_agg(DISTINCT 
+            CASE
+              WHEN scvt.is_not = TRUE THEN \'NOT \'
+              ELSE \'\'
+            END
+            || cvt.name
+          ) AS "values"
+        FROM {stock_cvterm} scvt
+          JOIN {cvterm} cvt ON (cvt.cvterm_id = scvt.cvterm_id)
+          JOIN {cv} cv ON (cv.cv_id = cvt.cv_id)
+          JOIN {dbxref} dxr ON (dxr.dbxref_id = cvt.dbxref_id)
+          JOIN {db} db ON (db.db_id = dxr.db_id)
+        WHERE ('
+        . $term_filter
+        . ') GROUP BY cv.name, cv.definition, "uri", "datatype"
+        UNION
+        SELECT
+          cvt.name AS "code",
+          cvt.definition AS "description",
+          db.urlprefix || accession AS "uri",
+          \'stockprop\' AS "datatype",
+          array_agg(DISTINCT sp.value) AS "values"
+        FROM {stockprop} sp
+          JOIN {cvterm} cvt ON (cvt.cvterm_id = sp.type_id)
+          JOIN {dbxref} dxr ON (dxr.dbxref_id = cvt.dbxref_id)
+          JOIN {db} db ON (db.db_id = dxr.db_id)
+        WHERE ('
+        . $term_filter
+        . ') GROUP BY cvt.name, cvt.definition, "uri", "datatype"
+      ;';
+
+      $attribute_result = chado_query($sql_query, $filters);
+      while ($attribute = $attribute_result->fetchAssoc()) {
+        $attribute['attributeCategoryDbId'] = $category_index + 1;
+        $attribute['name'] = $category['name'];
+        // Check if we must split values.
+        if ($attribute['values']
+            && (!is_array($attribute['values']))
+            && ('{' == substr($attribute['values'], 0, 1))) {
+          // Parse values.
+          // Remove curly brackets (PostreSQL array).
+          $attr_values = substr($attribute['values'], 1, -1);
+          // We replace escaped quotes by the hex code so they won't interfere
+          // in the regexp matching. All will be replaced by stripcslashes().
+          $attr_values = preg_replace('/\\\\"/', '\\x22', $attr_values);
+          // We match all double quoted and unquoted strings followed by comas.
+          // Note: we append a coma to the value string to match last value
+          // with the regexp.
+          if (!preg_match_all(
+            '/(?:(?:"([^"]+)")|([^",][^,]*)),/',
+            $attr_values . ',',
+            $attr_matches,
+            PREG_SET_ORDER
+          )) {
+            // Regexp did not match any, keep the whole string.
+            // Possible case: a value staring with but not finishing a double
+            // quote.
+            $attr_matches = array(array($attr_values, $attr_values, ''));
+            $debug_data[] = 'Unable to parse "values": "' . $attribute['values'] . '"';
+          }
+
+          $attribute['values'] = array();
+          // Loop on matches.
+          for ($match_index = 0; $match_index < count($attr_matches); ++$match_index) {
+            if (isset($attr_matches[$match_index][2])) {
+              $attr_match = $attr_matches[$match_index][2];
+            }
+            else {
+              $attr_match = $attr_matches[$match_index][1];
+            }
+            stripcslashes($attr_match);
+            $attr_match = trim($attr_match);
+            if ('' != $attr_match) {
+              $attribute['values'][] = $attr_match;
+            }
+          }
+        }
+        $attributes_data[] = $attribute;
+      }
+
+    }
+  }
+
+  $data = array('result' => array('data' => $attributes_data));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Returns a JSON array containing the germplasm attribute categories.
+ *
+ * @return array
+ *   a JSON array containing the germplasm attribute categories.
+ */
 function brapi_v1_categories_json() {
   $germplasm_categories = variable_get(BRAPI_GERMPLASM_CATEGORIES, array());
 
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $categories_data = array();
-  foreach ($germplasm_categories as $i => $category) {
+  foreach ($germplasm_categories as $category_index => $category) {
     $categories_data[] = array(
-      'attributeCategoryDbId' => $i + 1,
+      'attributeCategoryDbId' => $category_index + 1,
       'name' => $category['name'],
     );
   }

@@ -410,23 +410,30 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     array(
       array(
         'name'    => '',
-        'cv'      => '',
+        'cvs'     => '',
         'cvterms' => '',
-        'storage' => 'stockprop',
       ),
     )
   );
 
   $form['germplasm_attributes'] = array(
     '#type'        => 'fieldset',
-    '#attributes'  => array('class' => array('container-inline')),
     '#title'       => t('Germplasm attribute settings'),
     '#collapsible' => TRUE,
     '#collapsed'   => TRUE,
   );
 
   $form['germplasm_attributes']['markup'] = array(
-    '#markup' => t('Germplasm attributes are stored as stock properties (stockprop) or stock CV terms (stock_cvterm) (while traits are stored as ND experiments).<br/><br/>'),
+    '#markup' => t('Germplasm attributes are stored as stock properties
+      (stockprop) or stock CV terms (stock_cvterm) (while traits are stored as
+      ND experiments). Here, you can define several attribute categories. Each
+      category will regroup attributes using specified list of CV terms or all
+      the CV terms included in the specified CVs. It means that the matching
+      attributes will have either a stockprop.type_id or a
+      stock_cvterm.cvterm_id matching the list of selected CV terms.
+      You can specify both a list of CVs and a list CV terms identifiers or
+      just one of them (but at least one).
+      <br/><br/>'),
   );
 
   if (empty($form_state['category_count'])) {
@@ -453,45 +460,32 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#required' => FALSE,
       '#size' => 80,
       '#maxlength' => 1024,
-      '#suffix' => '<br/><br/>',
     );
-    $form['germplasm_attributes']['category'][$i]['cv'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Associated CV'),
+    $form['germplasm_attributes']['category'][$i]['cvs'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Associated CV(s)'),
       '#title_display' => 'before',
-      '#default_value' => $germplasm_categories[$i]['cv'],
+      '#description' => t(
+        'Specify a list of cv.cv_id. If you include CV names in the list, only
+        the numeric identifier cv_id (last number for each CV) will be used by
+        the system. You can specify multiple CV with comas. All the terms of
+        those CV will be used to match attributes.
+      '),
+      '#default_value' => $germplasm_categories[$i]['cvs'],
       '#required' => FALSE,
-      '#size' => 80,
-      '#maxlength' => 1024,
-      '#suffix' => '<br/><br/>',
       '#autocomplete_path' => 'brapi/cvs/autocomplete',
     );
     $form['germplasm_attributes']['category'][$i]['cvterms'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Associated CV terms'),
+      '#type' => 'textarea',
+      '#title' => t('Associated CV term(s)'),
       '#title_display' => 'before',
+      '#description' => t('
+        Specify a list of CV term identifiers (cvterm.cvterm_id) that will be
+        used to match attributes.
+      '),
       '#default_value' => $germplasm_categories[$i]['cvterms'],
       '#required' => FALSE,
-      '#size' => 80,
-      '#maxlength' => 1024,
-      '#suffix' => '<br/><br/>',
       '#autocomplete_path' => 'brapi/terms/autocomplete',
-    );
-    $form['germplasm_attributes']['category'][$i]['storage'] = array(
-      '#type' => 'radios',
-      '#title' => t('Storage mode'),
-      '#title_display' => 'before',
-      '#description' => t('Select the way those attributes are stored. '),
-      '#default_value' =>
-        isset($germplasm_categories[$i]['storage']) ?
-        $germplasm_categories[$i]['storage']
-        : 'stockprop',
-      '#suffix' => '<br/>',
-      '#field_suffix' => '<br/>&nbsp;&nbsp;&nbsp;',
-      '#options' => array(
-        'stockprop' => t('As stock properties (stockprop table)'),
-        'stock_cvterm' => t('As stock CV terms (stock_cvterm table)')
-      ),
     );
   }
 
@@ -711,7 +705,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $germplasm_categories = array();
   foreach ($form_state['values']['category'] as $category) {
     if ($category['name']
-        && ($category['cv'] || $category['cvterms'])) {
+        && ($category['cvs'] || $category['cvterms'])) {
       $germplasm_categories[] = $category;
     }
         
