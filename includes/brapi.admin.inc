@@ -757,6 +757,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   }
   variable_set(BRAPI_AGGREGATION_OPTIONS, $brapi_aggregation_options);
 
+  drupal_set_message(t('BrAPI configuration saved.'));
 }
 
 /**

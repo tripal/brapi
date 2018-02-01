@@ -831,7 +831,11 @@ function brapi_v1_call_json($selected_call_name) {
  * @ingroup brapi
  */
 function brapi_v1_germplasm_search_json() {
+  $cv_settings = brapi_get_cv_settings();
   $parameters = array(
+    'selectors' => array(
+      'type_id' => $cv_settings['Germplasm'],
+    ),
     'get_object_details' => 'brapi_get_germplasm_details',
   );
   return brapi_v1_object_search_json('germplasm', $parameters);
@@ -1723,7 +1727,7 @@ function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NUL
 function brapi_v1_marker_json($marker_id, $view_mode = 'full', $langcode = NULL) {
   $actions = array(
     'read'   => 'brapi_v1_read_marker_json',
-    'list'   => 'brapi_v1_markers_search_json',
+    'list'   => 'brapi_v1_marker_search_json',
   );
 
   return brapi_process_crud('markers/{markerDbId}', $actions, 'marker', $marker_id);
@@ -1795,7 +1799,7 @@ function brapi_v1_read_marker_json($feature) {
 }
 
 /**
- * Markers search call.
+ * Marker search call.
  *
  * BRAPI: Markers Search
  * URL: brapi/v1/markers-search
@@ -1811,7 +1815,7 @@ function brapi_v1_read_marker_json($feature) {
  *
  * @ingroup brapi
  */
-function brapi_v1_markers_search_json() {
+function brapi_v1_marker_search_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
     'selectors' => array(
@@ -1846,7 +1850,7 @@ function brapi_v1_markers_search_json() {
 function brapi_v1_location_json($location_id, $view_mode = 'full', $langcode = NULL) {
   $actions = array(
     'read' => 'brapi_v1_read_location_json',
-    'list' => 'brapi_v1_list_locations_json',
+    'list' => 'brapi_v1_location_search_json',
   );
 
   return brapi_process_crud('locations/{locationDbId}', $actions, 'location', $location_id);
@@ -1920,11 +1924,541 @@ function brapi_v1_read_location_json($geolocation) {
  * @return array
  *   a JSON array containing the geolocations.
  */
-function brapi_v1_list_locations_json() {
+function brapi_v1_location_search_json() {
   $parameters = array(
     'get_object_details' => 'brapi_get_location_details',
   );
   return brapi_v1_object_search_json('location', $parameters);
+}
+
+/**
+ * Program call.
+ *
+ * BRAPI: Program
+ * URL: brapi/v1/programs/<id>
+ * Displays programs.
+ *
+ * GET: returns programs.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/programs
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Programs/ListPrograms.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_program_json($program_id, $view_mode = 'full', $langcode = NULL) {
+  $actions = array(
+    'read' => 'brapi_v1_read_program_json',
+    'list' => 'brapi_v1_program_search_json',
+  );
+
+  return brapi_process_crud('programs/{programDbId}', $actions, 'program', $program_id);
+}
+
+/**
+ * Returns program details in an associative array.
+ *
+ * @param object $project
+ *   A Tripal Chado project object.
+ *
+ * @return array
+ *   the program details in an associative array.
+ */
+function brapi_get_program_details($project) {
+  $project_data = array();
+
+  $fields = array(
+    'programDbId',
+    'name',
+    'abbreviation',
+    'objective',
+    'leadPerson',
+  );
+
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+
+  foreach ($fields as $field_name) {
+    $project_data[$field_name] =
+      brapi_get_field('program', $project, $field_name);
+  }
+  return $project_data;
+}
+
+/**
+ * Returns a JSON array containing the details of a given program.
+ *
+ * @param object $project
+ *   A Tripal Chado project object.
+ *
+ * @return array
+ *   a JSON array containing the program details.
+ */
+function brapi_v1_read_program_json($project) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $project_data = array();
+
+  $project_data = brapi_get_program_details($project);
+  $data = array('result' => array('data' => array($project_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Returns a JSON array containing the list of programs.
+ *
+ * @return array
+ *   a JSON array containing the programs.
+ */
+function brapi_v1_program_search_json() {
+  $parameters = array(
+    'get_object_details' => 'brapi_get_program_details',
+  );
+  return brapi_v1_object_search_json('program', $parameters);
+}
+
+/**
+ * Sample search call.
+ *
+ * BRAPI: Sample Search
+ * URL: brapi/v1/sample-search
+ * Returns a list of sample.
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Samples/SampleSearch_POST.md
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Samples/SampleSearch_GET.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_sample_search_json() {
+  $cv_settings = brapi_get_cv_settings();
+  $parameters = array(
+    'selectors' => array(
+      'type_id' => $cv_settings['Sample'],
+    ),
+    'get_object_details' => 'brapi_get_sample_details',
+  );
+  return brapi_v1_object_search_json('sample', $parameters);
+}
+
+/**
+ * Sample details call.
+ *
+ * BRAPI: Sample Details by DbId
+ * URL: brapi/v1/sample/\<id\>
+ * Displays details of a sample.
+ *
+ * GET: returns details of the given accession.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/sample/01BEL084609
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Samples/Samples_GET.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_sample_json($sample_id, $view_mode = 'full', $langcode = NULL) {
+
+  $actions = array(
+    'create' => 'brapi_v1_create_sample_json',
+    'read'   => 'brapi_v1_read_sample_json',
+    'update' => 'brapi_v1_update_sample_json',
+    'delete' => 'brapi_v1_delete_sample_json',
+    'list'   => 'brapi_v1_sample_search_json',
+  );
+
+  return brapi_process_crud('samples/{sampleDbId}', $actions, 'sample', $sample_id);
+}
+
+/**
+ * Create a new stock (sample) entry.
+ *
+ * Insert a new sample in the stock table and creates required related
+ * entries such as missing organism or properties and associated cv terms.
+ *
+ * @param array $user_data
+ *   A hash containing the stock field values.
+ *   Supported keys (*: mandatory fields, **: not BrAPI standard):
+ *     - commonCropName*: common crop name;
+ *     - species*: the Chado organism species;
+ *     - genus*: the Chado organism genus;
+ *     - defaultDisplayName*: the Chado stock name;
+ *     - sampleDbId*: the Chado stock uniquename. can also be specified
+ *       through the $uniquename parameter which has higher priority;
+ *     - abbreviation**: the Chado organism abbreviation;
+ *     - description**: the Chado stock description;
+ *     - type_id**: a Chado cvterm_id used for stock types.
+ * @param string $uniquename
+ *   The stock.uniquename value to use for the new stock.
+ *
+ * @return array
+ *   a JSON structure containing the stock details.
+ */
+function brapi_v1_create_sample_json($user_data, $uniquename = NULL) {
+
+  // Make sure we got all the requested data.
+  $required_fields = array(
+    'commonCropName', 'species', 'genus', 'defaultDisplayName', 'sampleDbId',
+  );
+  $optional_fields = array('sampleName', 'synonyms');
+
+  foreach ($required_fields as $required_field) {
+    if (empty($user_data[$required_field])) {
+      throw new BrapiException(
+        400,
+        t("Missing sample @field!", array('@field' => $required_field))
+      );
+    }
+  }
+
+  // Check if a uniquename has been specified.
+  if (!$uniquename) {
+    $uniquename = $user_data['sampleDbId'];
+  }
+  // Make sure we got a uniquename.
+  if (!$uniquename) {
+    throw new BrapiException(
+      400,
+      t("Missing sample sampleDbId!")
+    );
+  }
+  $cv_settings = brapi_get_cv_settings();
+
+  // Check if organism exists.
+  $organism_selector = array(
+    'genus' => $user_data['genus'],
+    'species' => $user_data['species'],
+  );
+  // We capture output buffer for Tripal error messages.
+  ob_start();
+  $organism = chado_generate_var('organism', $organism_selector);
+  $tripal_message = ob_get_clean();
+  if (is_array($organism)) {
+    $organism = current($organism);
+  }
+
+  if (!$organism) {
+    // Try to insert organism.
+    if (isset($user_data['commonCropName'])) {
+      $organism_selector['common_name'] = $user_data['commonCropName'];
+    }
+
+    if (isset($user_data['abbreviation'])) {
+      $organism_selector['abbreviation'] = $user_data['abbreviation'];
+    }
+
+    // We capture output buffer for Tripal error messages.
+    ob_start();
+    $organism = chado_insert_record('organism', $organism_selector);
+    $tripal_message = ob_get_clean();
+    if (empty($organism) || !$organism['organism_id']) {
+      throw new BrapiException(
+        500,
+        t(
+          "Unable to insert new species!\n@tripal_message",
+          array('@tripal_message' => $tripal_message)
+        )
+      );
+    }
+    $organism = (object) $organism;
+    $organism_text = $organism->species . ' (' . $organism->organism_id . ')';
+    watchdog(
+      'brapi',
+      'A new organism has been inserted: @organism',
+      array('@organism' => $organism_text),
+      WATCHDOG_DEBUG
+    );
+  }
+
+  // Check if the user specified a stock description.
+  $description = '';
+  if (isset($user_data['description'])) {
+    $description = $user_data['description'];
+  }
+
+  // Check if the user specified a type_id.
+  if (isset($user_data['type_id'])) {
+    $type_id = $user_data['type_id'];
+  }
+  else {
+    $type_id = $cv_settings['Sample'];
+  }
+  // Make sure we got a type_id.
+  if (!$type_id) {
+    throw new BrapiException(
+      400,
+      t("Unable to insert new sample! Missing a type_id. You can either provide it in your JSON data (as \"'type_id': Chado cvterm_id,\") or in the default setting page of BrAPI.")
+    );
+  }
+
+  $values = array(
+    'organism_id' => $organism->organism_id,
+    'name' => $user_data['defaultDisplayName'],
+    'uniquename' => $uniquename,
+    'description' => $description,
+    'type_id' => $type_id,
+    'is_obsolete' => 0,
+  );
+  // We capture output buffer for Tripal error messages.
+  ob_start();
+  $stock = chado_insert_record('stock', $values);
+  $tripal_message = ob_get_clean();
+  if (empty($stock) || !$stock['stock_id']) {
+    throw new BrapiException(
+      500,
+      t(
+        "Unable to insert new sample!\n@tripal_message",
+        array('@tripal_message' => $tripal_message)
+      )
+    );
+  }
+  // Turn stock into an object.
+  $stock = (object) $stock;
+  $stock_text = $stock->uniquename . ' (' . $stock->stock_id . ')';
+
+  watchdog(
+    'brapi',
+    'A new stock has been inserted: @stock',
+    array('@stock' => $stock_text),
+    WATCHDOG_DEBUG
+  );
+
+  // @todo store other fields.
+  foreach ($optional_fields as $optional_field) {
+    if (isset($user_data[$optional_field])) {
+      brapi_set_field(
+        'sample',
+        $stock,
+        $optional_field,
+        $user_data[$optional_field],
+        FALSE
+      );
+    }
+  }
+
+  return brapi_v1_read_sample_json($stock);
+}
+
+/**
+ * Returns a JSON array containing the details of a given sample.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   a JSON array containing the stock details.
+ */
+function brapi_v1_read_sample_json($stock) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $sample_data = brapi_get_sample_details($stock);
+  $data = array('result' => array('data' => array($sample_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Returns sample details in an associative array.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   the stock details in an associative array.
+ */
+function brapi_get_sample_details($stock) {
+  $sample_data = array();
+
+  $fields = array(
+    'sampleDbId',
+    // 'observationUnitDbId',
+    'germplasmDbId', 'studyDbId',
+    'plotDbId', 'plantDbId', 'plateDbId', 'plateIndex',
+    'takenBy', 'sampleTimestamp', 'sampleType',
+    'tissueType', 'notes',
+  );
+
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+  
+  foreach ($fields as $field_name) {
+    $sample_data[$field_name] =
+      brapi_get_field('sample', $stock, $field_name);
+  }
+  return $sample_data;
+}
+
+/**
+ * Updates a sample.
+ *
+ * @param array $user_data
+ *   User input data.
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   a JSON structure containing the stock details.
+ */
+function brapi_v1_update_sample_json($user_data, $stock) {
+
+  $cv_settings = brapi_get_cv_settings();
+  $stock_match = array('stock_id' => $stock->stock_id);
+  $stock_data = array();
+
+  // Species to update?
+  $has_species = isset($user_data['species']);
+  $has_genus = isset($user_data['genus']);
+  if ($has_species || $has_genus) {
+    // Change stock organism.
+    // Check if organism exists.
+    $organism_selector = array();
+    if ($has_species || $has_genus) {
+      $organism_selector['genus'] = $user_data['genus'];
+      $organism_selector['species'] = $user_data['species'];
+    }
+    elseif ($has_species) {
+      $organism_selector['genus'] = $stock->organism->genus;
+      $organism_selector['species'] = $user_data['species'];
+    }
+    elseif ($has_genus) {
+      $organism_selector['genus'] = $user_data['genus'];
+      $organism_selector['species'] = $stock->organism->species;
+    }
+
+    // We capture output buffer for Tripal error messages.
+    ob_start();
+    $organism = chado_generate_var('organism', $organism_selector);
+    $tripal_message = ob_get_clean();
+    if (is_array($organism)) {
+      $organism = current($organism);
+    }
+
+    if (empty($organism) || !$organism->organism_id) {
+      throw new BrapiException(
+        404,
+        t("Unable to update sample: the given species was not found!")
+      );
+    }
+
+    $stock_data['organism_id'] = $organism->organism_id;
+  }
+
+  // Check if the user specified a stock description.
+  if (isset($user_data['description'])) {
+    $stock_data['description'] = $user_data['description'];
+  }
+
+  // Check if the user specified a type_id.
+  if (isset($user_data['type_id'])) {
+    $stock_data['type_id'] = $user_data['type_id'];
+  }
+
+  // Check if the user specified a new name.
+  if (isset($user_data['defaultDisplayName'])) {
+    $stock_data['name'] = $user_data['defaultDisplayName'];
+  }
+
+  // We capture output buffer for Tripal error messages.
+  ob_start();
+  $updated =
+    chado_update_record(
+      'stock',
+      $stock_match,
+      $stock_data,
+      array('return_record' => FALSE)
+    );
+  $tripal_message = ob_get_clean();
+  if (!$updated) {
+    throw new BrapiException(
+      404,
+      t(
+        "Failed to update sample genus/species!\n@tripal_message",
+        array('@tripal_message' => $tripal_message)
+      )
+    );
+  }
+
+  watchdog(
+    'brapi',
+    'Stock has been updated: @stock',
+    array(
+      '@stock' => $stock->uniquename . ' (' . $stock->stock_id . ')',
+    ),
+    WATCHDOG_DEBUG
+  );
+
+  // Update other fields.
+  $updatable_fields = array('sampleName', 'synonyms');
+
+  foreach ($updatable_fields as $updatable_field) {
+    if (isset($user_data[$updatable_field])) {
+      brapi_set_field(
+        'sample',
+        $stock,
+        $updatable_field,
+        $user_data[$updatable_field],
+        TRUE
+      );
+    }
+  }
+
+  return brapi_v1_read_sample_json($stock);
+}
+
+/**
+ * Removes a sample.
+ *
+ * @param object $stock
+ *   The Tripal Chado stock object to remove.
+ *
+ * @return array
+ *   a JSON structure with and empty data array.
+ */
+function brapi_v1_delete_sample_json($stock) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+
+  ob_start();
+  if (!chado_delete_record('stock', array('stock_id' => $stock->stock_id))) {
+    $tripal_message = ob_get_clean();
+    throw new BrapiException(
+      500,
+      t(
+        "Unable to remove sample!\n@tripal_message",
+        array('@tripal_message' => $tripal_message)
+      )
+    );
+  }
+  ob_get_clean();
+  $metadata['status'][] =
+    array(
+      'code' => 200,
+      'message' => t("Successfully removed sample."),
+    );
+
+  return array(array(), $metadata, $debug_data);
 }
 
 /**
