@@ -724,11 +724,13 @@ function brapi_v1_call_json($selected_call_name) {
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
       // Check proxied-only calls.
+      $proxied = FALSE;
       if ('brapi_v1_external_call_json' == $call_settings['page callback']) {
         if (!isset($aggregation_options[$call_name])
             || !count($aggregation_options[$call_name])) {
           continue;
         }
+        $proxied = TRUE;
         // @todo Check properties of remote calls?
       }
 

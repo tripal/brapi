@@ -104,7 +104,7 @@ function brapi_update_7100(&$sandbox) {
  * @ingroup brapi
  */
 function brapi_update_7101(&$sandbox) {
-  brapi_cleanup_cvterms();
+  brapi_cleanup_cvterms(TRUE);
   brapi_add_cvterms();
 }
 
@@ -195,7 +195,7 @@ function brapi_add_cvterms() {
  *
  * @ingroup brapi
  */
-function brapi_cleanup_cvterms() {
+function brapi_cleanup_cvterms($remove = FALSE) {
   $brapi_cv = brapi_get_cv();
 
   // Get all BrAPI CV terms.
@@ -204,13 +204,24 @@ function brapi_cleanup_cvterms() {
     array('cv_id' => array('name' => BRAPI_CV))
   );
 
+  $cvterm_to_remove = array();
   foreach ($cvterms as $cvterm) {
     if (!array_key_exists($cvterm->name, $brapi_cv)) {
-      chado_delete_record(
-        'cvterm', 
-        array('cvterm_id' => $cvterm->cvterm_id)
-      );
+      if ($remove) {
+        chado_delete_record(
+          'cvterm', 
+          array('cvterm_id' => $cvterm->cvterm_id)
+        );
+      }
+      else {
+        $cvterm_to_remove[] = $cvterm->cvterm_id;
+      }
     }
+  }
+
+  if ($cvterm_to_remove) {
+    $t = get_t();
+    drupal_set_message('warning', $t('Obsolete BrAPI CV terms were not removed. To remove them manually, use the following SQL command: "DELETE FROM cvterm WHERE cvterm_id IN (%cvterm_ids);"', array('%cvterm_ids' => implode(',', $cvterm_to_remove))));
   }
 }
 
