@@ -25,14 +25,6 @@ function brapi_enable() {
 }
 
 /**
- * Implements hook_disable().
- *
- * @ingroup brapi
- */
-function brapi_disable() {
-}
-
-/**
  * Implements hook_requirements().
  *
  * @ingroup brapi
@@ -106,6 +98,15 @@ function brapi_update_7100(&$sandbox) {
   variable_set(BRAPI_AGGREGATION_OPTIONS, $new_aggregation_options);
 }
 
+/**
+ * Update BrAPI CV.
+ *
+ * @ingroup brapi
+ */
+function brapi_update_7101(&$sandbox) {
+  brapi_cleanup_cvterms();
+  brapi_add_cvterms();
+}
 
 /**
  * Implements hook_uninstall().
@@ -119,14 +120,14 @@ function brapi_uninstall() {
   // Notify MCPD CV has not been removed.
   drupal_set_message($t("BrAPI: MCPD vocabulary has not been removed from Chado. If you don't need it anymore, you can remove it manually using the following SQL query: \"DELETE FROM chado.cv cv WHERE cv.name = '" . BRAPI_CV . "';\""));
   // Clear BrAPI settings.
-  variable_del(BRAPI_CV_SETTINGS);
-  variable_del(BRAPI_EXAMPLE_SETTINGS);
   variable_del(BRAPI_AGGREGATION_OPTIONS);
-  variable_del(BRAPI_GERMPLASM_ATTRIBUTES);
-  variable_del(BRAPI_GERMPLASM_ATTR_CATEGORIES);
-  variable_del(BRAPI_STORAGE_OPTIONS);
-  variable_del(BRAPI_DATE_FORMAT);
   variable_del(BRAPI_CUSTOM_DATE_FORMAT);
+  variable_del(BRAPI_CV_SETTINGS);
+  variable_del(BRAPI_DATE_FORMAT);
+  variable_del(BRAPI_EXAMPLE_SETTINGS);
+  variable_del(BRAPI_GERMPLASM_ATTR_CATEGORIES);
+  variable_del(BRAPI_GERMPLASM_ATTRIBUTES);
+  variable_del(BRAPI_STORAGE_OPTIONS);
 }
 
 /**
@@ -186,6 +187,31 @@ function brapi_add_cvterms() {
       'definition' => $definition,
       'db_name'    => BRAPI_DB,
     ));
+  }
+}
+
+/**
+ * Cleanup unused BrAPI CV terms.
+ *
+ * @ingroup brapi
+ */
+function brapi_cleanup_cvterms() {
+  $brapi_cv = brapi_get_cv();
+
+  // Get all BrAPI CV terms.
+  $cvterms = chado_generate_var(
+    'cvterm',
+    array('cv_id' => array('name' => BRAPI_CV))
+  );
+
+  foreach ($cvterms as $cvterm) {
+    drupal_set_message('Checking ' . $cvterm->name);
+    if (!array_key_exists($cvterm->name, $brapi_cv)) {
+      chado_delete_record(
+        'cvterm', 
+        array('cvterm_id' => $cvterm->cvterm_id)
+      );
+    }
   }
 }
 
