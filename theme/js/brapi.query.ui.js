@@ -56,7 +56,13 @@ $(function() {
         service_url = service_url.replace(/\/+$/, '');
         // Add URL argument.
         $form.find('.brapi-query-argument input').each(function(index, item) {
-          service_url += '/' + $(item).val();
+          var regex = new RegExp('\{' + $(item).attr('name') + '\}', 'g');
+          if (service_url.match(regex)) {
+            service_url = service_url.replace(regex, $(item).val());
+          }
+          else {
+            service_url += '/' + $(item).val();
+          }
         });
         // Add query string.
         var query_string = $('<form/>').append($form.find('.barpi-query-string').clone()).serialize();
@@ -136,6 +142,29 @@ $(function() {
       }
     );
     $select.find('option:selected').data('form').show();
+  }
+  
+  // Make all common fields act like one field...
+  // First gather all input names.
+  var checkbox_names = {}, text_names = {};
+  $('form.brapi-query input').each(function (index, element) {
+    if ('checkbox' == $(element).attr('type')) {
+      checkbox_names[$(element).attr('name')] = true;
+    }
+    else if ('text' == $(element).attr('type')) {
+      text_names[$(element).attr('name')] = true;
+    }
+  });
+  // Then loop on names and makes them act as one field.
+  for (var checkbox_name in checkbox_names) {
+    $('input[name="' + checkbox_name + '"]').on('change', function () {
+      $('input[name="' + $(this).attr('name') + '"]').prop('checked', $(this).is(':checked'));
+    });
+  }
+  for (var text_name in text_names) {
+    $('input[name="' + text_name + '"]').on('change', function () {
+      $('input[name="' + $(this).attr('name') + '"]').val($(this).val());
+    });
   }
 
   // Setup date picker widgets.
