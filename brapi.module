@@ -233,15 +233,19 @@ function brapi_menu() {
     'title' => 'Add more germplasm attribute category',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('brapi_add_category'),
-    'access callback' => TRUE,
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'file' => 'includes/brapi.admin.inc',
+    'type' => MENU_CALLBACK,
   );
   // The above example as it appears to users with no javascript.
   $items['brapi/settings/add_category_no_js'] = array(
     'title' => 'Add more germplasm attribute category',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('brapi_add_category', TRUE),
-    'access callback' => TRUE,
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_ADMIN_PERMISSION),
+    'type' => MENU_CALLBACK,
     'file' => 'includes/brapi.admin.inc',
   );
 
