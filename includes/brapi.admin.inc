@@ -46,7 +46,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     ksort($example_parameters);
   }
 
-  $brapi_example_settings = variable_get(BRAPI_EXAMPLE_SETTINGS);
+  $brapi_example_settings = variable_get(BRAPI_EXAMPLE_SETTINGS, array());
 
   foreach ($example_parameters as $example_parameter) {
     $form['example_settings'][$example_parameter['name']] = array(
@@ -67,7 +67,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   }
 
   // Storage type selection for some specific fields.
-  $storage_options = variable_get('brapi_storage_options', array());
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
   $form['storage_options'] = array(
     '#type'        => 'fieldset',
     '#title'       => t('Storage options'),
@@ -207,7 +207,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'timestamp' => t('Timestamp (Unix)'),
     'custom' => t('Custom format (specify below)'),
   );
-  $default_date_format = variable_get('brapi_date_format');
+  $default_date_format = variable_get(BRAPI_DATE_FORMAT, '');
   if (!$default_date_format
       || (($default_date_format != 'timestamp')
           && ($default_date_format != 'custom')
@@ -229,7 +229,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#type' => 'textfield',
     '#id' => 'brapi_custom_date_format',
     '#description' => t('If you use a custom format, specify the way dates are stored in database using the format describbed at <a href="http://php.net/manual/en/datetime.createfromformat.php">DateTime::createFromFormat PHP documentation</a>.'),
-    '#default_value' => variable_get('brapi_custom_date_format', ''),
+    '#default_value' => variable_get(BRAPI_CUSTOM_DATE_FORMAT, ''),
     '#title' => t('Custom date format specification'),
     '#title_display' => 'before',
     '#size' => 80,
@@ -601,7 +601,7 @@ function brapi_add_category_add_one($form, &$form_state) {
 function brapi_admin_form_submit($form_id, &$form_state) {
 
   // Save storage options.
-  $storage_options = variable_get('brapi_storage_options', array());
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
   if (!is_array($storage_options)) {
     $storage_options = array();
   }
@@ -629,20 +629,20 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   if ($form_state['values']['institute_name']) {
     $storage_options['institute_name'] = $form_state['values']['institute_name'];
   }
-  variable_set('brapi_storage_options', $storage_options);
+  variable_set(BRAPI_STORAGE_OPTIONS, $storage_options);
 
   // Save date format.
   switch ($form_state['values']['date_format']) {
     case 'xsd':
-      variable_set('brapi_date_format', 'xsd');
+      variable_set(BRAPI_DATE_FORMAT, 'xsd');
       break;
     case 'timestamp':
-      variable_set('brapi_date_format', 'timestamp');
+      variable_set(BRAPI_DATE_FORMAT, 'timestamp');
       break;
     case 'custom':
       if ($form_state['values']['custom_date_format']) {
-        variable_set('brapi_date_format', 'custom');
-        variable_set('brapi_custom_date_format', $form_state['values']['custom_date_format']);
+        variable_set(BRAPI_DATE_FORMAT, 'custom');
+        variable_set(BRAPI_CUSTOM_DATE_FORMAT, $form_state['values']['custom_date_format']);
       }
       else {
         drupal_set_message('No custom date format specified while this format has been selected!', 'warning');

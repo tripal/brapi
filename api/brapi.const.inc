@@ -29,6 +29,9 @@ define('BRAPI_EXAMPLE_SETTINGS', 'brapi_example_settings');
 define('BRAPI_GERMPLASM_ATTR_CATEGORIES', 'brapi_germplasm_attr_categories');
 define('BRAPI_GERMPLASM_ATTRIBUTES', 'brapi_germplasm_attributes');
 define('BRAPI_AGGREGATION_OPTIONS', 'brapi_aggregation_options');
+define('BRAPI_STORAGE_OPTIONS', 'brapi_storage_options');
+define('BRAPI_DATE_FORMAT', 'brapi_date_format');
+define('BRAPI_CUSTOM_DATE_FORMAT', 'brapi_custom_date_format');
 define('BRAPI_USE_PERMISSION', 'use breeding api');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
 define('BRAPI_ADMIN_PERMISSION', 'administer breeding api');
@@ -1728,7 +1731,7 @@ function brapi_get_data_mapping() {
     );
 
     // Alter default settings.
-    $storage_options = variable_get('brapi_storage_options', array());
+    $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
 
     // Germplasm fields...
     $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];

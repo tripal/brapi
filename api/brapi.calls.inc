@@ -463,10 +463,10 @@ function brapi_v1_about_json() {
   return array(
     array(
       'version' => '1.0',
-      'provider' => variable_get('site_name'),
-      'description' => variable_get('site_slogan'),
+      'provider' => variable_get('site_name', t('Unknown')),
+      'description' => variable_get('site_slogan', ''),
       'contact' => array(
-        'email' => variable_get('site_mail'),
+        'email' => variable_get('site_mail', ''),
         'www'   => $base_url . '/',
       ),
     ),

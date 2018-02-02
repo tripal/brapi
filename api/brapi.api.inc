@@ -239,7 +239,7 @@ function brapi_get_cv_settings($reset = FALSE) {
     }
     else {
       // Not available in cache, get it from saved settings.
-      $settings = variable_get(BRAPI_CV_SETTINGS);
+      $settings = variable_get(BRAPI_CV_SETTINGS, array());
       if (!$settings) {
         // Not in saved settings, get defaults.
         $settings = brapi_reset_cv_settings();
@@ -866,7 +866,7 @@ function brapi_parse_date($stored_value, $format = NULL) {
   static $date_setting;
 
   if (!$date_setting) {
-    $date_setting = variable_get('brapi_date_format');
+    $date_setting = variable_get(BRAPI_DATE_FORMAT, '');
   }
 
   if (!$format) {
@@ -878,7 +878,7 @@ function brapi_parse_date($stored_value, $format = NULL) {
       $parsed_date = date(BRAPI_XSD_DATE_FORMAT, $stored_value);
       break;
     case 'custom':
-      $date_format = variable_get('brapi_custom_date_format');
+      $date_format = variable_get(BRAPI_CUSTOM_DATE_FORMAT, '');
       if (!$date_format) {
         $date_format = BRAPI_XSD_DATE_FORMAT;
       }
@@ -912,7 +912,7 @@ function brapi_encode_date($brapi_date, $format = NULL) {
   static $date_setting;
 
   if (!$date_setting) {
-    $date_setting = variable_get('brapi_date_format');
+    $date_setting = variable_get(BRAPI_DATE_FORMAT, '');
   }
 
   if (!$format) {
@@ -926,7 +926,7 @@ function brapi_encode_date($brapi_date, $format = NULL) {
       $encoded_date = $date->format('U');
       break;
     case 'custom':
-      $date_format = variable_get('brapi_custom_date_format');
+      $date_format = variable_get(BRAPI_CUSTOM_DATE_FORMAT, '');
       if (!$date_format) {
         $date_format = BRAPI_XSD_DATE_FORMAT;
       }

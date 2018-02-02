@@ -69,9 +69,6 @@ function brapi_install() {
   $initial_brapi_cv_settings = brapi_get_cv_settings(TRUE);
   variable_set(BRAPI_CV_SETTINGS, $initial_brapi_cv_settings);
 
-  // Set BrAPI example settings.
-  variable_set(BRAPI_EXAMPLE_SETTINGS, array());
-
   drupal_set_message(
     $t('Breeding API settings are available under !link',
       array(
@@ -124,6 +121,12 @@ function brapi_uninstall() {
   // Clear BrAPI settings.
   variable_del(BRAPI_CV_SETTINGS);
   variable_del(BRAPI_EXAMPLE_SETTINGS);
+  variable_del(BRAPI_AGGREGATION_OPTIONS);
+  variable_del(BRAPI_GERMPLASM_ATTRIBUTES);
+  variable_del(BRAPI_GERMPLASM_ATTR_CATEGORIES);
+  variable_del(BRAPI_STORAGE_OPTIONS);
+  variable_del(BRAPI_DATE_FORMAT);
+  variable_del(BRAPI_CUSTOM_DATE_FORMAT);
 }
 
 /**
