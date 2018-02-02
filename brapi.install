@@ -205,7 +205,6 @@ function brapi_cleanup_cvterms() {
   );
 
   foreach ($cvterms as $cvterm) {
-    drupal_set_message('Checking ' . $cvterm->name);
     if (!array_key_exists($cvterm->name, $brapi_cv)) {
       chado_delete_record(
         'cvterm', 
