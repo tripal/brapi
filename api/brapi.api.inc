@@ -1257,7 +1257,12 @@ function brapi_get_field(
       if (isset($field_fetcher['return_array'])
           && $field_fetcher['return_array']) {
         // Multiple values.
-        $value = $values;
+        if (empty($values)) {
+          $value = NULL;
+        }
+        else {
+          $value = $values;
+        }
       }
       else {
         // A single value.
@@ -1974,10 +1979,10 @@ function brapi_prepare_metadata($item_count = 1) {
     }
 
     $metadata['pagination'] = array(
-      'pageSize'    => int($page_size),
-      'currentPage' => int($page_number),
-      'totalCount'  => int($item_count),
-      'totalPages'  => int($page_count),
+      'pageSize'    => intval($page_size),
+      'currentPage' => intval($page_number),
+      'totalCount'  => intval($item_count),
+      'totalPages'  => intval($page_count),
     );
   }
 
