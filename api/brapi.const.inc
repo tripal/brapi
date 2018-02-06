@@ -1902,21 +1902,21 @@ function brapi_get_data_mapping() {
         // ),
       ),
       'variable'     => array(
-        // 'table' => 'xxx',
-        // 'identifier' => 'xx_id',
-        // 'accession' => 'uniquename',
-        // 'fields' => array(
-        //   'xxxDbId' => 'uniquename',
-        //   'defaultDisplayName' => 'name',
-        //   'type' => array(
-        //     'table' => 'cvterm',
-        //     'foreign_key' => 'cvterm_id',
-        //     'object_key' => 'type_id',
-        //     'column' => 'name',
-        //     'selector' => array(),
-        //     'field_type' => 'string',
-        //   ),
-        // ),
+        'table' => 'cvterm',
+        'identifier' => 'cvterm_id',
+        'accession' => 'name',
+        'fields' => array(
+          'xxxDbId' => 'uniquename',
+          'defaultDisplayName' => 'name',
+          'type' => array(
+            'table' => 'cvterm',
+            'foreign_key' => 'cvterm_id',
+            'object_key' => 'type_id',
+            'column' => 'name',
+            'selector' => array(),
+            'field_type' => 'string',
+          ),
+        ),
       ),
       'map'          => array(
         // 'table' => 'xxx',

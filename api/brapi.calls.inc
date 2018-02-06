@@ -1440,8 +1440,8 @@ function brapi_v1_attributes_json() {
       $attribute_result = chado_query($sql_query, $filter_values);
       while ($attribute = $attribute_result->fetchAssoc()) {
         // Add some fields.
-        $attribute['attributeDbId'] = $attribute_index + 1;
-        $attribute['attributeCategoryDbId'] = $attribute_settings['category'] + 1;
+        $attribute['attributeDbId'] = (string) ($attribute_index + 1);
+        $attribute['attributeCategoryDbId'] = (string) ($attribute_settings['category'] + 1);
         $attribute['code'] = $attribute_settings['name'];
         
         // Note: datatypeshould be like Categorical, Numeric, Boolean,...
