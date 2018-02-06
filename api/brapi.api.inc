@@ -1974,10 +1974,10 @@ function brapi_prepare_metadata($item_count = 1) {
     }
 
     $metadata['pagination'] = array(
-      'pageSize'    => $page_size,
-      'currentPage' => $page_number,
-      'totalCount'  => $item_count,
-      'totalPages'  => $page_count,
+      'pageSize'    => int($page_size),
+      'currentPage' => int($page_number),
+      'totalCount'  => int($item_count),
+      'totalPages'  => int($page_count),
     );
   }
 

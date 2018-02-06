@@ -128,6 +128,7 @@ function brapi_get_mcpd_mapping() {
         'fallback' => array('breeding institute code', 'InstituteCode'),
       ),
       'instituteName' => array('name' => 'Breeding institute name'),
+      'persistent unique identifier' => array('name' => 'persistent unique identifier'),
       'species' => array('name' => 'species'),
       'speciesAuthority' => array('name' => 'species authority'),
       'subtaxa' => array('name' => 'subtaxa'),
@@ -1073,7 +1074,15 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'germplasmPUI' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+          'germplasmPUI' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['persistent unique identifier'],
+            ),
+            'field_type' => 'string',
+          ),
+          'germplasmPUIDrupalURL' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             global $base_url;
             $germplasm_pui = '';
             switch ($op) {
@@ -1249,9 +1258,8 @@ function brapi_get_data_mapping() {
               default:
             }
             return $institute_code_stock_collection;
-
           },
-          // Note: the use of MCPD 'institute code' should be priviledged
+          // Note: the use of MCPD 'institute code' should be privileged
           // against the use of 'Breeding institute name'. If 'institute code'
           // is set, then this field should be left empty.
           'instituteNameProp' => array(
@@ -2050,6 +2058,16 @@ function brapi_get_data_mapping() {
 
     // Germplasm fields...
     $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];
+
+    // Set "germplasmPUI" settings.
+    $use_specified_settings = array_key_exists(
+      $storage_options['germplasm_pui'],
+      $germplasm_fields
+    );
+    if ($use_specified_settings) {
+      $germplasm_fields['germplasmPUI'] =
+        &$germplasm_fields[$storage_options['germplasm_pui']];
+    }
 
     // Set "common crop name" settings, default to prop.
     $germplasm_fields['commonCropName'] =

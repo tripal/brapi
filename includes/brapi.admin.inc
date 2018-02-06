@@ -74,12 +74,50 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#collapsible' => TRUE,
     '#collapsed'   => TRUE,
   );
+  // Germplasm PUI.
+  $germplasm_pui_options = array(
+    'germplasmPUI' => t('Stored in stockprop table'),
+    'germplasmPUIDrupalURL' => t('Use Drupal stock URL'),
+  );
+  $germplasm_pui_storage = isset($storage_options['germplasm_pui']) ?
+    $storage_options['germplasm_pui']
+    : '';
+  if (!$germplasm_pui_storage
+      || (($germplasm_pui_storage != 'germplasmPUI')
+          && ($germplasm_pui_storage != 'germplasmPUIDrupalURL'))) {
+    $germplasm_pui_storage = 'germplasmPUI';
+  }
+  $form['storage_options']['germplasm_pui'] = array(
+      '#type' => 'select',
+      '#description' => t('Select the way germplasm persistent unique identifier are stored in your database.'),
+      '#options' => $germplasm_pui_options, 
+      '#default_value' => $germplasm_pui_storage,
+      '#title' => t('Germplasm PUI storage'),
+      '#title_display' => 'before',
+      '#required' => TRUE,
+      '#multiple' => FALSE,
+  );
+  // Crop list storage.
+  $crop_list_storage = isset($storage_options['crop_list']) ?
+    $storage_options['crop_list']
+    : '';
+  $form['storage_options']['crop_list'] = array(
+      '#type' => 'textfield',
+      '#description' => t('Enter the list of (no space coma-separated) supported crops here or leave this field empty to use the Chado organism.species field values.'),
+      '#default_value' => $crop_list_storage,
+      '#title' => t('List of supported crops ("crops" call)'),
+      '#title_display' => 'before',
+      '#required' => FALSE,
+       '#size' => 80,
+  );
   // Common crop name storage.
   $crop_name_options = array(
     'commonCropNameProp' => t('Stored in stockprop table'),
     'commonCropNameOrganism' => t('Stored in organism table'),
   );
-  $crop_name_storage = $storage_options['common_crop_name'];
+  $crop_name_storage = isset($storage_options['common_crop_name']) ?
+    $storage_options['common_crop_name']
+    : '';
   if (!$crop_name_storage
       || (($crop_name_storage != 'commonCropNameProp')
           && ($crop_name_storage != 'commonCropNameOrganism'))) {
@@ -100,7 +138,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'genusProp' => t('Stored in stockprop table'),
     'genusOrganism' => t('Stored in organism table'),
   );
-  $genus_storage = $storage_options['genus'];
+  $genus_storage = isset($storage_options['genus']) ?
+    $storage_options['genus']
+    : '';
   if (!$genus_storage
       || (($genus_storage != 'genusProp')
           && ($genus_storage != 'genusOrganism'))) {
@@ -121,7 +161,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'speciesProp' => t('Stored in stockprop table'),
     'speciesOrganism' => t('Stored in organism table'),
   );
-  $species_storage = $storage_options['species'];
+  $species_storage = isset($storage_options['species']) ?
+    $storage_options['species']
+    : '';
   if (!$species_storage
       || (($species_storage != 'speciesProp')
           && ($species_storage != 'speciesOrganism'))) {
@@ -142,7 +184,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'countryOfOriginCodeProp' => t('Stored in stockprop table'),
     'countryOfOriginCodeCVTerm' => t('Stored in stock_cvterm table'),
   );
-  $country_of_origin_code_storage = $storage_options['country_of_origin_code'];
+  $country_of_origin_code_storage = isset($storage_options['country_of_origin_code']) ?
+    $storage_options['country_of_origin_code']
+    : '';
   if (!$country_of_origin_code_storage
       || (($country_of_origin_code_storage != 'countryOfOriginCodeProp')
           && ($country_of_origin_code_storage != 'countryOfOriginCodeCVTerm'))) {
@@ -163,7 +207,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'instituteCodeProp' => t('Stored in stockprop table'),
     'instituteCodeStockCollection' => t('Stored in stockcollection table'),
   );
-  $institute_code_storage = $storage_options['institute_code'];
+  $institute_code_storage = isset($storage_options['institute_code']) ?
+    $storage_options['institute_code']
+    : '';
   if (!$institute_code_storage
       || (($institute_code_storage != 'instituteCodeProp')
           && ($institute_code_storage != 'instituteCodeStockCollection'))) {
@@ -184,7 +230,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     'instituteNameProp' => t('Stored in stockprop table'),
     'instituteNameStockCollection' => t('Stored in stockcollection table'),
   );
-  $institute_name_storage = $storage_options['institute_name'];
+  $institute_name_storage = isset($storage_options['institute_name']) ?
+    $storage_options['institute_name']
+    : '';
   if (!$institute_name_storage
       || (($institute_name_storage != 'instituteNameProp')
           && ($institute_name_storage != 'instituteNameStockCollection'))) {
@@ -604,6 +652,14 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
   if (!is_array($storage_options)) {
     $storage_options = array();
+  }
+  // Germplasm PUI storage.
+  if ($form_state['values']['germplasm_pui']) {
+    $storage_options['germplasm_pui'] = $form_state['values']['germplasm_pui'];
+  }
+  // Crop list storage.
+  if ($form_state['values']['crop_list']) {
+    $storage_options['crop_list'] = $form_state['values']['crop_list'];
   }
   // Common crop name storage.
   if ($form_state['values']['common_crop_name']) {

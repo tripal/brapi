@@ -1684,17 +1684,24 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
 function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
-
-  $sql_query = "
-    SELECT species
-    FROM organism o
-    WHERE EXISTS
-      (SELECT TRUE FROM stock s WHERE s.organism_id = o.organism_id LIMIT 1)
-    ORDER BY species;";
-  $crop_result = chado_query($sql_query);
   $crop_list = array();
-  while ($crop = $crop_result->fetchAssoc()) {
-    $crop_list[] = $crop['species'];
+
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
+  if (isset($storage_options['crop_list'])
+      && !empty($storage_options['crop_list'])) {
+    $crop_list = explode(',', $storage_options['crop_list']);
+  }
+  else {
+    $sql_query = "
+      SELECT species
+      FROM organism o
+      WHERE EXISTS
+        (SELECT TRUE FROM stock s WHERE s.organism_id = o.organism_id LIMIT 1)
+      ORDER BY species;";
+    $crop_result = chado_query($sql_query);
+    while ($crop = $crop_result->fetchAssoc()) {
+      $crop_list[] = $crop['species'];
+    }
   }
   $data = array('result' => array('data' => $crop_list));
   brapi_aggregate_call($data, $metadata, $debug_data);
