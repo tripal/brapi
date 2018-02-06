@@ -2385,7 +2385,7 @@ function brapi_aggregate_call(
             : '');
         // Prepare context.
         // Check method to use.
-        if (isset($parameters['POST'])) {
+        if (isset($parameters['POST']) && !empty($parameters['POST'])) {
           // POST.
           $json_post_data = json_encode($parameters['POST']);
           $options = array(
@@ -2418,7 +2418,10 @@ function brapi_aggregate_call(
         // @endcode
         try {
           $context = stream_context_create($options);
-          $call_result_json = file_get_contents($url, FALSE, $context);
+          if (!$call_result_json = file_get_contents($url, FALSE, $context)) {
+            // If it failed, try without context.
+            // $call_result_json = file_get_contents($url);
+          }
           if (isset($call_result_json)) {
             $call_result = json_decode($call_result_json, TRUE);
             if (isset($call_result)) {
