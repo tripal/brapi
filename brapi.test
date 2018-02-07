@@ -79,7 +79,7 @@ class BrapiTestCase extends TripalTestCase {
     $this->drupalLogin($this->brapi_user);
     $this->drupalGet('brapi/overview');
     $this->assertResponse(200, 'Access allowed to regular users on the overview page.');
-    
+
     $this->drupalLogin($this->regular_user);
     $this->drupalGet('brapi/overview');
     $this->assertResponse(403, 'Public access is denied on the overview page.');

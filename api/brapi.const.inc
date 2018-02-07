@@ -897,7 +897,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_variable_json',
         'aggregatable' => TRUE,
       ),
       'variables/{observationVariableDbId}' => array(
@@ -908,7 +908,7 @@ function brapi_get_calls() {
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_variable_json',
         'arguments'      => array(
           3 => array(
             'name' => 'observationVariableDbId',
@@ -919,17 +919,17 @@ function brapi_get_calls() {
         ),
         'aggregatable' => TRUE,
       ),
-      'variables/datatypes' => array(
-        'title'          => 'Variable Data Types',
-        'description'    => 'Variable data type list',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'page callback'  => 'brapi_v1_external_call_json',
-        'aggregatable' => TRUE,
-      ),
+      // 'variables/datatypes' => array(
+      //   'title'          => 'Variable Data Types',
+      //   'description'    => 'Variable data type list',
+      //   'datatypes'      => array('json'),
+      //   'methods'        => array(
+      //     'GET'  => BRAPI_USE_PERMISSION,
+      //     'POST' => BRAPI_USE_PERMISSION,
+      //   ),
+      //   'page callback'  => 'brapi_v1_external_call_json',
+      //   'aggregatable' => TRUE,
+      // ),
       'variables-search' => array(
         'title'          => 'Variable Search',
         'description'    => 'Search variables',
@@ -938,7 +938,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'page callback'  => 'brapi_v1_external_call_json',
+        'page callback'  => 'brapi_v1_variable_search_json',
         'aggregatable' => TRUE,
       ),
       'vendors/plates/{vendorPlateDbId}' => array(
@@ -1163,7 +1163,7 @@ function brapi_get_data_mapping() {
 
               default:
             }
-            
+
             return $parent2_db_id;
           },
           'pedigree' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
@@ -1841,8 +1841,8 @@ function brapi_get_data_mapping() {
               case 'read':
                 $sql_query = '
                   SELECT c.name
-                  FROM contact c
-                    JOIN project_contact pc USING (contact_id)
+                  FROM {contact} c
+                    JOIN {project_contact} pc USING (contact_id)
                   WHERE
                     pc.project_id = :project_id
                     AND c.type_id = :lead_person_type_id
@@ -1906,16 +1906,42 @@ function brapi_get_data_mapping() {
         'identifier' => 'cvterm_id',
         'accession' => 'name',
         'fields' => array(
-          'xxxDbId' => 'uniquename',
-          'defaultDisplayName' => 'name',
-          'type' => array(
-            'table' => 'cvterm',
-            'foreign_key' => 'cvterm_id',
-            'object_key' => 'type_id',
-            'column' => 'name',
-            'selector' => array(),
-            'field_type' => 'string',
-          ),
+          'observationVariableDbId' => 'cvterm_id',
+          'name' => 'name',
+          'ontologyDbId' => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
+            $lead_contact = NULL;
+            switch ($op) {
+              case NULL:
+                $lead_contact = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $sql_query = '
+                  SELECT c.name
+                  FROM {contact} c
+                    JOIN {project_contact pc USING (contact_id)
+                  WHERE
+                    pc.project_id = :project_id
+                    AND c.type_id = :lead_person_type_id
+                ;';
+                $filter_values = array(
+                  ':project_id' => $project->project_id,
+                  ':lead_person_type_id' => $cv_settings['LeadPerson'],
+                );
+                $contact_result = chado_query($sql_query, $filter_values);
+                if ($contact_result) {
+                  $contact = $contact_result->fetchAssoc();
+                  $lead_contact = $contact['name'];
+                }
+                else {
+                  $lead_contact = NULL;
+                }
+                break;
+
+              default:
+            }
+            return $lead_contact;
+          },
         ),
       ),
       'map'          => array(

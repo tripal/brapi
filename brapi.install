@@ -209,7 +209,7 @@ function brapi_cleanup_cvterms($remove = FALSE) {
     if (!array_key_exists($cvterm->name, $brapi_cv)) {
       if ($remove) {
         chado_delete_record(
-          'cvterm', 
+          'cvterm',
           array('cvterm_id' => $cvterm->cvterm_id)
         );
       }

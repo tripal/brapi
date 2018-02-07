@@ -58,6 +58,8 @@ function brapi_call_wrapper($call_name, $call_func) {
   // Remove leading and trailing underscores.
   $alter_name = preg_replace('/^_+/', '', $alter_name);
   $alter_name = preg_replace('/_+$/', '', $alter_name);
+  // Uncomment the line below to find out names to use.
+  // drupal_set_message('BrAPI alter call name: "' . $alter_name . '"', 'debug');
   try {
     list($data, $metadata, $debug_data) = call_user_func_array($call_func, $args);
     $debug_data[] = "Call name: $call_name";
@@ -403,7 +405,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
   if (!is_array($chado_objects)) {
     $chado_objects = array($chado_objects);
   }
-  
+
   // Process post-filtering.
   foreach ($post_filters as $post_filter) {
     $chado_objects = $post_filter($chado_objects);
@@ -1090,7 +1092,7 @@ function brapi_get_germplasm_details($stock) {
 
   // Handle 'include'.
   $fields = brapi_merge_fields_to_include($fields);
-  
+
   foreach ($fields as $field_name) {
     $germplasm_data[$field_name] =
       brapi_get_field('germplasm', $stock, $field_name);
@@ -1256,6 +1258,157 @@ function brapi_v1_delete_germplasm_json($stock) {
  * URL: brapi/v1/germplasm/\<id\>/pedigree
  * Displays pedigree of a germplasm.
  *
+ * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
+ *
+ * About pedigree string:
+ * ----------------------
+ *
+ * The pedigree identifies the parents and crossing sequences used to produce the
+ * cultivar.  The method used to illustrate pedigrees is a slightly modified
+ * version of the system proposed by Purdy et al. in 1969 (see Crop Sci. 8:405-
+ * 406).  Use of abbreviations has been minimized.  Crosses are symbolized by
+ * combinations of slash marks ("/") with female and male parents listed to left
+ * and right side, respectively.  Numbers indicate the order in which crosses
+ * were made:
+ *
+ *                           /  = primary cross
+ *
+ *                          /2/ = secondary cross
+ *
+ *                          /3/ = tertiary cross
+ *
+ *                          /X/ = Xth level cross, etc.
+ *
+ * Higher numbers indicate more recent crosses in the sequence.  The most recent
+ * or final cross used to create a cultivar is indicated by the highest number
+ * within the pedigree.  For example, the pedigree of "Scout" hard red winter
+ * wheat is:
+ *
+ *      -------------------------------------------------------------------
+ *      Example 1:  Comparison of Purdy pedigree nomenclature to a tree
+ *                  diagram of the pedigree of Scout hard red winter wheat.
+ *
+ *            Scout = Nebred /2/ Hope / Turkey Red /3/ Cheyenne / Ponca
+ *
+ *                                       OR
+ *
+ *                         Hope        Turkey Red
+ *                           |______ / _____|
+ *                                   |
+ *                                   |
+ *                Nebred            "?"
+ *                   |_____ /2/ _____|
+ *                           |              Cheyenne        Ponca
+ *                           |                  |______ / ____|
+ *                           |                          |
+ *                           |                          |
+ *                          "?"                        "?"
+ *                           |___________ /3/ __________|
+ *                                         |
+ *                                         |
+ *                                       Scout
+ *      -------------------------------------------------------------------
+ *
+ * In narrative terms, an unidentified progeny of a primary cross between "Hope"
+ * hard red spring wheat and "Turkey Red" hard red winter wheat was selected and
+ * crossed to "Nebred" hard red winter wheat.  One of the progeny selected from
+ * the "Nebred/2/Hope/Turkey Red" sequence of crosses was crossed to another
+ * unidentified progeny derived by crossing "Cheyenne" and "Ponca" hard red
+ * winter wheats.  The cultivar Scout was selected from progeny resulting from
+ * the final or "/3/" cross.  Specific generations and selection techniques
+ * involved are not indicated, but may be obtained from the referenced
+ * literature.
+ *
+ * Single slash marks are also used where the parents are known, but the exact
+ * sequence of a series of crosses is unknown.  Backcrossing sequences are
+ * indicated by use of an asterisk ("*") preceded or followed by a number to
+ * indicate the total number of crosses made with the recurrent parent (see
+ * Examples 2 and 3).  Left and right parentheses are used to bracket both the
+ * pedigree and designation of breeding lines contained within a cultivar's
+ * pedigree (see Example 4).  Commas are used to separate breeding line pedigrees
+ * from designations within the parentheses.
+ *
+ *
+ *      -------------------------------------------------------------------
+ *      Example 2:  Pedigree with three backcrosses of female recurrent parent
+ *                  for TAM 107 hard red winter wheat.
+ *
+ *                            TAM 107 = TAM 105*4 / Amigo
+ *
+ *                                         OR
+ *
+ *                                                  TAM 105      Amigo
+ *                                                     |____ / ____|
+ *                                                           |
+ *                                         TAM 105           |
+ *         1st backcross>                     |____ *2 / ____|
+ *                                                    |
+ *                                  TAM 105           |
+ *         2nd backcross>              |____ *3 / ____|
+ *                                             |
+ *                         TAM 105             |
+ *         3rd backcross>     |_____ *4 / _____|
+ *                                    |
+ *                                    |
+ *                                 TAM 107
+ *
+ *
+ *      Example 3:  Pedigree with three backcrosses of male recurrent parent
+ *                  for Blueboy II soft red winter wheat.
+ *
+ *                      Blueboy II = Agent / Tascosa /2/ 4*Blueboy
+ *
+ *                                          OR
+ *
+ *               Agent      Tascosa
+ *                 |____ / ____|
+ *                       |
+ *                       |          Blueboy
+ *                       |____ /2/ ____|
+ *                              |
+ *                              |            Blueboy
+ *          1st backcross>      |____ /2/ 2* ____|
+ *                                       |
+ *                                       |            Blueboy
+ *          2nd backcross>               |____ /2/ 3* ____|
+ *                                                |
+ *                                                |            Blueboy
+ *          3rd backcross>                        |____ /2/ 4* ____|
+ *                                                         |
+ *                                                         |
+ *                                                     Blueboy II
+ *
+ *
+ *      Example 4:  Use of parentheses to delineate breeding line used in the
+ *                  pedigree of Pitic 62 hard red spring wheat.
+ *
+ *            Pitic 62 = Yaktana 54 /2/ (Sel. 26-1c, Norin 10 / Brevor)
+ *                                       ^
+ *                                       Indicates Sel. 26-1c as the male
+ *                                       parent of the highest order cross for
+ *                                       Pitic 62, with its own pedigree of
+ *                                       "Norin 10 / Brevor".
+ *                                      OR
+ *
+ *                                   Norin 10          Brevor
+ *                                      |________ / ______|
+ *                                                |
+ *                                                |
+ *                   Yaktana 54              Sel. 26-1c
+ *                       |__________ /2/ _________|
+ *                                    |
+ *                                    |
+ *                                 Pitic 62
+ *
+ *      -------------------------------------------------------------------
+ *
+ * Narratives providing more detailed information are used where necessary for
+ * clarification.  Pedigrees of cultivars screened from another cultivar are
+ * listed as "pure line selections".  Pedigrees of cultivars phenotypically
+ * selected from mixtures or out-crosses in commercial fields are listed as
+ * "farmer selections" with the original source material identified wherever
+ * possible.
+ *
  * GET: returns pedigree of the given accession.
  *
  * Example:
@@ -1385,7 +1538,7 @@ function brapi_v1_attributes_json() {
   // Note: attributeCategoryDbId is +1 than the real index in the category array
   // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
   // 1 but is $germplasm_categories[0].
-  
+
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $attributes_data = array();
@@ -1406,7 +1559,7 @@ function brapi_v1_attributes_json() {
           cv.definition AS "description",
           db.urlprefix || accession AS "uri",
           \'stock_cvterm\' AS "datatype",
-          array_agg(DISTINCT 
+          array_agg(DISTINCT
             CASE
               WHEN scvt.is_not = TRUE THEN \'NOT \'
               ELSE \'\'
@@ -1443,7 +1596,7 @@ function brapi_v1_attributes_json() {
         $attribute['attributeDbId'] = (string) ($attribute_index + 1);
         $attribute['attributeCategoryDbId'] = (string) ($attribute_settings['category'] + 1);
         $attribute['code'] = $attribute_settings['name'];
-        
+
         // Note: datatypeshould be like Categorical, Numeric, Boolean,...
         // Check if we must split values.
         if ($attribute['values']
@@ -1592,7 +1745,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
     }
     $germplasm_attributes = $new_germplasm_attributes;
   }
-  
+
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = array();
@@ -1762,7 +1915,7 @@ function brapi_get_marker_details($feature) {
     'refAlt',
     'analysisMethods',
   );
-  
+
   // Handle 'include'.
   $fields = brapi_merge_fields_to_include($fields);
 
@@ -1891,7 +2044,7 @@ function brapi_get_location_details($geolocation) {
     'instituteAddress',
     'additionalInfo',
   );
-  
+
   // Handle 'include'.
   $fields = brapi_merge_fields_to_include($fields);
 
@@ -2311,7 +2464,7 @@ function brapi_get_sample_details($stock) {
 
   // Handle 'include'.
   $fields = brapi_merge_fields_to_include($fields);
-  
+
   foreach ($fields as $field_name) {
     $sample_data[$field_name] =
       brapi_get_field('sample', $stock, $field_name);
@@ -2471,6 +2624,103 @@ function brapi_v1_delete_sample_json($stock) {
 }
 
 /**
+ * Observation variable call.
+ *
+ * BRAPI: variable
+ * URL: brapi/v1/variables/<id>
+ * Displays variables.
+ *
+ * GET: returns variables.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/variables
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/ObservationVariables/VariableDetails.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_variable_json($variable_id, $view_mode = 'full', $langcode = NULL) {
+  $actions = array(
+    'read' => 'brapi_v1_read_variable_json',
+    'list' => 'brapi_v1_variable_search_json',
+  );
+
+  return brapi_process_crud('variables/{variableDbId}', $actions, 'variable', $variable_id);
+}
+
+/**
+ * Returns variable details in an associative array.
+ *
+ * @param object $cvterm
+ *   A Tripal Chado cvterm object.
+ *
+ * @return array
+ *   the variable details in an associative array.
+ */
+function brapi_get_variable_details($cvterm) {
+  $cvterm_data = array();
+
+  $fields = array(
+    'observationVariableDbId',
+    'name',
+    'abbreviation',
+    'objective',
+    'leadPerson',
+  );
+
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+
+  foreach ($fields as $field_name) {
+    $cvterm_data[$field_name] =
+      brapi_get_field('variable', $cvterm, $field_name);
+  }
+  return $cvterm_data;
+}
+
+/**
+ * Returns a JSON array containing the details of a given variable.
+ *
+ * @param object $project
+ *   A Tripal Chado project object.
+ *
+ * @return array
+ *   a JSON array containing the variable details.
+ */
+function brapi_v1_read_variable_json($project) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $project_data = array();
+
+  $project_data = brapi_get_variable_details($project);
+  $data = array('result' => array('data' => array($project_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Returns a JSON array containing the list of variable.
+ *
+ * @return array
+ *   a JSON array containing the variables.
+ */
+function brapi_v1_variable_search_json() {
+  $parameters = array(
+    'get_object_details' => 'brapi_get_variable_details',
+  );
+  return brapi_v1_object_search_json('variable', $parameters);
+}
+
+/**
  * Generic callback for BrAPI call not supported by Drupal BrAPI module.
  *
  * Those calls can be processed by external BrAPI services.
@@ -2500,1123 +2750,10 @@ function brapi_v1_external_call_json() {
     // Not implemented.
     throw new BrapiException(501, "Not implemented!");
   }
-  
+
   return array(
     $data,
     $metadata,
     $debug_data,
   );
 }
-
-
-// @todo remove the old implementation below once re-implemented
-/**
- * BRAPI: Germplasm Multi Crop Passport Descriptor
- *        brapi/v1/germplasm/\<id\>/MCPD
- *
- * GET: returns several MCPD fields of the given accession.
- *
- * Example:
- * - GET
- *   brapi/v1/germplasm/01BEL084609/MCPD
- *
- * @return string
- *   a JSON string with the following variable (some can be embeded):
- *
- * Variable            Datatype   Required  Description
- *------------------------------------------------------
- * metadata            object            Y  pagination, status
- * pagination          object            Y  pageSize, currentPage, totalCount,
- *                                          totalPages
- * status              list              Y  code, message
- * result              object            Y  data
- * data                array of objects  Y  Array of 0 or 1 germplasm records
- * germplasmDbId       string            Y  Internal db identifier
- * defaultDisplayName  string            Y  A string representing the germplasm
- *                                          that will be meaningful to the user
- * germplasmName       string               Name of the germplasm. It can be the
- *                                          prefered name and does not have to
- *                                          be unique
- * accessionNumber     string               This is the unique identifier for
- *                                          accessions within a genebank, and is
- *                                          assigned when a sample is entered
- *                                          into the genebank collection
- * germplasmPUI        string               Permanent identifier (e.g. URI, DOI,
- *                                          LSID)
- * pedigree            string               Cross name with optional selection
- *                                          history.
- * seedSource          string               Seed source
- * synonyms            array of string      List of other germplasm names
- *
- * commonCropName      string               Common name fo the crop (e.g. wheat,
- *                                          rice, maize, cassava, banana)
- * instituteCode       string            Y  Institute that has bred the
- *                                          material. Note: The code may consist
- *                                          of the 3-letter ISO 3166 country
- *                                          code of the country where the
- *                                          institute is located plus a number
- *                                          (e.g. COL001) as recommended by FAO
- *                                          WIEWS
- * instituteName       string               Name of the institute (or person)
- *                                          that bred the material.
- * biologicalStatusOfAccessionCode  string  400) Breeding/research material 410)
- *                                          Breeder's line 411) Synthetic
- *                                          population 412) Hybrid 413) Founder
- *                                          stock/base population 414) Inbred
- *                                          line (parent of hybrid cultivar)
- *                                          415) Segregating population 416)
- *                                          Clonal selection 420) Genetic stock
- *                                          421) Mutant (e.g. induced/insertion
- *                                          mutants, tilling populations) 422)
- *                                          Cytogenetic stocks 423) Other
- *                                          genetic stocks (e.g. mapping
- *                                          populations)500) Advanced or
- *                                          improved cultivar (conventional
- *                                          breeding methods) 600) GMO (by
- *                                          genetic engineering) 999) Other
- * countryOfOriginCode  string              3-letter ISO 3166-1 code of the
- *                                          country in which the sample was bred
- *                                          or selected (breeding lines, GMOs,
- *                                          segregating populations, hybrids,
- *                                          modern cultivars, etc.).
- * typeOfGermplasmStorageCode  array of string  If germplasm is maintained under
- *                                          different types of storage, multiple
- *                                          choices are allowed. 10) Seed
- *                                          collection 11) Short term 12) Medium
- *                                          term 13) Long term 20) Field
- *                                          collection 30) In vitro collection
- *                                          40) Cryopreserved collection 50) DNA
- *                                          collection 99) Other (elaborate in
- *                                          REMARKS field)
- * genus               string               Genus name for taxon. Initial
- *                                          uppercase letter required.
- * species             string               Specific epithet portion of the
- *                                          scientific name in lowercase
- *                                          letters.
- * speciesAuthority    string
- * subtaxa             string               Subtaxon can be used to store any
- *                                          additional taxonomic identifier. The
- *                                          following abbreviations are allowed:
- *                                          'subsp.' (for subspecies); 'convar.'
- *                                          (for convariety); 'var.' (for
- *                                          variety); 'f.' (for form); 'Group'
- *                                          (for 'cultivar group').
- * subtaxaAuthority    string
- * donors              array of object      code of the donor institute and
- *                                          Identifier assigned to an accession
- *                                          by the donor, and permanent
- *                                          identifier.
- * acquisitionDate     string               Date on which the accession entered
- *                                          the collection where YYYY is the
- *                                          year, MM is the month and DD is the
- *                                          day. Missing data (MM or DD) should
- *                                          be indicated with hyphens or '00'
- *                                          [double zero].
- *
- * Example:
- *   {
- *     "metadata": {
- *       "status": [],
- *       "pagination": {
- *         "pageSize": 1000,
- *         "currentPage": 0,
- *         "totalCount": 1,
- *         "totalPages": 1
- *       }
- *     },
- *     "result": {
- *       "data": [
- *         {
- *           "germplasmDbId": "01BEL084609",
- *           "defaultDisplayName": "Pahang",
- *           "germplasmName": "Pahang",
- *           "accessionNumber": "ITC0609",
- *           "germplasmPUI": "http://www.crop-diversity.org/mgis/accession/01BEL084609",
- *           "synonyms": [
- *             "01BEL084609",
- *             "ITC0609"
- *           ],
- *           "commonCropName": "Pahang",
- *           "instituteCode": "01BEL084",
- *           "instituteName": "ITC",
- *           "biologicalStatusOfAccessionCode": "100 wild",
- *           "countryOfOriginCode": "UNK",
- *           "typeOfGermplasmStorageCode": "10 seed collection",
- *           "genus": "Musa",
- *           "species": "subsp. malaccensis",
- *           "donors": [
- *             {
- *               "donorAccessionNumber": "CIRAD II.04.01.001.002; (BB IR.296; CNPMF 122"
- *             }
- *           ],
- *           "acquisitionDate": "19890525"
- *         }
- *       ]
- *     }
- *   }
- *
- * @ingroup brapi
- * /
-function brapi_v1_germplasm_mcpd_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
-  $metadata = brapi_prepare_metadata(1);
-
-  $debug_data = array();
-
-  // get corresponding stock
-  $germplasm_data = array();
-  $selector = array(
-    'uniquename' => $germplasm_id,
-  );
-
-  if ($stock = chado_generate_var('stock', $selector)) {
-    // we got a matching stock
-
-    // -germplasmDbId
-    $germplasm_data['germplasmDbId'] = $stock->uniquename; // required
-
-    // -defaultDisplayName
-    $germplasm_data['defaultDisplayName'] = $stock->name;  // required
-
-    // -germplasmName
-    if (($accession_name = brapi_get_stock_property_values($stock->stock_id, 'accession name'))
-        && count($accession_name)) {
-      $germplasm_data['germplasmName'] = $accession_name[0];
-    }
-
-    // -accessionNumber
-    if (($accession_number = brapi_get_stock_property_values($stock->stock_id, 'accession number'))
-        && count($accession_number)) {
-      $germplasm_data['accessionNumber'] = $accession_number[0];
-    }
-
-    // -germplasmPUI
-    $germplasm_data['germplasmPUI']  = tripal_stock_match_stocks_page($stock->uniquename);
-
-    // -pedigree
-    // $germplasm_data['pedigree'] = NULL;
-
-    // -seedSource
-    // $germplasm_data['seedSource'] = NULL;
-
-    // -synonyms
-    $germplasm_data['synonyms'] = array($stock->uniquename);
-    if (($synonyms = brapi_get_stock_property_values($stock->stock_id, 'other identification numbers associated with the accession'))
-        && count($synonyms)) {
-      $germplasm_data['synonyms'] = array_merge($germplasm_data['synonyms'], $synonyms);
-    }
-
-    // -commonCropName
-    if (($common_crop_name = brapi_get_stock_property_values($stock->stock_id, 'common crop name', 'mgis_accession')) //+FIXME: CV
-        && count($common_crop_name)) {
-      $germplasm_data['commonCropName'] = $common_crop_name[0];
-    }
-    else {
-      $germplasm_data['commonCropName'] = $stock->name;
-    }
-
-    // -instituteCode
-    if (($institute_code = brapi_get_stock_property_values($stock->stock_id, 'institute code'))
-        && count($institute_code)) {
-      $germplasm_data['instituteCode'] = $institute_code[0];
-    }
-    else {
-      $collection_options = array('return_array' => 1);
-      $stock = chado_expand_var($stock, 'table', 'stockcollection_stock', $collection_options);
-      $collections = $stock->stockcollection_stock;
-      if (0 < count($collections)) {
-        $collection = $collections[0]->stockcollection_id;
-        $germplasm_data['instituteCode'] = $collection->uniquename;
-      }
-    }
-    //+FIXME: get from stocktprop?
-
-    // -instituteName
-    if (($institute_name = brapi_get_stock_property_values($stock->stock_id, 'institute name'))
-        && count($institute_name)) {
-      $germplasm_data['instituteName'] = $institute_name[0];
-    }
-    else {
-      $collection_options = array('return_array' => 1);
-      $stock = chado_expand_var($stock, 'table', 'stockcollection_stock', $collection_options);
-      $collections = $stock->stockcollection_stock;
-      if (0 < count($collections)) {
-        $collection = $collections[0]->stockcollection_id;
-        $germplasm_data['instituteName'] = $collection->name;
-      }
-    }
-
-    // -biologicalStatusOfAccessionCode
-    if (($biological_status = brapi_get_stock_property_values($stock->stock_id, 'BiologicalStatusOfAccessionCode'))
-        && count($biological_status)) {
-      $germplasm_data['biologicalStatusOfAccessionCode'] = $biological_status[0];
-    }
-    elseif (($biological_status = brapi_get_stock_cvterm_values($stock->stock_id, array('parent_term' => 'BiologicalStatusOfAccessionCode', 'cv' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV)))
-            && count($biological_status)) {
-      $germplasm_data['biologicalStatusOfAccessionCode'] = $biological_status[0]->name;
-    }
-
-    // -countryOfOriginCode
-    if (($country_of_origin = brapi_get_stock_property_values($stock->stock_id, 'CountryOfOriginCode'))
-        && count($country_of_origin)) {
-      $germplasm_data['countryOfOriginCode'] = $country_of_origin[0];
-    }
-
-    // -typeOfGermplasmStorageCode
-    if (($type_of_storage = brapi_get_stock_property_values($stock->stock_id, 'TypeOfGermplasmStorageCode'))
-        && count($type_of_storage)) {
-      $germplasm_data['typeOfGermplasmStorageCode'] = $type_of_storage;
-    }
-    elseif (($type_of_storage = brapi_get_stock_cvterm_values($stock->stock_id, array('parent_term' => 'TypeOfGermplasmStorageCode', 'cv' => BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV)))
-            && count($type_of_storage)) {
-      $germplasm_data['typeOfGermplasmStorageCode'] = $type_of_storage[0]->name;
-    }
-    // else {
-    //   $germplasm_data['typeOfGermplasmStorageCode'] = array();
-    // }
-
-    // -genus
-    if (($genus = brapi_get_stock_property_values($stock->stock_id, 'genus'))
-        && count($genus)) {
-      $germplasm_data['genus'] = $genus[0];
-    }
-    else {
-      $germplasm_data['genus'] = $stock->organism_id->genus;
-    }
-
-    // -species
-    if (($species = brapi_get_stock_property_values($stock->stock_id, 'species'))
-        && count($species)) {
-      $germplasm_data['species'] = $species[0];
-    }
-    else {
-      $germplasm_data['species'] = $stock->organism_id->species;
-    }
-
-    // -speciesAuthority
-    if (($species_authority = brapi_get_stock_property_values($stock->stock_id, 'species authority'))
-        && count($species_authority)) {
-      $germplasm_data['speciesAuthority'] = $species_authority[0];
-    }
-
-    // -subtaxa
-    if (($subtaxa = brapi_get_stock_property_values($stock->stock_id, 'subtaxa'))
-        && count($subtaxa)) {
-      $germplasm_data['subtaxa'] = $subtaxa[0];
-    }
-
-    // -subtaxaAuthority
-    if (($subtaxa_authority = brapi_get_stock_property_values($stock->stock_id, 'subtaxa authority'))
-        && count($subtaxa_authority)) {
-    }
-
-    // -donors
-    $germplasm_data['donors'] = array();
-    $donor_institute_code = brapi_get_stock_property_values($stock->stock_id, 'donor institute code');
-    $donor_accession_number = brapi_get_stock_property_values($stock->stock_id, 'donor accession number');
-    $donors_count = max(count($donor_institute_code), count($donor_accession_number));
-
-    for ($i = 0; $i < $donors_count; ++$i) {
-      $donor_data = array();
-      if (isset($donor_institute_code[$i])) {
-        // -donor institute code
-        $donor_data['donorInstituteCode'] = $donor_institute_code[$i];
-      }
-
-      if (isset($donor_accession_number[$i])) {
-        // -donor accession number
-        $donor_data['donorAccessionNumber'] = $donor_accession_number[$i];
-      }
-
-      // $donor_data['germplasmPUI'] = NULL;
-
-      $germplasm_data['donors'][] = $donor_data;
-    }
-
-    // -acquisitionDate
-    if (($acquisition_date = brapi_get_stock_property_values($stock->stock_id, 'acquisition date'))
-        && count($acquisition_date)
-        && (1 < $acquisition_date[0])) {
-      $germplasm_data['acquisitionDate'] = date('Ymd', $acquisition_date[0]);
-    }
-
-  }
-  else {
-    //+FIXME: error code stock not found
-  }
-
-  return array(array('result' => array('data' => array($germplasm_data))), $metadata, $debug_data);
-}
-
-
-/**
- * BRAPI: Germplasm pedigree
- *        brapi/v1/germplasm/\<id\>/pedigree
- *
- * GET: returns the pedigree of the given accession.
- *
- * Supported GET parameters:
- * - notation string
- *     The pedigree notation to use.
- *     Supported values: 'purdy'
- *     Default: purdy
- *     Example: 'notation=purdy'.
- *
- * Example:
- * - GET
- *   brapi/v1/germplasm/01BEL084609/pedigree?notation=purdy
- *
- * @return string
- *   a JSON string with the following variable (some can be embeded):
- *
- * Variable            Datatype   Required  Description
- *------------------------------------------------------
- * metadata            object            Y  pagination, status
- * pagination          object            Y  pageSize, currentPage, totalCount,
- *                                          totalPages
- * status              list              Y  code, message
- * result              object            Y  data
- * germplasmDbId       string            Y  Internal db identifier
- * defaultDisplayName  string            Y  A string representing the germplasm
- * pedigree            string            Y  Cross name with optional selection
- *                                          history.
- * parent1Id           string               germplasmDbId of parent1
- * parent2Id           string               germplasmDbId of parent2
- *
- * @ingroup brapi
- */
-/*
- http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
-
- About pedigreeString:
- ---------------------
-
- The pedigree identifies the parents and crossing sequences used to produce the
- cultivar.  The method used to illustrate pedigrees is a slightly modified
- version of the system proposed by Purdy et al. in 1969 (see Crop Sci. 8:405-
- 406).  Use of abbreviations has been minimized.  Crosses are symbolized by
- combinations of slash marks ("/") with female and male parents listed to left
- and right side, respectively.  Numbers indicate the order in which crosses
- were made:
-
-                           /  = primary cross
-
-                          /2/ = secondary cross
-
-                          /3/ = tertiary cross
-
-                          /X/ = Xth level cross, etc.
-
- Higher numbers indicate more recent crosses in the sequence.  The most recent
- or final cross used to create a cultivar is indicated by the highest number
- within the pedigree.  For example, the pedigree of "Scout" hard red winter
- wheat is:
-
-      -------------------------------------------------------------------
-      Example 1:  Comparison of Purdy pedigree nomenclature to a tree
-                  diagram of the pedigree of Scout hard red winter wheat.
-
-            Scout = Nebred /2/ Hope / Turkey Red /3/ Cheyenne / Ponca
-
-                                       OR
-
-                         Hope        Turkey Red
-                           |______ / _____|
-                                   |
-                                   |
-                Nebred            "?"
-                   |_____ /2/ _____|
-                           |              Cheyenne        Ponca
-                           |                  |______ / ____|
-                           |                          |
-                           |                          |
-                          "?"                        "?"
-                           |___________ /3/ __________|
-                                         |
-                                         |
-                                       Scout
-      -------------------------------------------------------------------
-
- In narrative terms, an unidentified progeny of a primary cross between "Hope"
- hard red spring wheat and "Turkey Red" hard red winter wheat was selected and
- crossed to "Nebred" hard red winter wheat.  One of the progeny selected from
- the "Nebred/2/Hope/Turkey Red" sequence of crosses was crossed to another
- unidentified progeny derived by crossing "Cheyenne" and "Ponca" hard red
- winter wheats.  The cultivar Scout was selected from progeny resulting from
- the final or "/3/" cross.  Specific generations and selection techniques
- involved are not indicated, but may be obtained from the referenced
- literature.
-
- Single slash marks are also used where the parents are known, but the exact
- sequence of a series of crosses is unknown.  Backcrossing sequences are
- indicated by use of an asterisk ("*") preceded or followed by a number to
- indicate the total number of crosses made with the recurrent parent (see
- Examples 2 and 3).  Left and right parentheses are used to bracket both the
- pedigree and designation of breeding lines contained within a cultivar's
- pedigree (see Example 4).  Commas are used to separate breeding line pedigrees
- from designations within the parentheses.
-
-
-      -------------------------------------------------------------------
-      Example 2:  Pedigree with three backcrosses of female recurrent parent
-                  for TAM 107 hard red winter wheat.
-
-                            TAM 107 = TAM 105*4 / Amigo
-
-                                         OR
-
-                                                  TAM 105      Amigo
-                                                     |____ / ____|
-                                                           |
-                                         TAM 105           |
-         1st backcross>                     |____ *2 / ____|
-                                                    |
-                                  TAM 105           |
-         2nd backcross>              |____ *3 / ____|
-                                             |
-                         TAM 105             |
-         3rd backcross>     |_____ *4 / _____|
-                                    |
-                                    |
-                                 TAM 107
-
-
-      Example 3:  Pedigree with three backcrosses of male recurrent parent
-                  for Blueboy II soft red winter wheat.
-
-                      Blueboy II = Agent / Tascosa /2/ 4*Blueboy
-
-                                          OR
-
-               Agent      Tascosa
-                 |____ / ____|
-                       |
-                       |          Blueboy
-                       |____ /2/ ____|
-                              |
-                              |            Blueboy
-          1st backcross>      |____ /2/ 2* ____|
-                                       |
-                                       |            Blueboy
-          2nd backcross>               |____ /2/ 3* ____|
-                                                |
-                                                |            Blueboy
-          3rd backcross>                        |____ /2/ 4* ____|
-                                                         |
-                                                         |
-                                                     Blueboy II
-
-
-      Example 4:  Use of parentheses to delineate breeding line used in the
-                  pedigree of Pitic 62 hard red spring wheat.
-
-            Pitic 62 = Yaktana 54 /2/ (Sel. 26-1c, Norin 10 / Brevor)
-                                       ^
-                                       Indicates Sel. 26-1c as the male
-                                       parent of the highest order cross for
-                                       Pitic 62, with its own pedigree of
-                                       "Norin 10 / Brevor".
-                                      OR
-
-                                   Norin 10          Brevor
-                                      |________ / ______|
-                                                |
-                                                |
-                   Yaktana 54              Sel. 26-1c
-                       |__________ /2/ _________|
-                                    |
-                                    |
-                                 Pitic 62
-
-      -------------------------------------------------------------------
-
- Narratives providing more detailed information are used where necessary for
- clarification.  Pedigrees of cultivars screened from another cultivar are
- listed as "pure line selections".  Pedigrees of cultivars phenotypically
- selected from mixtures or out-crosses in commercial fields are listed as
- "farmer selections" with the original source material identified wherever
- possible.
-
- * /
-function brapi_v1_germplasm_pedigree_json($germplasm_id) {
-
-  // get call parameters
-  $args = drupal_get_query_parameters();
-
-  $metadata = brapi_prepare_metadata(1);
-
-  $debug_data = array();
-
-  //+FIXME: handle notation
-  $notation   = isset($args['notation']) ? $args['notation'] : 'purdy';
-
-  // get corresponding stock
-  $pedigree_data = array();
-  $selector = array(
-    'uniquename' => $germplasm_id,
-  );
-
-  if ($stock = chado_generate_var('stock', $selector)) {
-    // we got a matching stock
-    // -germplasmDbId
-    $pedigree_data['germplasmDbId'] = $stock->uniquename; // required
-
-    // -defaultDisplayName
-    $germplasm_data['defaultDisplayName'] = $stock->name; // required
-
-    // get its parents
-    $table_options = array(
-      'include_fk' => array(
-        'type_id' => array(
-          'cv_id' => 1,
-        ),
-        'object_id' => array(
-        ),
-      ),
-    );
-    $stock = chado_expand_var($stock, 'table', 'stock_relationship', $table_options);
-
-    //$pedigree_data['debug'] = $stock->stock_relationship->subject_id;
-    $rank0_pedigree = array();
-    foreach ($stock->stock_relationship->subject_id as $relationship) {
-      if (0 == $relationship->rank) {
-        if ('female_parent' == $relationship->type_id->name) {
-          $rank0_pedigree['parent1Id'] = $relationship->object_id->uniquename;
-        }
-        elseif ('male_parent' == $relationship->type_id->name) {
-          $rank0_pedigree['parent2Id'] = $relationship->object_id->uniquename;
-        }
-      }
-    }
-
-    $rank0_pedigree['pedigreeString'] = '';
-    if ($rank0_pedigree['parent1Id'] || $rank0_pedigree['parent2Id']) {
-      $rank0_pedigree['pedigreeString'] = $rank0_pedigree['parent1Id'] . ' / ' . $rank0_pedigree['parent2Id'];
-    }
-    $pedigree_data = array(array_merge($pedigree_data, $rank0_pedigree));
-  }
-
-  return array(array('result' => $pedigree_data), $metadata, $debug_data);
-}
-
-
-/ **
- * BRAPI: Germplasm markerprofiles
- *        brapi/v1/germplasm/\<id\>/markerprofiles
- *
- * GET: returns the markerprofiles of the given accession.
- *
- * Example:
- * - GET
- *   brapi/v1/germplasm/01BEL084609/markerprofiles
- *
- * @return string
- *   a JSON string with the following variable (some can be embeded):
- *
- * Variable            Datatype   Required  Description
- *------------------------------------------------------
- * metadata            object            Y  pagination, status
- * pagination          object            Y  pageSize, currentPage, totalCount,
- *                                          totalPages
- * status              list              Y  code, message
- * result              object            Y  data
- * germplasmDbId       string               Internal db identifier
- * defaultDisplayName  string               A string representing the germplasm
- * markerProfiles      array of string      An array of marker profile
- *                                          identifiers
- *
- * @ingroup brapi
- * /
-function brapi_v1_germplasm_markerprofiles_json($germplasm_id) {
-
-  $metadata = brapi_prepare_metadata(1);
-
-  $debug_data = array();
-
-  // get corresponding stock
-  $selector = array(
-    'uniquename' => $germplasm_id,
-  );
-  if ($stock = chado_generate_var('stock', $selector)) {
-    // get corresponding markers
-    $markerprofiles_data = array();
-    $query_arguments = array(
-      ':stock_uniquename' => $germplasm_id,
-    );
-
-    $sql_query = "
-        SELECT f.uniquename
-        FROM
-          feature f
-            INNER JOIN feature_genotype fg USING (feature_id)
-            INNER JOIN stock_genotype sg USING (genotype_id)
-            INNER JOIN stock s USING (stock_id)
-        WHERE
-          s.uniquename = :stock_uniquename
-    ;";
-    $markerprofiles = chado_query($sql_query, $query_arguments);
-
-    if (count($markerprofiles)) {
-      // -germplasmDbId
-      $markerprofiles_data['germplasmDbId'] = $stock->uniquename;
-      // -defaultDisplayName
-      $markerprofiles_data['defaultDisplayName'] = $stock->name;
-
-      $markerprofiles_data['markerProfiles'] = array();
-      foreach ($markerprofiles as $markerprofile) {
-        $markerprofiles_data['markerProfiles'][] = $markerprofile->uniquename;
-      }
-    }
-  }
-
-  return array(array('result' => $markerprofiles_data), $metadata, $debug_data);
-}
-
-
-/ **
- * brapi_v1_crops_json()
- *
- * /
-function brapi_v1_crops_json() {
-
-  // init status and debug data
-  $status = array();
-  $debug_data = array();
-  $metadata = brapi_prepare_metadata(0);
-
-  $sql_count_query = "
-    SELECT o.common_name AS \"crop\"
-    FROM
-      {stock} s
-        INNER JOIN organism o USING (organism_id)
-    WHERE
-      s.is_obsolete = FALSE
-    GROUP BY o.common_name
-    ;";
-  $crop_list_result = chado_query($sql_count_query);
-  $crop_list = array();
-  while ($crop_data = $crop_list_result->fetchAssoc()) {
-    $crop_list[] = $crop_data['crop'];
-  }
-
-  return array(array('result' => $crop_list), $metadata, $debug_data);
-}
-
-
-/ **
- * brapi_v1_markerprofiles_json()
- *
- * /
-function brapi_v1_markerprofiles_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-
-/ **
- * brapi_v1_markerprofiles_details_json()
- *
- * /
-function brapi_v1_markerprofiles_details_json($markerprofile_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-
-/ **
- * brapi_v1_allelematrices_json()
- *
- * /
-function brapi_v1_allelematrices_json($allelematrix_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-
-/ **
- * brapi_v1_traits_json()
- *
- * /
-function brapi_v1_traits_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_germplasm_list_by_trialdbid_json()
- *
- * /
-function brapi_v1_germplasm_list_by_trialdbid_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_attributes_json()
- *
- * /
-function brapi_v1_attributes_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_attribute_categories_json()
- *
- * /
-function brapi_v1_attribute_categories_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_germplasm_attributes_json()
- *
- * /
-function brapi_v1_germplasm_attributes_json($germplasm_id) {
-
-  $attribute_cv = array('mgis_plant_general_appearance',
-    'mgis_petiole_midrib_leaf',
-    'mgis_pseudostem_suckers',
-    'mgis_male_flower',
-    'mgis_inflorescence_male_bud',
-    'mgis_bract',
-    'mgis_fruit',
-  );
-
-  // init status and debug data
-  $status = array();
-  $debug_data = array();
-  $metadata = brapi_prepare_metadata(0);
-
-  $sql_query = '
-    SELECT
-      sp.stockprop_id AS "attributeDbId",
-      spcvt.name AS "attributeName",
-      sp.value AS "value",
-      sp.rank as "rank"
-    FROM {stock} s
-      JOIN {stockprop} sp ON (s.stock_id = sp.stock_id)
-      JOIN {cvterm} spcvt ON (spcvt.cvterm_id = sp.type_id)
-      JOIN {cv} cv ON (cv.cv_id = spcvt.cv_id)
-    WHERE
-      s.uniquename = :germplasm_id
-      AND cv.name IN (:attribute_cv)
-    ORDER BY "attributeName","rank"
-    ;'
-  ;
-  $query_arguments = array(
-    ':germplasm_id' => $germplasm_id,
-    ':attribute_cv' => $attribute_cv,
-  );
-
-  $attribute_list_result = chado_query($sql_query, $query_arguments);
-  $attribute_list = array();
-  while ($attribute = $attribute_list_result->fetchAssoc()) {
-    $attribute_list[] = $attribute;
-  }
-
-  return array(array('result' => array('germplasmDbId' => $germplasm_id, 'data' => $attribute_list)), $metadata, $debug_data);
-}
-
-/ **
- * brapi_v1_study_types_json()
- *
- * /
-function brapi_v1_study_types_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_study_instances_json()
- *
- * /
-function brapi_v1_study_instances_json($study_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_studies_json()
- *
- * /
-function brapi_v1_studies_json() {
-  // init status and debug data
-  $status = array();
-  $debug_data = array();
-
-  //+FIXME: set CV terms
-  $projectprop_year_type = 'year';
-  $projectprop_location_type = 'location';
-
-  // prepare count query
-  $sql_count_query = "
-    SELECT COUNT(DISTINCT p.project_id) AS \"count\"
-    FROM
-      {project} p
-    ;"
-  ;
-
-  $project_count_result = chado_query($sql_count_query);
-  $project_count = floor($project_count_result->fetchAssoc()['count']);
-  $metadata = brapi_prepare_metadata($project_count);
-
-  $pager = '';
-  if ($project_count) {
-    $pager = 'LIMIT ' . $metadata['pagination']['pageSize'] . "\n";
-
-    if ($metadata['pagination']['currentPage'] > 0) {
-      $pager .= 'OFFSET ' . (($metadata['pagination']['currentPage']-1)*$metadata['pagination']['pageSize']) . "\n";
-    }
-  }
-
-  $sql_query = "
-    SELECT
-      p.project_id AS \"studyDbId\",
-      p.name AS \"studyName\",
-      (
-         SELECT string_agg(ppyear.value, ',')
-         FROM
-          {projectprop} ppyear
-            INNER JOIN {cvterm} cvtyear ON cvtyear.cvterm_id = ppyear.type_id AND cvtyear.name = '$projectprop_year_type'
-         WHERE
-           ppyear.project_id = p.project_id
-         GROUP BY ppyear.rank
-         ORDER BY ppyear.rank
-      ) AS \"years\",
-      pploc.projectprop_id AS \"locationDbId\"
-    FROM {project} p
-      LEFT JOIN {projectprop} pploc ON p.project_id = pploc.project_id
-      INNER JOIN {cvterm} cvtloc ON pploc.type_id = cvtloc.cvterm_id AND cvtloc.name = '$projectprop_location_type'
-    ORDER BY \"studyName\"
-    $pager
-    ;"
-  ;
-
-  $study_list_result = chado_query($sql_query);
-  $study_list = array();
-  while ($study = $study_list_result->fetchAssoc()) {
-    if (!empty($study['years'])) {
-      $study['years'] = explode(',', $study['years']);
-    }
-    $study_list[] = $study;
-  }
-
-  return array(array('result' => array('data' => $study_list)), $metadata, $debug_data);
-}
-
-/ **
- * brapi_v1_study_json()
- *
- * /
-function brapi_v1_study_json($study_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_study_details_json()
- *
- * /
-function brapi_v1_study_details_json($study_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_study_table_json()
- *
- * /
-function brapi_v1_study_table_json($study_id) {
-  $metadata = brapi_prepare_metadata(1);
-
-  $debug_data = array();
-
-  // get corresponding project
-  $study_data = array();
-  $selector = array(
-    'project_id' => $study_id,
-  );
-
-  if ($project = chado_generate_var('project', $selector)) {
-    // we got a matching project
-
-    // check request type
-    if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
-      //+FIXME: not logged in => 400, invalid_token
-      if (!user_access(BRAPI_UPDATE_PERMISSION)) {
-          // insufficient_scope
-        throw new BrapiException(401, "Access denied!");
-      }
-      $putdata_stream = fopen("php://input", "r");
-      $user_data = '';
-      while ($data = fread($putdata_stream, 1024)) {
-        $user_data .= $data;
-      }
-      fclose($putdata_stream);
-      $json_data = json_decode($user_data, TRUE);
-      if (!isset($json_data) || !is_array($json_data)) {
-        // invalid json data provided
-        throw new BrapiException(400, "Invalid JSON data!");
-      }
-      //+FIXME: implementation missing
-      throw new BrapiException(501, "Not implemented!");
-    }
-    elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
-      if (!user_access(BRAPI_UPDATE_PERMISSION)) { // user_access('administer site configuration')
-        throw new BrapiException(401, "Access denied!");
-      }
-      //+FIXME: DELETE not supported yet
-    }
-    elseif (($_SERVER['REQUEST_METHOD'] !== 'GET')
-        && ($_SERVER['REQUEST_METHOD'] !== 'POST')) {
-      //+FIXME: Unsupported method not supported yet
-    }
-
-    $study_data['studyDbId']    = $project->project_id; // required
-    $study_data['studyName']    = $project->name;  // required
-    //+FIXME
-    $study_data['years']        = array();  // required
-    $study_data['locationDbId'] = '';  // required
-
-  }
-  else {
-    //+FIXME: error code stock not found
-  }
-
-  return array(array('result' => array('data' => array($study_data))), $metadata, $debug_data);
-}
-
-/ **
- * brapi_v1_study_layout_json()
- *
- * /
-function brapi_v1_study_layout_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_study_plot_json()
- *
- * /
-function brapi_v1_study_plot_json($study_id, $observation_variable) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_phenotypes_json()
- *
- * /
-function brapi_v1_phenotypes_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_phenotype_metadata_json()
- *
- * /
-function brapi_v1_phenotype_metadata_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_phenotype_hierarchical_json()
- *
- * /
-function brapi_v1_phenotype_hierarchical_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_trait_details_json()
- *
- * /
-function brapi_v1_trait_details_json($trait_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_data_types_json()
- *
- * /
-function brapi_v1_data_types_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_variables_json()
- *
- * /
-function brapi_v1_variables_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_variable_detail_json()
- *
- * /
-function brapi_v1_variable_detail_json($variable_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_genome_map_json()
- *
- * /
-function brapi_v1_genome_map_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_genome_map_details_json()
- *
- * /
-function brapi_v1_genome_map_details_json($map_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_genome_map_data_json()
- *
- * /
-function brapi_v1_genome_map_data_json($map_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_genome_map_data_by_range_on_linkagegroup_json()
- *
- * /
-function brapi_v1_genome_map_data_by_range_on_linkagegroup_json($map_id, $linkagegroup_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_observation_levels_json()
- *
- * /
-function brapi_v1_observation_levels_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_collection_json()
- *
- * /
-function brapi_v1_collection_json($study_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_observation_sets_json()
- *
- * /
-function brapi_v1_observation_sets_json($observation_id) {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_location_json()
- *
- * /
-function brapi_v1_location_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-
-/ **
- * brapi_v1_programs_json()
- *
- * /
-function brapi_v1_programs_json() {
-  throw new BrapiException(501, "Not implemented!");
-}
-*/

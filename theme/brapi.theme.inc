@@ -248,11 +248,11 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
       elseif (array_key_exists('POST', $brapi_call_data['methods'])) {
         $methods = 'READ, FILTERING';
       }
-      
+
       if (array_key_exists('DELETE', $brapi_call_data['methods'])) {
         $methods .= ', DELETE';
       }
-      
+
       // handle special case of login
       if ('token' == $brapi_call) {
         $methods = 'LOGIN, LOGOUT';
@@ -261,7 +261,7 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
     else {
       $methods = implode(', ', array_keys($brapi_call_data['methods']));
     }
-    
+
     $rows[] = array(
       'data' => array(
         array('data' => $call_url_display),

@@ -2174,7 +2174,7 @@ function brapi_data_field_supports($object_type, $field, $operation) {
     default:
       return FALSE;
   };
-  
+
 }
 
 /**
@@ -2441,7 +2441,7 @@ function brapi_aggregate_call(
       $metadata['aggregated_from'] = $aggregated_from_list;
     }
   }
-  
+
   return $queried_site_count;
 }
 

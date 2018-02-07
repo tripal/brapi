@@ -90,7 +90,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['germplasm_pui'] = array(
       '#type' => 'select',
       '#description' => t('Select the way germplasm persistent unique identifier are stored in your database.'),
-      '#options' => $germplasm_pui_options, 
+      '#options' => $germplasm_pui_options,
       '#default_value' => $germplasm_pui_storage,
       '#title' => t('Germplasm PUI storage'),
       '#title_display' => 'before',
@@ -126,7 +126,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['common_crop_name'] = array(
       '#type' => 'select',
       '#description' => t('Select the way common crop name are stored in your database.'),
-      '#options' => $crop_name_options, 
+      '#options' => $crop_name_options,
       '#default_value' => $crop_name_storage,
       '#title' => t('Common crop name storage'),
       '#title_display' => 'before',
@@ -149,7 +149,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['genus_storage'] = array(
       '#type' => 'select',
       '#description' => t('Select the way genus are stored in your database.'),
-      '#options' => $genus_options, 
+      '#options' => $genus_options,
       '#default_value' => $genus_storage,
       '#title' => t('Genus storage'),
       '#title_display' => 'before',
@@ -172,7 +172,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['species_storage'] = array(
       '#type' => 'select',
       '#description' => t('Select the way species names are stored in your database.'),
-      '#options' => $species_options, 
+      '#options' => $species_options,
       '#default_value' => $species_storage,
       '#title' => t('Species storage'),
       '#title_display' => 'before',
@@ -195,7 +195,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['country_of_origin_code'] = array(
       '#type' => 'select',
       '#description' => t('Select the way country of origin codes are stored in your database.'),
-      '#options' => $country_of_origin_code_options, 
+      '#options' => $country_of_origin_code_options,
       '#default_value' => $country_of_origin_code_storage,
       '#title' => t('Country of origin code storage'),
       '#title_display' => 'before',
@@ -218,7 +218,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['institute_code'] = array(
       '#type' => 'select',
       '#description' => t('Select the way institute codes are stored in your database.'),
-      '#options' => $institute_code_options, 
+      '#options' => $institute_code_options,
       '#default_value' => $institute_code_storage,
       '#title' => t('Institute code storage'),
       '#title_display' => 'before',
@@ -241,7 +241,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['institute_name'] = array(
       '#type' => 'select',
       '#description' => t('Select the way institute names are stored in your database.'),
-      '#options' => $institute_name_options, 
+      '#options' => $institute_name_options,
       '#default_value' => $institute_name_storage,
       '#title' => t('Institute name storage'),
       '#title_display' => 'before',
@@ -266,7 +266,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#type' => 'select',
       '#id' => 'brapi_date_settings',
       '#description' => t('Select the format used to store dates in the database.'),
-      '#options' => $date_options, 
+      '#options' => $date_options,
       '#default_value' => $default_date_format,
       '#title' => t('Date storage format'),
       '#title_display' => 'before',
@@ -580,7 +580,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   if (!empty($results)) {
     // Load data about each connection.
     $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
- 
+
     foreach ($brapi_sites as $bsid => $entity) {
       $brapi_site_options[$entity->machine_name] = $entity->title;
     }
@@ -597,7 +597,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       $form['aggregation_options']['aggr_' . $call_path_form_name] = array(
           '#type' => 'select',
           '#description' => t('Select a BrAPI site for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
-          '#options' => $brapi_site_options, 
+          '#options' => $brapi_site_options,
           '#default_value' => $default_values,
           '#title' => "$call_path " . t('call aggregation'),
           '#title_display' => 'before',
@@ -741,7 +741,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
         }
       }
     }
-    
+
     if (!empty($cvterm_ids)) {
       if (1 == count($cvterm_ids)){
         $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
@@ -797,7 +797,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       }
       $germplasm_attributes[] = $attribute;
     }
-        
+
   }
   variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
   variable_set(BRAPI_GERMPLASM_ATTR_CATEGORIES, $germplasm_category_list);
