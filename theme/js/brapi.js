@@ -3,7 +3,7 @@
  * BrAPI Javascript library
  *
  */
-(function ($/*, Drupal, window, document, undefined*/) {
+(function ($) {
 "use strict";
 
   Drupal.brapi = Drupal.brapi || {};
@@ -97,17 +97,17 @@ $(function() {
   ;
 
   // Settings.
-  $('#brapi_date_settings').on('change', function() {
+  $('#brapi_date_settings').change(function() {
     switch ($(this).val()) {
       case 'custom':
         $('#brapi_custom_date_format')
-          .prop('disabled', false)
+          .attr('disabled', false)
           .parent()
             .removeClass('form-disabled');
         break;
       default:
         $('#brapi_custom_date_format')
-          .prop('disabled', true)
+          .attr('disabled', true)
           .parent()
             .addClass('form-disabled');
         break;

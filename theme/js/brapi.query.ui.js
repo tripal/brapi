@@ -21,7 +21,7 @@ $(function() {
   if ($calls.length) {
     // Adds "call" selection dropdown.
     var $select = $('<select/>')
-      .on('change', function() {
+      .change(function() {
         $('form.brapi-query').hide();
         $(this).find('option:selected').data('form').show();
       })
@@ -157,12 +157,12 @@ $(function() {
   });
   // Then loop on names and makes them act as one field.
   for (var checkbox_name in checkbox_names) {
-    $('input[name="' + checkbox_name + '"]').on('change', function () {
-      $('input[name="' + $(this).attr('name') + '"]').prop('checked', $(this).is(':checked'));
+    $('input[name="' + checkbox_name + '"]').change(function () {
+      $('input[name="' + $(this).attr('name') + '"]').attr('checked', $(this).is(':checked'));
     });
   }
   for (var text_name in text_names) {
-    $('input[name="' + text_name + '"]').on('change', function () {
+    $('input[name="' + text_name + '"]').change(function () {
       $('input[name="' + $(this).attr('name') + '"]').val($(this).val());
     });
   }
