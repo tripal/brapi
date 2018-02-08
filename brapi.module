@@ -238,7 +238,7 @@ function brapi_menu() {
     'file' => 'includes/brapi.admin.inc',
     'type' => MENU_CALLBACK,
   );
-  // The above example as it appears to users with no javascript.
+  // The above example as it appears to users with no JavaScript.
   $items['brapi/settings/add_category_no_js'] = array(
     'title' => 'Add more germplasm attribute category',
     'page callback' => 'drupal_get_form',
