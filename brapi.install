@@ -83,6 +83,63 @@ function brapi_install() {
 }
 
 /**
+ * Implements hook_schema().
+ */
+function brapi_schema() {
+  $schema = array();
+
+  $schema['brapi_id_list'] = array(
+    'description' => 'The base table for BrAPI ID lists.',
+    'fields' => array(
+      'blid' => array(
+        'description' => 'Primary Key: BrAPI ID list identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'My ID List',
+        'description' => 'BrAPI ID list name (Human readable label).',
+        'translatable' => TRUE,
+      ),
+      'description' => array(
+        'description' => 'A brief description of this BrAPI ID list.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+      'version' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+        'description' => 'BrAPI site version.',
+      ),
+      'list_owner' => array(
+        'description' => 'Name of the list owner',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+    ) + entity_exportable_schema_fields(),
+    'unique keys' => array(
+      'brapi_id_list_blid_uq1' => array('blid'),
+    ),
+    'primary key' => array('blid'),
+    'indexes' => array(
+      'blid' => array('blid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
  * Update aggregation option variable to remove the first '/' of calls.
  *
  * @ingroup brapi

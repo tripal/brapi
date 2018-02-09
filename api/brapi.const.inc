@@ -277,7 +277,7 @@ function brapi_get_calls() {
         ),
         'aggregatable' => FALSE,
       ),
-      'crops'      => array(
+      'crops' => array(
         'title'          => 'Crops',
         'description'    => 'List supported crops',
         'datatypes'      => array('json'),
