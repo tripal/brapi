@@ -43,7 +43,7 @@ function brapi_site_schema() {
     'description' => 'The base table for BrAPI site references.',
     'fields' => array(
       'bsid' => array(
-        'description' => 'Primary Key: BrAPI site reference dentifier.',
+        'description' => 'Primary Key: BrAPI site reference identifier.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
