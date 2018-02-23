@@ -209,6 +209,17 @@ function brapi_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  // Comparator interface.
+  $items['brapi/comparator'] = array(
+    'title' => 'Breeding API Comparator Interface',
+    'description' => 'User interface that can be used to compare entities from 2 Breeding API services.',
+    'page callback' => 'theme',
+    'page arguments' => array('brapi_comparator', array()),
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_USE_PERMISSION),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   // Autocomplete script.
   $items['brapi/cvs/autocomplete'] = array(
     'title' => 'Autocomplete for BrAPI CVs',
@@ -262,7 +273,6 @@ function brapi_menu() {
       // added below after.
       'page arguments' => array(
         $call_name,
-        $call_data['page callback'],
       ),
       'access callback' => 'user_access',
       'access arguments' => array($call_data['methods']['GET']),
@@ -326,6 +336,12 @@ function brapi_theme($existing, $type, $theme, $path) {
     // The Breeding API query page template.
     'brapi_query' => array(
       'template' => 'brapi_query',
+      'variables' => array(NULL),
+      'path' => "$path/theme/templates",
+    ),
+    // The Breeding API comparator template.
+    'brapi_comparator' => array(
+      'template' => 'brapi_comparator',
       'variables' => array(NULL),
       'path' => "$path/theme/templates",
     ),

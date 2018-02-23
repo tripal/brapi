@@ -38,7 +38,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#attributes'  => array('class' => array('container-inline')),
       '#title'       => t('Example value settings'),
       '#collapsible' => TRUE,
-      '#collapsed'   => FALSE,
+      '#collapsed'   => TRUE,
     );
     $form['example_settings']['markup'] = array(
       '#markup' => t('Here you can specify example values for the parameters of some BrAPI call. Those values will be as example when the user will try a call on the "Breeding API Overview" public page.<br/><br/>'),
@@ -289,7 +289,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#attributes'  => array('class' => array('container-inline')),
     '#title'       => t('Controlled vocabulary settings'),
     '#collapsible' => TRUE,
-    '#collapsed'   => FALSE,
+    '#collapsed'   => TRUE,
   );
 
   $brapi_cv_select = array('name' => BRAPI_CV);
@@ -563,17 +563,22 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     ),
   );
 
-  // Setup calls aggregation.
-  $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
-  $form['aggregation_options'] = array(
+  // Setup calls options.
+  $form['call_options'] = array(
     '#type'        => 'fieldset',
-    '#title'       => t('Call aggregation options'),
+    '#title'       => t('Call options'),
     '#collapsible' => TRUE,
     '#collapsed'   => TRUE,
   );
+  // Implementation version.
+  $version_options = variable_get(BRAPI_VERSION_OPTIONS, array());
+  // Aggregation.
+  $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
   // Get the list of available BrAPI sites.
   $brapi_sites = array();
-  $brapi_site_options = array();
+  $brapi_site_options = array(
+    '' => t('None'),
+  );
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'brapi_site');
   $results = $query->execute();
@@ -588,19 +593,59 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
 
   // Loop on calls.
   foreach (brapi_get_calls() as $call_path => $call) {
+    // Skip root call.
+    if (!$call_path) {
+      continue;
+    }
+    $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
+    $form['call_options']['call_' . $call_path_form_name] = array(
+      '#type'        => 'fieldset',
+      '#title'       => $call_path,
+      '#collapsible' => TRUE,
+      '#collapsed'   => FALSE,
+    );
+    $call_section = &$form['call_options']['call_' . $call_path_form_name];
+
+    $available_versions = array_merge(
+      array(
+        '0' => t('Not provided'),
+        'proxy' => t('Proxied'),
+      ),
+      array_combine(
+        array_keys($call['callback versions']),
+        array_keys($call['callback versions'])
+      )
+    );
+    $default_value = '0';
+    if (isset($version_options[$call_path])) {
+      $default_value = $version_options[$call_path];
+    }
+    elseif ($call) {
+      $default_value = $call['active version'];
+    }
+    $call_section['version_' . $call_path_form_name] = array(
+        '#type' => 'select',
+        '#title' => t('Select a call version'),
+        '#options' => $available_versions,
+        '#default_value' => $default_value,
+        '#title_display' => 'before',
+        '#required' => TRUE,
+        '#multiple' => FALSE,
+    );
+
     if ($call['aggregatable']) {
       $default_values =
-        isset($aggregation_options[$call_path]) ?
+        (isset($aggregation_options[$call_path])
+            && $aggregation_options[$call_path]) ?
           $aggregation_options[$call_path]
-          : array();
-      $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
-      $form['aggregation_options']['aggr_' . $call_path_form_name] = array(
+          : array('');
+      $call_section['aggr_' . $call_path_form_name] = array(
           '#type' => 'select',
-          '#description' => t('Select a BrAPI site for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
           '#options' => $brapi_site_options,
           '#default_value' => $default_values,
-          '#title' => "$call_path " . t('call aggregation'),
+          '#title' => t('Proxy for/aggregation with'),
           '#title_display' => 'before',
+          '#description' => t('Select BrAPI sites for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
           '#required' => FALSE,
           '#multiple' => TRUE,
       );
@@ -802,15 +847,24 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
   variable_set(BRAPI_GERMPLASM_ATTR_CATEGORIES, $germplasm_category_list);
 
+  // Version options.
+  $version_options = variable_get(BRAPI_VERSION_OPTIONS, array());
   // Aggregation options.
   $brapi_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+
   // Loop on calls.
   foreach (brapi_get_calls() as $call_path => $call) {
+    // Skip root call.
+    if (!$call_path) {
+      continue;
+    }
+    $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
+    $version_options[$call_path] = $form_state['values']['version_' . $call_path_form_name];
     if ($call['aggregatable']) {
-      $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
       $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path_form_name]);
     }
   }
+  variable_set(BRAPI_VERSION_OPTIONS, $version_options);
   variable_set(BRAPI_AGGREGATION_OPTIONS, $brapi_aggregation_options);
 
   drupal_set_message(t('BrAPI configuration saved.'));

@@ -2476,21 +2476,27 @@ function brapi_aggregate_call(
  *   merged array.
  */
 function brapi_merge_array($a, $b) {
-  // Merge common keys.
-  foreach ($a as $key => $value) {
-    if (isset($b[$key])) {
-      if (is_array($a[$key])) {
-        if (is_array($b[$key])) {
-          $a[$key] = brapi_merge_array($value, $b[$key]);
+  if (isset($a[0])) {
+    // Merge sequences.
+    $a = array_merge($a, $b);
+  }
+  else {
+    // Merge common keys on associative array.
+    foreach ($a as $key => $value) {
+      if (isset($b[$key])) {
+        if (is_array($a[$key])) {
+          if (is_array($b[$key])) {
+            $a[$key] = brapi_merge_array($value, $b[$key]);
+          }
+        }
+        elseif (empty($a[$key])) {
+          $a[$key] = $b[$key];
         }
       }
-      elseif (empty($a[$key])) {
-        $a[$key] = $b[$key];
-      }
     }
+    // Add b-specific keys to a.
+    $a += $b;
   }
-  // Add b-specific keys to a.
-  $a += $b;
 
   // Returns merged array.
   return $a;

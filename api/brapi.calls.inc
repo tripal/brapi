@@ -51,7 +51,23 @@ require_once 'brapi.const.inc';
  * @see hook_brapi_CALL_FUNC_NAME_brapi_error_alter()
  * @see hook_brapi_CALL_FUNC_NAME_error_alter()
  */
-function brapi_call_wrapper($call_name, $call_func) {
+function brapi_call_wrapper($call_name) {
+  // Get call function.
+  $call_data = brapi_get_calls()[$call_name];
+  // By default, not implemented/not provided.
+  $call_func = 'brapi_v1_unimplemented_call_json';
+  if ($call_data['active version']) {
+    // Check which version has been specified.
+    if (isset($call_data['callback versions'][$call_data['active version']])) {
+      // Using a valid version.
+      $call_func = $call_data['callback versions'][$call_data['active version']];
+    }
+    elseif ('proxy' == $call_data['active version']) {
+      // Using simple proxy call.
+      $call_func = 'brapi_v1_external_call_json';
+    }
+  }
+
   $args = array_slice(func_get_args(), 2);
   // Replace slash and other non-word characters by '_' and lower-case string.
   $alter_name = strtolower(preg_replace('/\W+/', '_', $call_name));
@@ -725,9 +741,13 @@ function brapi_v1_call_json($selected_call_name) {
   // GET: get list of calls.
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     foreach (brapi_get_calls() as $call_name => $call_settings) {
+      // Check for unsupported calls.
+      if (!$call_settings['active version']) {
+        continue;
+      }
       // Check proxied-only calls.
       $proxied = FALSE;
-      if ('brapi_v1_external_call_json' == $call_settings['page callback']) {
+      if ('proxy' == $call_settings['active version']) {
         if (!isset($aggregation_options[$call_name])
             || !count($aggregation_options[$call_name])) {
           continue;
@@ -865,7 +885,7 @@ function brapi_v1_germplasm_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_germplasm_json($germplasm_id) {
 
   $actions = array(
     'create' => 'brapi_v1_create_germplasm_json',
@@ -1422,7 +1442,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_pedigree_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_germplasm_pedigree_json($germplasm_id) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_pedigree_json',
@@ -1706,7 +1726,7 @@ function brapi_v1_categories_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_attributes_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_germplasm_attributes_json($germplasm_id) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_attributes_json',
@@ -1834,7 +1854,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_crops_json() {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $crop_list = array();
@@ -1886,7 +1906,7 @@ function brapi_v1_crops_json($germplasm_id, $view_mode = 'full', $langcode = NUL
  *
  * @ingroup brapi
  */
-function brapi_v1_marker_json($marker_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_marker_json($marker_id) {
   $actions = array(
     'read'   => 'brapi_v1_read_marker_json',
     'list'   => 'brapi_v1_marker_search_json',
@@ -2009,7 +2029,7 @@ function brapi_v1_marker_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_location_json($location_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_location_json($location_id) {
   $actions = array(
     'read' => 'brapi_v1_read_location_json',
     'list' => 'brapi_v1_location_search_json',
@@ -2113,7 +2133,7 @@ function brapi_v1_location_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_program_json($program_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_program_json($program_id) {
   $actions = array(
     'read' => 'brapi_v1_read_program_json',
     'list' => 'brapi_v1_program_search_json',
@@ -2236,7 +2256,7 @@ function brapi_v1_sample_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_sample_json($sample_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_sample_json($sample_id) {
 
   $actions = array(
     'create' => 'brapi_v1_create_sample_json',
@@ -2643,7 +2663,7 @@ function brapi_v1_delete_sample_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_variable_json($variable_id, $view_mode = 'full', $langcode = NULL) {
+function brapi_v1_variable_json($variable_id) {
   $actions = array(
     'read' => 'brapi_v1_read_variable_json',
     'list' => 'brapi_v1_variable_search_json',
@@ -2756,4 +2776,11 @@ function brapi_v1_external_call_json() {
     $metadata,
     $debug_data,
   );
+}
+
+/**
+ * Generic callback for BrAPI call not implemented by Drupal BrAPI module.
+ */
+function brapi_v1_unimplemented_call_json() {
+  throw new BrapiException(501, "Not implemented!");
 }

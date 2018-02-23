@@ -175,6 +175,22 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
   $rows = array();
   // Get settings.
   $brapi_example_settings = variable_get(BRAPI_EXAMPLE_SETTINGS, array());
+  $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  // Get the list of available BrAPI sites.
+  $brapi_sites = array();
+  $brapi_site_lookup = array();
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'brapi_site');
+  $results = $query->execute();
+  if (!empty($results)) {
+    // Load data about each connection.
+    $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+    foreach ($brapi_sites as $bsid => $entity) {
+      $brapi_site_lookup[$entity->machine_name] = $entity;
+    }
+  }
+
+
   // Process each call.
   foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
     $call_url = '/' . $brapi_call;
@@ -239,7 +255,50 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
           . '</span></div>';
       }
     }
+    
+    // Version.
+    $version = $brapi_call ? $brapi_call_data['active version'] : t('n/a');
+    if (!$version) {
+      if ($simplified) {
+        // Skip.
+        continue;
+      }
+      $version = t('Not provided');
+    }
+    else if ('proxy' == $version) {
+      $version = t('Proxied');
+    }
 
+    // Aggregation.
+    $used_sites = array();
+    if ($brapi_call && isset($aggregation_options[$brapi_call])) {
+      foreach ($aggregation_options[$brapi_call] as $brapi_site_mn) {
+        if (isset($brapi_site_lookup[$brapi_site_mn])) {
+          if ($simplified) {
+            $used_sites[] =
+              '<span class="brapi-site">'
+              . $brapi_site_lookup[$brapi_site_mn]->title
+              . '</span>';
+          }
+          else {
+            $used_sites[] =
+              '<span class="brapi-site" title="'
+              . $brapi_site_lookup[$brapi_site_mn]->url
+              . '/'
+              . $brapi_call
+              . '">'
+              . $brapi_site_lookup[$brapi_site_mn]->title
+              . '</span>';
+          }
+        }
+        elseif ($brapi_site_mn) {
+          $used_sites[] = t('Missing entry "%site"', array('%site' => $brapi_site_mn));
+        }
+      }
+    }
+    $aggregation = implode(', ', $used_sites);
+
+    // Methods.
     if ($simplified) {
       $methods = 'READ';
       if (array_key_exists('PUT', $brapi_call_data['methods'])) {
@@ -266,6 +325,8 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
       'data' => array(
         array('data' => $call_url_display),
         array('data' => $brapi_call_data['title']),
+        array('data' => $version),
+        array('data' => $aggregation),
         array('data' => $methods),
         array('data' => $brapi_call_data['description']),
         array('data' => implode("\n", $features)),
@@ -280,6 +341,8 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
         array('@service_url' => $base_url . '/' . BRAPI_SERVICE_PREFIX_V1 . '/')
       ),
       t('Call name'),
+      t('Version'),
+      t('Proxy/aggregation'),
       t('Supported methods'),
       t('Description'),
       t('Features'),
@@ -449,4 +512,20 @@ function brapi_preprocess_brapi_query(&$variables) {
       'filters' => brapi_get_call_filters($brapi_call),
     );
   }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @ingroup brapi
+ */
+function brapi_preprocess_brapi_comparator(&$variables) {
+  global $base_url;
+
+  drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
+  drupal_add_js(array('brapi' => array('imagePath' => $base_url . '/' . drupal_get_path('module', 'brapi') . '/theme/images/')), 'setting');
+  drupal_add_js(drupal_get_path('module', 'brapi') . '/theme/js/brapi.comparator.js');
+
+  $variables['local_brapi_url'] = $base_url . '/' . BRAPI_SERVICE_PREFIX_V1;
+
 }
