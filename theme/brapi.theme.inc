@@ -257,6 +257,7 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
     }
     
     // Version.
+    $proxied = false;
     $version = $brapi_call ? $brapi_call_data['active version'] : t('n/a');
     if (!$version) {
       if ($simplified) {
@@ -267,6 +268,7 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
     }
     else if ('proxy' == $version) {
       $version = t('Proxied');
+      $proxied = true;
     }
 
     // Aggregation.
@@ -300,21 +302,26 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
 
     // Methods.
     if ($simplified) {
-      $methods = 'READ';
-      if (array_key_exists('PUT', $brapi_call_data['methods'])) {
-        $methods = 'CREATE, READ, UPDATE';
+      if ($proxied) {
+        $methods = t('n/a');
       }
-      elseif (array_key_exists('POST', $brapi_call_data['methods'])) {
-        $methods = 'READ, FILTERING';
-      }
-
-      if (array_key_exists('DELETE', $brapi_call_data['methods'])) {
-        $methods .= ', DELETE';
-      }
-
-      // handle special case of login
-      if ('token' == $brapi_call) {
-        $methods = 'LOGIN, LOGOUT';
+      else {
+        $methods = 'READ';
+        if (array_key_exists('PUT', $brapi_call_data['methods'])) {
+          $methods = 'CREATE, READ, UPDATE';
+        }
+        elseif (array_key_exists('POST', $brapi_call_data['methods'])) {
+          $methods = 'READ, FILTERING';
+        }
+        
+        if (array_key_exists('DELETE', $brapi_call_data['methods'])) {
+          $methods .= ', DELETE';
+        }
+        
+        // handle special case of login
+        if ('token' == $brapi_call) {
+          $methods = 'LOGIN, LOGOUT';
+        }
       }
     }
     else {
