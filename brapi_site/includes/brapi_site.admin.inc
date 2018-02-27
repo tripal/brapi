@@ -93,10 +93,19 @@ function brapi_site_edit_form($form, &$form_state, BrapiSite $brapi_site) {
       '#description'   => t('The (compatible) version of the BrAPI implementation.'),
       '#required'      => TRUE,
       '#options' => array(
-        1 => t('version 1'),
+        '1.0' => t('1.0'),
+        '1.1' => t('1.1'),
+        '1.2' => t('1.2'),
       ),
       '#default_value' => isset($brapi_site->version) ? $brapi_site->version : 1,
       '#weight'        => 1,
+    ),
+    'public' => array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Public site'),
+      '#description'   => t('If checked, the site may appear on query pages.'),
+      '#default_value' => isset($brapi_site->public) ? $brapi_site->public : FALSE,
+      '#weight'        => 2,
     ),
     'username' => array(
       '#type'          => 'textfield',
@@ -106,13 +115,13 @@ function brapi_site_edit_form($form, &$form_state, BrapiSite $brapi_site) {
       '#default_value' => (
         isset($brapi_site->username) ? $brapi_site->username : ''
       ),
-      '#weight'        => 2,
+      '#weight'        => 3,
     ),
     'password' => array(
       '#type'          => 'password_confirm',
       '#title'         => t('BrAPI service password (optionnaly associated with the user login above). Leave empty to clear password.'),
       '#required'      => FALSE,
-      '#weight'        => 3,
+      '#weight'        => 4,
     ),
     'description' => array(
       '#type'          => 'textarea',
@@ -120,7 +129,7 @@ function brapi_site_edit_form($form, &$form_state, BrapiSite $brapi_site) {
       '#description'   => t('Contains the description of the referenced BrAPI site.'),
       '#required'      => FALSE,
       '#default_value' => isset($brapi_site->description) ? $brapi_site->description : '',
-      '#weight'        => 4,
+      '#weight'        => 5,
     ),
   );
 

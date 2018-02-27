@@ -35,7 +35,8 @@ class BrapiSiteController extends EntityAPIController {
       'description' => '',
       'weight' => 0,
       'url' => '',
-      'version' => 1,
+      'version' => '1.0',
+      'public' => 0,
       'username' => '',
       'password' => '',
     );
@@ -66,6 +67,13 @@ class BrapiSiteController extends EntityAPIController {
         '#markup' =>
         '<div class="brapi-site-version"><strong>BrAPI Version:</strong> <span>'
         . check_plain($entity->version)
+        . '</span></div>',
+      );
+
+      $content['brapi_site_public'] = array(
+        '#markup' =>
+        '<div class="brapi-site-public"><strong>Public site:</strong> <span>'
+        . ($entity->public ? t('yes') : t('no'))
         . '</span></div>',
       );
 

@@ -88,11 +88,18 @@ function brapi_site_schema() {
         'translatable' => FALSE,
         'description' => 'The BrAPI site URL.',
       ),
-      'version' => array(
+      'public' => array(
         'type' => 'int',
         'not null' => TRUE,
-        'default' => 1,
+        'default' => 0,
         'size' => 'tiny',
+        'description' => 'Public site.',
+      ),
+      'version' => array(
+        'type' => 'varchar',
+        'not null' => TRUE,
+        'default' => '1.0',
+        'length' => 7,
         'description' => 'BrAPI site version.',
       ),
        // Note: "user" is an SQL reserved word.
@@ -119,4 +126,33 @@ function brapi_site_schema() {
   );
 
   return $schema;
+}
+
+/**
+ * Add 'public' field to brapi_site table and change version type.
+ */
+function brapi_site_update_7100() {
+  $spec = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+    'size' => 'tiny',
+    'description' => 'Public site.',
+  ); 
+  db_add_field('brapi_site', 'public', $spec);
+  
+  $spec = array(
+    'type' => 'varchar',
+    'not null' => TRUE,
+    'default' => '1.0',
+    'length' => 7,
+    'description' => 'BrAPI site version.',
+  );
+  db_change_field('brapi_site', 'version', 'version', $spec);
+  db_update('brapi_site')
+    ->fields(array(
+      'version' => '1.0',
+    ))
+    ->condition('version', '1', '=')
+    ->execute();
 }
