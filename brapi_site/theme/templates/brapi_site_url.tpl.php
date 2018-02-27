@@ -11,9 +11,8 @@
  * @ingroup brapi_site
  */
 ?>
-<div class="brapi-site-url">
-    <strong>URL:</strong>
-    <?php
-      print $brapi_url;
-    ?>
-</div>
+<span class="brapi-site-url">
+    <a href="<?php print $brapi_url; ?>" title="<?php print check_plain($brapi_site->title) . ', API v' . check_plain($brapi_site->version); ?>">
+      <?php print $brapi_url; ?>
+    </a>
+</span>

@@ -163,6 +163,62 @@ function brapi_theme_prepare_overview_table($permission_stats) {
 }
 
 /**
+ * Prepares Breeding API available site table data before rendering.
+ *
+ * @return array
+ *   BrAPI site table data.
+ *
+ * @ingroup brapi
+ */
+function brapi_theme_prepare_brapi_site_table_table() {
+
+  // Get the list of available public BrAPI sites.
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'brapi_site');
+  $results = $query->execute();
+  $brapi_sites = array();
+  if (!empty($results)) {
+    // Load data about each connection.
+    $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+  }
+
+  $rows = array();
+  foreach ($brapi_sites as $bsid => $brapi_site) {
+    $operations =
+      '<ul class="links inline"><li class="edit first">'
+      . l(t('edit'), 'brapi_site/' . $brapi_site->bsid . '/edit')
+      . '</li><li class="delete last">'
+      . l(t('delete'), 'brapi_site/' . $brapi_site->bsid . '/delete')
+      . '</li></ul>';
+    $rows[] = array(
+      l($brapi_site->title, 'brapi_site/' . $brapi_site->bsid),
+      $brapi_site->description,
+      theme('brapi_site_url', array('brapi_site' => $brapi_site, 'brapi_url' => $brapi_site->url)),
+      $brapi_site->version,
+      $operations,
+    );
+  }
+
+  $brapi_site_table = array(
+    'header' => array(
+      t('Name'),
+      t('Description'),
+      t('Service URL'),
+      t('API Version'),
+      t('operations'),
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('system-status-report')),
+    'caption' => t('Available BrAPI sites'),
+    'sticky' => FALSE,
+    'colgroups' => array(),
+    'empty' => t('No BrAPI site recorded!'),
+  );
+
+  return $brapi_site_table;
+}
+
+/**
  * Prepare calls table data before rendering.
  *
  * @return array
@@ -458,9 +514,10 @@ function brapi_preprocess_brapi_overview(&$variables) {
     'admin_permission'  => $admin_permission,
   );
 
-  $variables['overview_table'] = brapi_theme_prepare_overview_table($permission_stats);
-  $variables['call_table']     = brapi_theme_prepare_call_table();
-  $variables['cv_table']       = brapi_theme_prepare_cv_table();
+  $variables['overview_table']   = brapi_theme_prepare_overview_table($permission_stats);
+  $variables['brapi_site_table'] = brapi_theme_prepare_brapi_site_table_table();
+  $variables['call_table']       = brapi_theme_prepare_call_table();
+  $variables['cv_table']         = brapi_theme_prepare_cv_table();
 }
 
 /**
@@ -511,7 +568,7 @@ function brapi_preprocess_brapi_query(&$variables) {
   );
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'brapi_site');
-  if (($user->uid != 1) && !user_access(BRAPI_ADMIN_PERMISSION)) {
+  if (!user_access('administer') && !user_access(BRAPI_ADMIN_PERMISSION)) {
     $query->propertyCondition('public', 1);
   }
   $results = $query->execute();

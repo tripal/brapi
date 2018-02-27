@@ -19,6 +19,13 @@
   if (user_access(BRAPI_USE_PERMISSION)
       || user_access(BRAPI_ADMIN_PERMISSION)
       || user_access('administer')) {
+    print theme_table($brapi_site_table);
+    echo l(t('Add a BrAPI site reference'), 'brapi_site/add');
+  }
+
+  if (user_access(BRAPI_USE_PERMISSION)
+      || user_access(BRAPI_ADMIN_PERMISSION)
+      || user_access('administer')) {
     print theme_table($call_table);
   }
 

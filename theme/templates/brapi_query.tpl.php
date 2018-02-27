@@ -23,7 +23,7 @@
       $selected = ' selected="selected"';
       foreach ($brapi_sites as $brapi_site_name => $brapi_url) {
         ?>
-        <option value="<?php echo check_url($brapi_url); ?>"<?php echo $selected; ?>><?php echo ($brapi_site_name); ?></option>
+        <option value="<?php echo check_url($brapi_url); ?>"<?php echo $selected; ?>><?php echo check_plain($brapi_site_name); ?></option>
         <?php
         $selected = '';
       }

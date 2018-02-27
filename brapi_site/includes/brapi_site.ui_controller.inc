@@ -172,7 +172,7 @@ class BrapiSiteUIController extends EntityDefaultUIController {
             'weight'         => $entity->weight,
             'title'          => $title,
             'description'    => $entity->description,
-            'url'            => $entity->url,
+            'url'            => l($entity->url, $entity->url),
             'version'        => $entity->version,
             'public'         => ($entity->public ? t('yes') : t('no')),
             'authentication' => (!empty($entity->username) || !empty($entity->password)) ? t('yes') : t('no'),
