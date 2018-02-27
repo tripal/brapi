@@ -851,7 +851,7 @@ function brapi_v1_call_json($selected_call_name) {
  *
  * Other service requests use the server's internal germplasmDbId. This service
  * returns germplasm records that provide the germplasmDbId. For the requested
- * name or synonym, returns an array (possibyly empty) of germplasm records that
+ * name or synonym, returns an array (possibly empty) of germplasm records that
  * match the search criteria.
  * - If there is none, an empty array is returned.
  * - If there is one or more than one match, returns an array of all germplasm

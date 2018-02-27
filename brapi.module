@@ -474,8 +474,6 @@ function brapi_chado_query_alter(&$sql, &$args) {
               unset($args[$variable]);
             }
           }
-drupal_set_message('DEBUG: ' . $sql);
-drupal_set_message('DEBUG: ' . print_r($args, TRUE));
         }
       }
     }
