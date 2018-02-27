@@ -115,7 +115,8 @@ function brapi_call_wrapper($call_name) {
  *     Whether to restrict the search to exact (case insensitive) or wildcard.
  *     '\' can be used to escape characters matches.
  *     Possible values are:
- *       'exact': exact character match (but case insensitive);
+ *       'exact': exact character match (case sensitive);
+ *       'case_insensitive': case insensitive;
  *       'wildcard': Wildcard uses both '*' or percent ('%') sign for any number
  *         of character and '?' for one character matching.
  *     Default is 'exact'.
@@ -865,7 +866,8 @@ function brapi_v1_call_json($selected_call_name) {
  *     Whether to restrict the search to exact (case insensitive) or wildcard.
  *     '\' can be used to escape characters matches.
  *     Possible values are:
- *       'exact': exact character match (but case insensitive);
+ *       'exact': exact character match (case sensitive);
+ *       'case_insensitive': case insensitive;
  *       'wildcard': Wildcard uses both '*' or percent ('%') sign for any number
  *         of character and '?' for one character matching.
  *     Default is 'exact'.
