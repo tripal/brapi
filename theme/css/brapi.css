@@ -109,14 +109,20 @@ content: "}";
 }
 
 #brapi_query_settings label {
-  display: block;
+  display: inline-block;
   width: 20ex;
 }
 
 #brapi_query_settings input,
+#brapi_query_settings select,
 #brapi_query_calls .brapi-call-select select {
   position: absolute;
   left: 21ex;
+}
+
+#brapi_query_settings select,
+#brapi_query_calls .brapi-call-select select {
+  min-width: 50ex;
 }
 
 .brapi-query-argument label,

@@ -14,9 +14,15 @@
 $(function() {
   var $settings = $('form#brapi_query_settings');
   
-  // BrAPI query interface javascript.
+  // BrAPI query interface Javascript.
   //----------------------------------
 
+  // Manages public BrAPI site URL selection.
+  $('#brapi_site_urls').change(function() {
+    $('#brapi_query_url').val($(this).val());
+  });
+  
+  
   var $calls = $('#brapi_query_calls');
   if ($calls.length) {
     // Adds "call" selection dropdown.

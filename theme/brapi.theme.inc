@@ -496,6 +496,7 @@ function brapi_preprocess_brapi_help(&$variables) {
  */
 function brapi_preprocess_brapi_query(&$variables) {
   global $base_url;
+  global $user;
 
   drupal_add_library('system', 'ui.datepicker');
   drupal_add_css(drupal_get_path('module', 'brapi') . '/theme/css/brapi.css');
@@ -503,6 +504,29 @@ function brapi_preprocess_brapi_query(&$variables) {
   drupal_add_js(drupal_get_path('module', 'brapi') . '/theme/js/brapi.query.ui.js');
 
   $variables['local_brapi_url'] = $base_url . '/' . BRAPI_SERVICE_PREFIX_V1;
+
+  // Get the list of available public BrAPI sites.
+  $variables['brapi_sites'] = array(
+    t('Local') => $base_url . '/' . BRAPI_SERVICE_PREFIX_V1,
+  );
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'brapi_site');
+  if (($user->uid != 1) && !user_access(BRAPI_ADMIN_PERMISSION)) {
+    $query->propertyCondition('public', 1);
+  }
+  $results = $query->execute();
+  if (!empty($results)) {
+    // Load data about each connection.
+    $sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+    foreach ($sites as $brapi_site) {
+      if ($brapi_site->public) {
+        $variables['brapi_sites'][$brapi_site->title] = $brapi_site->url;
+      }
+      else {
+        $variables['brapi_sites']['(' . $brapi_site->title . ')'] = $brapi_site->url;
+      }
+    }
+  }
 
   $variables['calls'] = array();
   foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
