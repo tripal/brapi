@@ -1804,11 +1804,8 @@ function brapi_merge_fields_to_include($field_list) {
     if (is_array($args['include'])) {
       $args['include'] = implode(',', $args['include']);
     }
-    // Trim spaces.
-    $args['include'] = trim($args['include']);
-    $args['include'] = preg_replace('/\s*,\s*/', ',', $args['include']);
     // Turn includes into an array.
-    $args['include'] = explode(',', $args['include']);
+    $args['include'] = array_map('trim', explode(',', $args['include']));
     $field_list = array_filter(array_unique(array_merge($field_list, $args['include'])));
   }
   return $field_list;
@@ -2500,6 +2497,78 @@ function brapi_merge_array($a, $b) {
 
   // Returns merged array.
   return $a;
+}
+
+/**
+ * Transcribes a BrAPI wildcarded search string into a PostgreSQL search string.
+ */
+function brapi_transcribe_search_string_to_postgres(
+  $string,
+  $similar_to_syntax = FALSE
+) {
+  if ($similar_to_syntax) {
+    // Escape special characters for SIMILAR TO.
+    $string = str_replace(
+      array('|', '+', '(', ')', '[', ']', '{', '}'),
+      array('\|', '\+', '\(', '\)', '\[', '\]', '\{', '\}'),
+      $string
+    );
+  }
+  // Replaces non-escaped '*' with '%' and escape '_'.
+  $string = preg_replace(
+    array(
+      '/(^|[^\\\\])\*/',
+      '/_/',
+    ),
+    array(
+      '${1}%',
+      '\_',
+    ),
+    $string
+  );
+  // Replaces non-escaped '?' with '_'.
+  $string = preg_replace(
+    // Do it twice to replace following '?' which would be skipped
+    // otherwise.
+    array('/(^|[^\\\\])\?/', '/(^|[^\\\\])\?/'),
+    '${1}_',
+    $string
+  );
+  // Unescape ILIKE non-special char.
+  if (!$similar_to_syntax) {
+    $string = str_replace(array('\?', '\*'), array('?', '*'), $string);
+  }
+
+  return $string;
+}
+
+/**
+ * Adds given fields to the non-exact search list and return that list.
+ *
+ * @param $fields array
+ *   an associative array which keys are field names and values are associative
+ *   arrays with 3 keys: 'table' (name of the Chado table), 'column' (name of
+ *   the Chado table column holding the string value) and 'match' (one of the
+ *   following matching methods: 'case_insensitive', 'wildcard').
+ *
+ * @return array
+ *   an associative array which keys are field names and values are associative
+ *   arrays with 3 keys: 'table' (name of the Chado table), 'column' (name of
+ *   the Chado table column holding the string value) and 'match' (one of the
+ *   following matching methods: 'case_insensitive', 'wildcard').
+ */
+function brapi_non_exact_search($fields = FALSE) {
+  static $non_exact_fields;
+
+  if (!isset($non_exact_fields)) {
+    $non_exact_fields = array();
+  }
+
+  if ($fields) {
+    $non_exact_fields = array_merge($non_exact_fields, $fields);
+  }
+
+  return $non_exact_fields;
 }
 
 /**

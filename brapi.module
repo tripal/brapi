@@ -360,3 +360,124 @@ function brapi_help($path, $arg) {
     return theme('brapi_help', array());
   }
 }
+
+/**
+ * Implements hook_chado_query_alter().
+ *
+ * @ingroup brapi
+ */
+function brapi_chado_query_alter(&$sql, &$args) {
+  // Get all fields to wildcard search.
+  $non_exact_fields = brapi_non_exact_search();
+  if ($non_exact_fields) {
+    // Get search type.
+    $filters = brapi_get_url_call_args();
+    $match_method =
+      isset($filters['matchMethod']) ?
+      strtolower($filters['matchMethod'])
+      : 'wildcard';
+  }
+  foreach ($non_exact_fields as $field => $field_settings) {
+    // Table-matching regexp to use.
+    $table_regex =
+      '/^\s*SELECT\s.+\sFROM.*\schado\.'
+      . $field_settings['table']
+      . '\s.*WHERE\s/i';
+    // Check if the table appears in the query.
+    if (preg_match($table_regex, $sql)) {
+      // Table matches.
+      if ($field_settings['match'] == 'case_insensitive') {
+        // Just case insensitive.
+        $sql = preg_replace(
+          '/(\W)' . $field_settings['column'] . '(\s*=\s*)(\S+)/i',
+          '${1}upper(' . $field_settings['column'] . ')${2}upper(${3})',
+          $sql);
+        // For multiple values, also operate on values.
+        if (preg_match_all(
+              '/\W' . $field_settings['column'] . '\s+IN\s*\(([^)]+)\)/i',
+              $sql,
+              $matches,
+              PREG_PATTERN_ORDER)) {
+          foreach ($matches[1] as $match_list) {
+            $match_list = array_map('trim', explode(',', $match_list));
+            foreach ($match_list as $match) {
+              $args[$match] = strtoupper($args[$match]);
+            }
+          }
+        }
+        if (preg_match_all(
+              '/\W' . $field_settings['column'] . '\s+IN\s+([^(]\S+)/i',
+              $sql,
+              $matches,
+              PREG_PATTERN_ORDER)) {
+          foreach ($matches[1] as $match) {
+            $args[$match] = strtoupper($args[$match]);
+          }
+        }
+        $sql = preg_replace(
+          '/(\W)' . $field_settings['column'] . '(\s+IN\s+)/i',
+          '${1}upper(' . $field_settings['column'] . ')${2}',
+          $sql);
+      }
+      else {
+        // Wildcards.
+        // Work on single values.
+        $sql = preg_replace(
+          '/(\W)' . $field_settings['column'] . '(\s*)=/',
+          '${1}' . $field_settings['column'] . '${2} ILIKE ',
+          $sql);
+        // Update jokers.
+        if (preg_match_all(
+              '/\W' . $field_settings['column'] . '\s+ILIKE\s+(\S+)/i',
+              $sql,
+              $matches,
+              PREG_PATTERN_ORDER)) {
+          foreach ($matches[1] as $match) {
+            $args[$match] = brapi_transcribe_search_string_to_postgres($args[$match]);
+          }
+        }
+        // Work on multiple values.
+        $sql = preg_replace(
+          '/(\W)' . $field_settings['column'] . '(\s+)IN(\W)/i',
+          '${1}' . $field_settings['column'] . '${2}SIMILAR TO${3}',
+          $sql);
+        // Update values.
+        if (preg_match_all(
+              '/\W' . $field_settings['column'] . '\s+SIMILAR TO\s*\(([^\)]+)\)/i',
+              $sql,
+              $matches,
+              PREG_PATTERN_ORDER)) {
+          $variable_to_remove = array();
+          foreach ($matches[1] as $match_list) {
+            $match_list = array_map('trim', explode(',', $match_list));
+            $new_variable = ':';
+            $new_values = array();
+            foreach ($match_list as $match) {
+              $new_variable .= substr($match, 1);
+              $variable_to_remove[] = $match;
+              $new_values[] = brapi_transcribe_search_string_to_postgres(
+                strtoupper($args[$match]),
+                TRUE
+              );
+            }
+            $args[$new_variable] = implode('|', $new_values);
+            // Replaces multiple place holders by the new one.
+            $sql = preg_replace(
+              '/(\W)' . $field_settings['column'] . '(\s+)SIMILAR TO(\s*)\(([^\)]+)\)/i',
+              '${1}upper(' . $field_settings['column'] . ')${2}SIMILAR TO ${3}' . $new_variable,
+              $sql
+            );
+          }
+          // Remove unused variables to avoid SQL query cancellation.
+          foreach ($variable_to_remove as $variable) {
+            if (FALSE === strpos($variable, $sql)) {
+              unset($args[$variable]);
+            }
+          }
+drupal_set_message('DEBUG: ' . $sql);
+drupal_set_message('DEBUG: ' . print_r($args, TRUE));
+        }
+      }
+    }
+  }
+}

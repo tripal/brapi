@@ -43,6 +43,23 @@ define('BRAPI_VERSION_OPTIONS', 'brapi_version_options');
 define('BRAPI_XSD_DATE_FORMAT', "Y-m-d");
 
 /**
+ * Tells if a given URL query parameter is not a field filter.
+ *
+ * @param $parameter string
+ *   Parameter name.
+ */
+function brapi_is_query_parameter($parameter) {
+  $parameters = array(
+    'debug' => true,
+    'matchMethod' => true,
+    'page' => true,
+    'pageSize' => true,
+    'pretty' => true,
+  );
+  return isset($parameters[$parameter]);
+}
+
+/**
  * Returns an array of CV terms used by the Breeding API that are not part of
  * the MCPD ontology.
  *

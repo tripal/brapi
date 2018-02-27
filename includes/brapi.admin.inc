@@ -624,13 +624,13 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       $default_value = $call['active version'];
     }
     $call_section['version_' . $call_path_form_name] = array(
-        '#type' => 'select',
-        '#title' => t('Select a call version'),
-        '#options' => $available_versions,
-        '#default_value' => $default_value,
-        '#title_display' => 'before',
-        '#required' => TRUE,
-        '#multiple' => FALSE,
+      '#type' => 'select',
+      '#title' => t('Select a call version'),
+      '#options' => $available_versions,
+      '#default_value' => $default_value,
+      '#title_display' => 'before',
+      '#required' => TRUE,
+      '#multiple' => FALSE,
     );
 
     if ($call['aggregatable']) {
@@ -640,14 +640,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
           $aggregation_options[$call_path]
           : array('');
       $call_section['aggr_' . $call_path_form_name] = array(
-          '#type' => 'select',
-          '#options' => $brapi_site_options,
-          '#default_value' => $default_values,
-          '#title' => t('Proxy for/aggregation with'),
-          '#title_display' => 'before',
-          '#description' => t('Select BrAPI sites for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
-          '#required' => FALSE,
-          '#multiple' => TRUE,
+        '#type' => 'select',
+        '#options' => $brapi_site_options,
+        '#default_value' => $default_values,
+        '#title' => t('Proxy for/aggregation with'),
+        '#title_display' => 'before',
+        '#description' => t('Select BrAPI sites for aggregation. Use Ctrl+click to select/unselect multiple sites.'),
+        '#required' => FALSE,
+        '#multiple' => TRUE,
       );
     }
   }

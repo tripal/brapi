@@ -154,6 +154,11 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     $user_data,
     brapi_get_url_call_args()
   );
+  $non_exact_match = FALSE;
+  if (isset($filters['matchMethod'])
+      && (strtolower($filters['matchMethod']) != 'exact')) {
+    $non_exact_match = strtolower($filters['matchMethod']);
+  }
 
   $cv_settings = brapi_get_cv_settings();
   $data_mapping = brapi_get_data_mapping();
@@ -174,19 +179,33 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     // Check if the field is available.
     if (isset($data_mapping[$object_type]['fields'][$field])) {
       $field_fetcher = $data_mapping[$object_type]['fields'][$field];
-      // @todo: add support to matchMethod using 'SIMILAR TO' in queries
-      //        and hook_chado_query_alter().
+      // Split multiple values.
+      if (is_array($values)) {
+        $values = implode(',', $values);
+      }
+      if (FALSE !== strpos($values, ',')) {
+        $values = array_map('trim', explode(',', $values));
+      }
       switch (gettype($field_fetcher)) {
         case 'string':
           // Field is in object table.
-          if (is_array($values)) {
-            $values = implode(',', $values);
-          }
-          $values = explode(',', $values);
           $selectors[$field_fetcher] = $values;
           $debug_data[] = "Filter on field '$field' ($field_fetcher)"
             . " with value(s): "
-            . implode(', ', $values);
+            . (is_array($values) ? implode(', ', $values) : $values);
+          // Add to wildcard search list if needed.
+          if ($non_exact_match) {
+            brapi_non_exact_search(
+              array(
+                $field => array(
+                  'table' => $data_mapping[$object_type]['table'],
+                  'column' => $field_fetcher,
+                  'match' => $non_exact_match,
+                )
+              )
+            );
+            $debug_data[] = "Using $non_exact_match on field '$field' ($field_fetcher)";
+          }
           break;
 
         case 'array':
@@ -211,6 +230,18 @@ function brapi_v1_object_search_json($object_type, $parameters) {
               break;
 
             case 'string':
+              if ($non_exact_match) {
+                brapi_non_exact_search(
+                  array(
+                    $field => array(
+                      'table' => $field_fetcher['table'],
+                      'column' => $field_fetcher['column'],
+                      'match' => $non_exact_match,
+                    ),
+                  )
+                );
+                $debug_data[] = "Using $non_exact_match on field '$field' (" . $field_fetcher['column'] . ")";
+              }
               break;
 
             case 'cvterm':
@@ -340,7 +371,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
       }
       // Ends existing fields check.
     }
-    else {
+    elseif (!brapi_is_query_parameter($field)) {
       $sanitized_field = urlencode($field);
       $debug_data[] = "Field '$sanitized_field' not found for filtering";
       $status[] = array(
@@ -389,6 +420,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     $metadata = brapi_prepare_metadata($total_count);
 
     if (isset($metadata['pagination']['pageSize'])
+        && $metadata['pagination']['pageSize']
         && isset($metadata['pagination']['currentPage'])) {
       // Use client page selection.
       $options['pager'] = array(
@@ -418,7 +450,10 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     $debug_data[] = $tripal_message;
   }
 
-  if (!is_array($chado_objects)) {
+  if (!isset($chado_objects) || !$chado_objects) {
+    $chado_objects = array();
+  }
+  elseif (!is_array($chado_objects)) {
     $chado_objects = array($chado_objects);
   }
 
