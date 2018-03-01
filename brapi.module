@@ -237,6 +237,15 @@ function brapi_menu() {
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
     'type' => MENU_CALLBACK,
   );
+  $items['brapi/filter/autocomplete/%/%'] = array(
+    'title' => 'Autocomplete for BrAPI filters',
+    'page callback' => 'brapi_filter_autocomplete',
+    'page arguments' => array(3, 4),
+    // User accessing BrAPI data can see returned values.
+    'access callback' => 'user_access',
+    'access arguments' => array(BRAPI_USE_PERMISSION),
+    'type' => MENU_CALLBACK,
+  );
 
   // Add-more button that creates additional form elements.
   // See ajax_example_graceful_degradation.inc.

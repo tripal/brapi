@@ -352,6 +352,70 @@ function brapi_terms_autocomplete($string) {
 }
 
 /**
+ * Autocomplete for filters.
+ *
+ * Autocomplete helper function that returns suggestions of filter values
+ * to user inputs.
+ * It outputs a JSON array which keys are suggested CV term names with CV name
+ * and cvterm_id as text (computer-processable) and values are corresponding CV
+ * term names with CV (human-readable).
+ *
+ * @param string $string
+ *   Part of the CV term name to use for the CV term search.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_filter_autocomplete($data_type, $field, $string) {
+  $brapi_data_mapping = brapi_get_data_mapping();
+  $matches = array();
+
+  if ($string
+      && isset($brapi_data_mapping[$data_type])
+      && isset($brapi_data_mapping[$data_type]['fields'][$field])
+      && ($field_fetcher = $brapi_data_mapping[$data_type]['fields'][$field])
+      && is_array($field_fetcher)
+      && ('cvterm' == $field_fetcher['field_type'])) {
+
+    ob_start();
+    try {
+      $records = chado_select_record(
+         $field_fetcher['table'],
+         array('DISTINCT ' . $field_fetcher['column']),
+         $field_fetcher['selector']
+      );
+      $cvterm_ids = array();
+      foreach ($records as $record) {
+        $cvterm_ids[] = $record->$field_fetcher['column'];
+      }
+      $cvterm_records = chado_select_record(
+         'cvterm',
+         array('name'),
+         array('cvterm_id' => $cvterm_ids)
+      );
+      foreach ($cvterm_records as $record) {
+        if (($string == '*')
+            || (FALSE !== strpos($record->name, $string))) {
+          $matches[$record->name] = check_plain($record->name);
+        }
+      }
+    }
+    catch (Exception $e) {
+      drupal_set_message(t(
+        "Failed to fetch field @field_name possible values! @error_message",
+        array(
+          '@field_name' => $field_name,
+          '@error_message' => $e->getMessage() . "\n" . ob_get_clean(),
+        )
+      ));
+    }
+    ob_get_clean();
+  }
+
+  // Return the result to the form in json.
+  drupal_json_output($matches);
+}
+
+/**
  * Helper function that returns the value of a given property for a given stock.
  *
  * @param int $stock_id

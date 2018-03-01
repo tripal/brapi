@@ -64,12 +64,27 @@
           foreach ($call_structure['filters'][$method] as $filter_name => $value_type) {
             // Handles filter types.
             if (is_array($value_type)) {
-              echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-              echo "  <option value=\"\" selected=\"selected\"></option>\n";
-              foreach ($value_type as $value) {
-                echo "  <option value=\"$value\">$value</option>\n";
-              }
-              echo"</select></label></li>\n";
+              // echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
+              // echo "  <option value=\"\" selected=\"selected\"></option>\n";
+              // foreach ($value_type as $value) {
+              //   echo "  <option value=\"$value\">$value</option>\n";
+              // }
+              // echo"</select></label></li>\n";
+              echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ":";
+              $autocomplete_filter = array(
+                $filter_name => array(
+                  '#type' => 'textfield',
+                  '#description' => '',
+                  '#default_value' => '',
+                  '#autocomplete_path' => 'brapi/filter/autocomplete/a/b',
+                  '#title' => 'Filter',
+                  '#title_display' => 'before',
+                  '#size' => 80,
+                  '#maxlength' => 1024,
+                )
+              );
+              echo render($autocomplete_filter);
+              echo"</label></li>\n";
             }
             else {
               switch ($value_type) {
