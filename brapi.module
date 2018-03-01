@@ -344,8 +344,8 @@ function brapi_theme($existing, $type, $theme, $path) {
     ),
     // The Breeding API query page template.
     'brapi_query' => array(
+      'render element' => 'form',
       'template' => 'brapi_query',
-      'variables' => array(NULL),
       'path' => "$path/theme/templates",
     ),
     // The Breeding API comparator template.

@@ -39,96 +39,13 @@
 <div id="brapi_query_calls">
 <h4>Calls</h4>
 <?php
-  foreach ($calls as $call_name => $call_structure) {
-    $call_url = $local_brapi_url . ($call_name == '/' ? '/' : "/$call_name");
-    $call_url = preg_replace('/\{.+/', '', $call_url);
-?>
-  <form class="brapi-query" action="<?php echo $call_url;?>" method="post" accept-charset="UTF-8">
-    <fieldset>
-      <legend>Call "<strong class="brapi-call-name"><?php echo $call_name; ?></strong>" </legend>
-<?php
-    if ($call_structure['arguments']) {
-      echo t('Arguments:') . "<br/>\n<ol>\n";
-      foreach ($call_structure['arguments'] as $arg_number => $argument) {
-        echo "<li class=\"brapi-query-argument\"><label>" . $argument['name'] . ": <input name=\"" . $argument['name'] . "\" type=\"text\" value=\"\"/></label></li>\n";
-      }
-      echo "</ol>\n";
-    }
-
-    if ($call_structure['filters']) {
-      echo t('Filters:') . "<br/>\n";
-      foreach (array('GET', 'POST') as $method) {
-        if (isset($call_structure['filters'][$method])) {
-          $method_class = strtolower($method);
-          echo "<ol>\n";
-          foreach ($call_structure['filters'][$method] as $filter_name => $value_type) {
-            // Handles filter types.
-            if (is_array($value_type)) {
-              // echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-              // echo "  <option value=\"\" selected=\"selected\"></option>\n";
-              // foreach ($value_type as $value) {
-              //   echo "  <option value=\"$value\">$value</option>\n";
-              // }
-              // echo"</select></label></li>\n";
-              echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ":";
-              $autocomplete_filter = array(
-                $filter_name => array(
-                  '#type' => 'textfield',
-                  '#description' => '',
-                  '#default_value' => '',
-                  '#autocomplete_path' => 'brapi/filter/autocomplete/a/b',
-                  '#title' => 'Filter',
-                  '#title_display' => 'before',
-                  '#size' => 80,
-                  '#maxlength' => 1024,
-                )
-              );
-              echo render($autocomplete_filter);
-              echo"</label></li>\n";
-            }
-            else {
-              switch ($value_type) {
-                case 'string':
-                case 'int':
-                  echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                  break;
-        
-                case 'bool':
-                  echo "<li class=\"brapi-query-filter-$method_class\"><label>" . $filter_name . ": <select name=\"" . $filter_name . "\">\n";
-                  echo "  <option value=\"1\">TRUE</option>\n";
-                  echo "  <option value=\"0\">FALSE</option>\n";
-                  echo"</select></label></li>\n";
-                  break;
-        
-                case 'date':
-                  echo "<li class=\"brapi-query-filter-$method_class brapi-datepicker\"><label>" . $filter_name . ": <input name=\"" . $filter_name . "\" type=\"text\" value=\"\"/></label></li>\n";
-                  break;
-        
-                default:
-                  break;
-              }
-            }
-          }
-          echo "</ol>\n";
-        }
-      }
-    }
-?>
-    <label class="barpi-query-string brapi-query-page">Page number: <input name="page" type="text" value="0"/></label><br/>
-    <label class="barpi-query-string brapi-query-size">Results per page: <input name="pageSize" type="text" value="<?php echo BRAPI_DEFAULT_PAGE_SIZE; ?>"/></label><br/>
-    <label class="barpi-query-string brapi-query-pretty"><input name="pretty" type="checkbox" value="1" checked="checked"/> Output pretty JSON</label><br/>
-    <?php
-      if (user_access('administer')) {
-        ?>
-    <label class="barpi-query-string brapi-query-debug"><input name="debug" type="checkbox" value="1"/> Enable debug mode</label><br/>
-        <?php
-      }
-    ?>
-    <input class="brapi-query-button" type="submit" value="<?php echo t('Run call'); ?>"/>
-   </fieldset>
-  </form>
-
-<?php
+  foreach ($calls as $call_name => $call_info) {
+    $brapi_query = drupal_get_form(
+      'brapi_query_form',
+      $call_name,
+      $call_info
+    );
+    print render($brapi_query);
   }
 ?>
 </div>

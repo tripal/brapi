@@ -108,7 +108,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#title' => t('List of supported crops ("crops" call)'),
       '#title_display' => 'before',
       '#required' => FALSE,
-       '#size' => 80,
+      '#size' => 80,
   );
   // Common crop name storage.
   $crop_name_options = array(

@@ -2241,7 +2241,7 @@ function brapi_data_field_supports($object_type, $field, $operation) {
 /**
  * Returns the list of parameters that can be used to filter call results.
  *
- * @param string $call_name
+ * @param string $requested_call_name
  *   A BrAPI call name.
  *
  * @return array
@@ -2250,96 +2250,113 @@ function brapi_data_field_supports($object_type, $field, $operation) {
  *
  * @ingroup brapi_api
  */
-function brapi_get_call_filters($call_name) {
-  static $data_mapping;
-  if (!isset($data_mapping)) {
-    $data_mapping = brapi_get_data_mapping();
-  }
-
+function brapi_get_call_filters($requested_call_name) {
   static $call_filters;
+
   if (!isset($call_filters)) {
     $call_filters = array();
 
-    $call_filters['calls'] = array('GET' => array('datatype' => 'string'));
+    // Get all call settings and data mapping.
+    $data_mapping = brapi_get_data_mapping();
+    $call_settings = brapi_get_calls();
 
-    $germplasm_search = array();
-    $germplasm_fields = $data_mapping['germplasm']['fields'];
-    foreach ($germplasm_fields as $field_name => $field_fetcher) {
-      switch (gettype($field_fetcher)) {
-        case "string":
-          $germplasm_search[$field_name] = 'string';
-          break;
+    // Loop on each call to get its parameters and filters.
+    foreach ($call_settings as $call => $call_setting) {
+      $call_filters[$call] = array();
+      $versioned_parameters = isset($call_setting['parameters']) ?
+        $call_setting['parameters']
+        : array();
+      $versioned_filters = isset($call_setting['filters']) ?
+        $call_setting['filters']
+        : array();
 
-       case "array":
-          switch ($field_fetcher['field_type']) {
-            case 'string':
-              $germplasm_search[$field_name] = 'string';
-              break;
+      $versions = array_merge(
+        array_keys($versioned_parameters),
+        array_keys($versioned_filters)
+      );
 
-            case 'int':
-              $germplasm_search[$field_name] = 'int';
-              break;
+      // Loop on each call version.
+      foreach ($versions as $api_version) {
+        $call_filters[$call][$api_version] = array();
 
-            case 'bool':
-              $germplasm_search[$field_name] = 'bool';
-              break;
+        if (isset($versioned_parameters[$api_version])) {
+          $call_filters[$call][$api_version]['GET'] =
+            $versioned_parameters[$api_version];
+        }
+        else {
+          $call_filters[$call][$api_version]['GET'] = array();
+        }
 
-            case 'date':
-              $germplasm_search[$field_name] = 'date';
-              break;
+        if (isset($versioned_filters[$api_version])) {
+          $filters = $versioned_filters[$api_version];
+          $call_filters[$call][$api_version]['POST'] = array();
 
-            case 'cvterm':
-              $germplasm_search[$field_name] = array();
-              // We capture output buffer for Tripal error messages.
-              ob_start();
-              try {
-                $records = chado_select_record(
-                   $field_fetcher['table'],
-                   array('DISTINCT ' . $field_fetcher['column']),
-                   $field_fetcher['selector']
-                );
-                $cvterm_ids = array();
-                foreach ($records as $record) {
-                  $cvterm_ids[] = $record->$field_fetcher['column'];
-                }
-                $cvterm_records = chado_select_record(
-                   'cvterm',
-                   array('name'),
-                   array('cvterm_id' => $cvterm_ids)
-                );
-                foreach ($cvterm_records as $record) {
-                  $germplasm_search[$field_name][] = $record->name;
-                }
+          // Loop on filtrable data types.
+          foreach ($versioned_filters[$api_version] as $data_type => $field_names) {
+            $data_type_fields = $data_mapping[$data_type]['fields'];
+            $data_type_filtrable_fields = array();
+            // Loop on each field.
+            foreach ($field_names as $field_name) {
+              if (!isset($data_type_fields[$field_name])) {
+                drupal_set_message('Warning: invalid filtering field ' . $field_name . ' for call ' . $call . '(v' . $api_version . ')');
+                continue;
               }
-              catch (Exception $e) {
-                drupal_set_message(t(
-                  "Failed to fetch field @field_name possible values! @error_message",
-                  array(
-                    '@field_name' => $field_name,
-                    '@error_message' => $e->getMessage() . "\n" . ob_get_clean(),
-                  )
-                ));
-              }
-              ob_get_clean();
-              break;
+              $field_fetcher = $data_type_fields[$field_name];
+              // Get widget type according to field type.
+              switch (gettype($field_fetcher)) {
+                case "string":
+                  $data_type_filtrable_fields[$field_name] = 'string';
+                  break;
 
-            default:
-              break;
+               case "array":
+                  switch ($field_fetcher['field_type']) {
+                    case 'string':
+                      $data_type_filtrable_fields[$field_name] = 'string';
+                      break;
+
+                    case 'int':
+                      $data_type_filtrable_fields[$field_name] = 'int';
+                      break;
+
+                    case 'bool':
+                      $data_type_filtrable_fields[$field_name] = 'bool';
+                      break;
+
+                    case 'date':
+                      $data_type_filtrable_fields[$field_name] = 'date';
+                      break;
+
+                    case 'cvterm':
+                      $data_type_filtrable_fields[$field_name] = "$data_type/$field_name";
+                      break;
+
+                    default:
+                      break;
+                  }
+                  break;
+
+               case "object":
+                  break;
+
+               default:
+                  break;
+              }
+            }
+
+            // Add data type fields to filtration.
+            $call_filters[$call][$api_version]['POST'] +=
+              $data_type_filtrable_fields;
           }
-          break;
-
-       case "object":
-          break;
-
-       default:
-          break;
+        }
+        else {
+          $call_filters[$call][$api_version]['POST'] = array();
+        }
       }
     }
-    $call_filters['germplasm-search'] = array('POST' => &$germplasm_search);
   }
 
-  if (isset($call_filters[$call_name])) {
-    return $call_filters[$call_name];
+  if (isset($call_filters[$requested_call_name])) {
+    return $call_filters[$requested_call_name];
   }
   else {
     return array();
@@ -2756,4 +2773,165 @@ function brapi_get_menu_call_mapping($reset = FALSE) {
   }
 
   return $menu_call_mapping;
+}
+
+/**
+ *
+ */
+function brapi_query_form($form, &$form_state, $call_name, $call_info) {
+
+  $call_machine_name = preg_replace('/\W+/', '_', $call_name);
+  if ('' == $call_name) {
+    $call_title = t('Root call');
+  }
+  else {
+    $call_title = t(
+      'Call @call_name',
+      array('@call_name' => $call_name)
+    );
+  }
+  
+  // Main call fieldset.
+  $call_fieldset = array(
+    '#type'        => 'fieldset',
+    '#title'       => $call_title,
+  );
+  $form['call_' . $call_machine_name] = &$call_fieldset;
+
+  // Call arguments.
+  if ($call_info['arguments']) {
+    $call_fieldset['arguments'] = array(
+      '#type'        => 'fieldset',
+      '#title'       => t('Arguments:'),
+    );
+    foreach ($call_info['arguments'] as $arg_number => $argument) {
+      $call_fieldset['arguments'][$argument['name']] = array(
+        '#type' => 'textfield',
+        '#title' => $argument['name'],
+        '#required' => FALSE,
+        '#size' => 40,
+      );
+    }
+  }
+
+  // Call filters.
+  if ($call_info['parameters-filters']) {
+    // Loop on API versions.
+    foreach ($call_info['parameters-filters'] as $api_version => $call_methods) {
+      $api_version_mn = preg_replace('/\W+/', '_', $api_version);
+      $filter_fieldset = array(
+        '#type'  => 'fieldset',
+        '#title' => t('v@version filters:', array('@version' => $api_version)),
+        '#collapsible' => TRUE,
+        '#collapsed'   => ((BRAPI_SERVICE_VERSION == $api_version) ? FALSE : TRUE),
+      );
+      $call_fieldset[$api_version_mn . '-filters'] = &$filter_fieldset;
+      // Loop on methods.
+      foreach (array('GET', 'POST') as $method) {
+        foreach ($call_methods[$method] as $filter_name => $filter_type) {
+          if (is_array($filter_type)) {
+            $options = array(
+              t('Not set') => '',
+            )
+            + array_combine($filter_type, $filter_type);
+            
+            $filter_fieldset[$filter_name] = array(
+              '#type' => 'select',
+              '#options' => $options,
+              '#default_value' => '',
+              '#title' => $filter_name,
+            );
+          }
+          elseif (('string' == $filter_type) || ('int' == $filter_type)) {
+            $filter_fieldset[$filter_name] = array(
+              '#type' => 'textfield',
+              '#title' => $filter_name,
+              '#default_value' => '',
+              '#size' => 80,
+              '#maxlength' => 1024,
+            );
+          }
+          elseif ('bool' == $filter_type) {
+            $filter_fieldset[$filter_name] = array(
+              '#type' => 'select',
+              '#title' => $filter_name,
+              '#options' => array(
+                'TRUE' => 1,
+                'FALSE' => 0,
+              ),
+              '#default_value' => 0,
+              '#multiple' => FALSE,
+            );
+          }
+          elseif ('date' == $filter_type) {
+            $filter_fieldset[$filter_name] = array(
+              '#type' => 'textfield',
+              '#title' => $filter_name,
+              '#default_value' => '',
+              '#size' => 10,
+              '#maxlength' => 10,
+              '#attributes' => array(
+                'class' => array('brapi-datepicker'),
+              ),
+            );
+          }
+          elseif (FALSE !== strpos($filter_type, '/')) {
+            $filter_fieldset[$filter_name] = array(
+              '#type' => 'textfield',
+              '#title' => $filter_name,
+              '#default_value' => '',
+              '#autocomplete_path' => 'brapi/filter/autocomplete/' . $filter_type,
+              '#size' => 80,
+              '#maxlength' => 1024,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  $call_fieldset['global'] = array(
+    '#type'  => 'fieldset',
+    '#title' => t('Settings'),
+    
+    'page' => array(
+      '#type' => 'textfield',
+      '#title' => t('Page number'),
+      '#default_value' => '0',
+      '#size' => 10,
+      '#maxlength' => 10,
+    ),
+    
+    'pageSize' => array(
+      '#type' => 'textfield',
+      '#title' => t('Results per page'),
+      '#default_value' => '0',
+      '#size' => 10,
+      '#maxlength' => 10,
+    ),
+    
+    'pretty' => array(
+      '#type' => 'checkbox',
+      '#title' => t('Output pretty JSON'),
+      '#return_value' => '1',
+      '#default_value' => '',
+    ),
+    
+  );
+
+  if (user_access('administer')) {
+    $call_fieldset['global']['debug'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable debug mode'),
+      '#return_value' => '1',
+      '#default_value' => '1',
+    );
+  }
+
+  $call_fieldset['global'] = array(
+    '#type'        => 'submit',
+    '#value'       => t('Submit'),
+  );
+
+  return $form;
 }

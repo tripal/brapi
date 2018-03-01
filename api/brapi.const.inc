@@ -185,7 +185,12 @@ function brapi_get_mcpd_mapping() {
  *     - 'name' (string): name of the argument;
  *     - 'type' (string): type of the argument;
  *     - 'description' (string): description of the argument;
- *     - 'required' (bool): true if the argument is required.
+ *     - 'required' (bool): true if the argument is required;
+ *   - 'parameters' (array): hash of parameter names (array of strings) grouped
+ *       by API version (as keys);
+ *   - 'filters' (array): hash of API version, each containing a hash of data
+ *       type names each containing a list of field names (array of string)
+ *       which can be used for filtering;
  *   - 'features' (array): an array of feature name => value/description
  *     supported by the call;
  *   - 'aggregatable' (bool): if true, the call can be aggregated with other
@@ -415,6 +420,40 @@ function brapi_get_calls() {
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_germplasm_search_json',
+        ),
+        'parameters' => array(
+          '1.1' => array(
+            'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+            // 'include' => array('synonyms'),
+          ),
+        ),
+        'filters' => array(
+          '1.1' => array(
+            'germplasm' => array(
+              'germplasmDbId',
+              'defaultDisplayName',
+              'accessionNumber',
+              'germplasmName',
+              'germplasmPUI',
+              'pedigree',
+              'seedSource',
+              'synonyms',
+              'commonCropName',
+              'instituteCode',
+              'instituteName',
+              'biologicalStatusOfAccessionCode',
+              'countryOfOriginCode',
+              'typeOfGermplasmStorageCode',
+              'genus',
+              'species',
+              'taxonIds',
+              'speciesAuthority',
+              'subtaxa',
+              'subtaxaAuthority',
+              'donors',
+              'acquisitionDate',
+            ),
+          ),
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregatable' => TRUE,

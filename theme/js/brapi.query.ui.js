@@ -147,7 +147,7 @@ $(function() {
           .data('form', $(element));
       }
     );
-    $select.find('option:selected').data('form').show();
+    // $select.find('option:selected').data('form').show();
   }
   
   // Make all common fields act like one field...
@@ -175,7 +175,7 @@ $(function() {
 
   // Setup date picker widgets.
   if ($().datepicker) {
-    $("#brapi_query_calls .brapi-datepicker input")
+    $("#brapi_query_calls input.brapi-datepicker")
       .not('.brapi-processed')
       .addClass('brapi-processed')
       .datepicker();
