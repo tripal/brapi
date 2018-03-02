@@ -376,6 +376,11 @@ function brapi_help($path, $arg) {
  * @ingroup brapi
  */
 function brapi_chado_query_alter(&$sql, &$args) {
+  // Fix Tripal paging issue.
+  $pager = brapi_force_pager();
+  if ($pager && $pager['limit'] && $pager['element']) {
+    $sql = preg_replace('/OFFSET \d+/', 'OFFSET ' . ($pager['limit']*$pager['element']), $sql);
+  }
   // Get all fields to wildcard search.
   $non_exact_fields = brapi_non_exact_search();
   if ($non_exact_fields) {

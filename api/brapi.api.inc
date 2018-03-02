@@ -2653,6 +2653,24 @@ function brapi_non_exact_search($fields = FALSE) {
 }
 
 /**
+ * Forces the pager settings to bypass Tripal 2 paging issue.
+ *
+ * @param $pager array
+ *   an array with 2 keys: 'limit' and 'element'. If not set or empty, the last
+ *   given pager value is kept.
+ *
+ * @return array
+ *   the last $pager value given.
+ */
+function brapi_force_pager($pager = FALSE) {
+  static $forced_pager;
+  if ($pager) {
+    $forced_pager = $pager;
+  }
+  return $forced_pager;
+}
+
+/**
  * Example implementation of hook_brapi_CALL_FUNC_NAME_alter.
  *
  * This implementation adds a source_db field set to 'brapi' to any call result
@@ -2776,10 +2794,31 @@ function brapi_get_menu_call_mapping($reset = FALSE) {
 }
 
 /**
+ * Returns the query interface form for a given call.
  *
+ * @param $form
+ * @param $form_state
+ * @param $call_name
+ * @param $call_info
+ *
+ * @return array
+ *   The renderable form array.
  */
 function brapi_query_form($form, &$form_state, $call_name, $call_info) {
 
+  # Call action URL.
+  global $base_url;
+  $call_url = url(BRAPI_SERVICE_PREFIX_V1 . '/' . $call_name);
+  $form['#action'] = $call_url;
+  $form['#attributes'] = array(
+    'target' => 'brapi_query_result_iframe',
+    'class' => array('brapi-query-call'),
+  );
+  $form['call_name'] = array(
+    '#markup' => '<span class="hidden brapi-hidden" name="call_name">' . $call_name . '</span>',
+  );
+
+  // Call name/machine name.
   $call_machine_name = preg_replace('/\W+/', '_', $call_name);
   if ('' == $call_name) {
     $call_title = t('Root call');
@@ -2790,7 +2829,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       array('@call_name' => $call_name)
     );
   }
-  
+
   // Main call fieldset.
   $call_fieldset = array(
     '#type'        => 'fieldset',
@@ -2810,6 +2849,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
         '#title' => $argument['name'],
         '#required' => FALSE,
         '#size' => 40,
+        '#attributes' => array(
+          'class' => array('brapi-query-argument'),
+        ),
       );
     }
   }
@@ -2824,6 +2866,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
         '#title' => t('v@version filters:', array('@version' => $api_version)),
         '#collapsible' => TRUE,
         '#collapsed'   => ((BRAPI_SERVICE_VERSION == $api_version) ? FALSE : TRUE),
+        '#attributes' => array(
+          'class' => array('brapi-query-filters', 'brapi-query-api-' . $api_version_mn),
+        ),
       );
       $call_fieldset[$api_version_mn . '-filters'] = &$filter_fieldset;
       // Loop on methods.
@@ -2840,6 +2885,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               '#options' => $options,
               '#default_value' => '',
               '#title' => $filter_name,
+              '#attributes' => array(
+                'class' => array('brapi-query-filter-' . strtolower($method)),
+              ),
             );
           }
           elseif (('string' == $filter_type) || ('int' == $filter_type)) {
@@ -2849,6 +2897,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               '#default_value' => '',
               '#size' => 80,
               '#maxlength' => 1024,
+              '#attributes' => array(
+                'class' => array('brapi-query-filter-' . strtolower($method)),
+              ),
             );
           }
           elseif ('bool' == $filter_type) {
@@ -2861,6 +2912,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               ),
               '#default_value' => 0,
               '#multiple' => FALSE,
+              '#attributes' => array(
+                'class' => array('brapi-query-filter-' . strtolower($method)),
+              ),
             );
           }
           elseif ('date' == $filter_type) {
@@ -2871,7 +2925,10 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               '#size' => 10,
               '#maxlength' => 10,
               '#attributes' => array(
-                'class' => array('brapi-datepicker'),
+                'class' => array(
+                  'brapi-datepicker',
+                  'brapi-query-filter-' . strtolower($method),
+                ),
               ),
             );
           }
@@ -2883,6 +2940,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               '#autocomplete_path' => 'brapi/filter/autocomplete/' . $filter_type,
               '#size' => 80,
               '#maxlength' => 1024,
+              '#attributes' => array(
+                'class' => array('brapi-query-filter-' . strtolower($method)),
+              ),
             );
           }
         }
@@ -2893,6 +2953,10 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
   $call_fieldset['global'] = array(
     '#type'  => 'fieldset',
     '#title' => t('Settings'),
+    '#attributes' => array(
+      'class' => array('brapi-query-parameters'),
+    ),
+
     
     'page' => array(
       '#type' => 'textfield',
@@ -2928,7 +2992,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
     );
   }
 
-  $call_fieldset['global'] = array(
+  $call_fieldset['submit'] = array(
     '#type'        => 'submit',
     '#value'       => t('Submit'),
   );

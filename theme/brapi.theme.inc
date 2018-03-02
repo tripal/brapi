@@ -246,7 +246,6 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
     }
   }
 
-
   // Process each call.
   foreach (brapi_get_calls() as $brapi_call => $brapi_call_data) {
     $call_url = '/' . $brapi_call;

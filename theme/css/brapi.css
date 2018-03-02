@@ -92,6 +92,33 @@ content: "}";
 }
 
 /* Breeding API Query Interface */
+
+#brapi_query_settings, #brapi_call_settings, #brapi_query_result_ajax {
+  display: none;
+}
+
+#brapi_query_result_iframe {
+  width: 100%;
+  height: 20em;
+  border: 1px solid black;
+}
+
+.brapi-hidden {
+  display: none;
+}
+
+#brapi_query_result_ajax,
+#brapi_query_debug code {
+  display: block;
+  margin: 0 0 1em 0;
+  padding: 0.5em 1ex;
+  border: 1px solid black;
+  font-family: Consolas, Courier New, monospace;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+/*
 #brapi_query_calls {
   padding: 0 0 1em 0;
 }
@@ -160,13 +187,4 @@ content: "}";
   margin-top: 1em;
 }
 
-#brapi_query_results,
-#brapi_query_debug code {
-  display: block;
-  margin: 0 0 1em 0;
-  padding: 0.5em 1ex;
-  border: 1px solid black;
-  font-family: Consolas, Courier New, monospace;
-  white-space: pre-wrap;
-  overflow: auto;
-}
+*/

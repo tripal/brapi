@@ -17,7 +17,7 @@
   if (1 < count($brapi_sites)) {
   ?>
   <div class="container-inline">
-    <label for="brapi_site_urls">Available sites:</label>
+    <label for="brapi_site_urls"><?php echo t('Use available sites:'); ?></label>
     <select id="brapi_site_urls" name="brapi_site">
       <?php
       $selected = ' selected="selected"';
@@ -34,22 +34,38 @@
   <?php
   }
   ?>
+  <div class="container-inline">
+    <label for="brapi_api_version"><?php echo t('API Version:'); ?></label>
+    <select id="brapi_api_version" name="brapi_api_version">
+      <option value="<?php echo BRAPI_SERVICE_VERSION; ?>" selected="selected"><?php echo BRAPI_SERVICE_VERSION; ?></option>
+    </select>
+  </div>
+  
 </form>
 
 <div id="brapi_query_calls">
-<h4>Calls</h4>
-<?php
-  foreach ($calls as $call_name => $call_info) {
-    $brapi_query = drupal_get_form(
-      'brapi_query_form',
-      $call_name,
-      $call_info
-    );
-    print render($brapi_query);
-  }
-?>
+  <h4>Calls</h4>
+  <form id="brapi_call_settings">
+    <label for="brapi_call_select">Select a BrAPI call:</label>
+    <select id="brapi_call_select" name="brapi_call_select">
+    </select>
+  </form>
+  <?php
+    // Render each call form.
+    foreach ($calls as $call_name => $call_info) {
+      $brapi_query = drupal_get_form(
+        'brapi_query_form',
+        $call_name,
+        $call_info
+      );
+      print render($brapi_query);
+    }
+  ?>
 </div>
 
-<h4 id="brapi_query_result_title">Service response</h4>
-<code id="brapi_query_results">
-</code>
+<div id="brapi_query_results">
+  <h4 id="brapi_query_result_title">Service response</h4>
+  <iframe id="brapi_query_result_iframe" name="brapi_query_result_iframe"></iframe>
+  <code id="brapi_query_result_ajax">
+  </code>
+</div>
