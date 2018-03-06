@@ -2280,10 +2280,13 @@ function brapi_get_call_filters($requested_call_name) {
         $call_setting['filters']
         : array();
 
-      $versions = array_merge(
-        array_keys($versioned_parameters),
-        array_keys($versioned_filters)
+      $versions = array_keys(
+        array_merge(
+          $versioned_parameters,
+          $versioned_filters
+        )
       );
+      sort($versions);
 
       // Loop on each call version.
       foreach ($versions as $api_version) {
@@ -2875,12 +2878,12 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
         '#type'  => 'fieldset',
         '#title' => t('v@version filters:', array('@version' => $api_version)),
         '#collapsible' => TRUE,
-        '#collapsed'   => ((BRAPI_SERVICE_VERSION == $api_version) ? FALSE : TRUE),
+        '#collapsed'   => FALSE,
         '#attributes' => array(
           'class' => array('brapi-query-filters', 'brapi-query-api-' . $api_version_mn),
         ),
       );
-      $call_fieldset[$api_version_mn . '-filters'] = &$filter_fieldset;
+      $call_fieldset[$call_machine_name . '-' . $api_version_mn . '-filters'] = &$filter_fieldset;
       // Loop on methods.
       foreach (array('GET', 'POST') as $method) {
         foreach ($call_methods[$method] as $filter_name => $filter_type) {
@@ -2957,6 +2960,8 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
           }
         }
       }
+      // Release array to instantiate a new one on next loop.
+      unset($filter_fieldset);
     }
   }
 
@@ -2988,7 +2993,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       '#type' => 'checkbox',
       '#title' => t('Output pretty JSON'),
       '#return_value' => '1',
-      '#default_value' => '',
+      '#default_value' => TRUE,
     ),
     
   );
@@ -2998,7 +3003,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       '#type' => 'checkbox',
       '#title' => t('Enable debug mode'),
       '#return_value' => '1',
-      '#default_value' => '1',
+      '#default_value' => TRUE,
     );
   }
 

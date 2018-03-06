@@ -37,7 +37,19 @@
   <div class="container-inline">
     <label for="brapi_api_version"><?php echo t('API Version:'); ?></label>
     <select id="brapi_api_version" name="brapi_api_version">
-      <option value="<?php echo BRAPI_SERVICE_VERSION; ?>" selected="selected"><?php echo BRAPI_SERVICE_VERSION; ?></option>
+      <?php 
+        foreach (brapi_get_versions() as $api_version_mn => $api_version_name) {
+          echo '      <option value="'
+            . $api_version_mn
+            . '"'
+            . ((BRAPI_SERVICE_VERSION == $api_version_name)
+              ? ' selected="selected"'
+              : '')
+            . '>'
+            . $api_version_name
+            . "</option>\n";
+        }
+      ?>
     </select>
   </div>
   

@@ -36,7 +36,7 @@ $(function() {
     .addClass('brapi-processed')
   ;
   if ($calls.length) {
-    // Get dropdown.
+    // Get call selection dropdown.
     var $select = $('#brapi_call_select')
       .change(function() {
         $('form.brapi-query-call').hide();
@@ -151,7 +151,7 @@ $(function() {
               $('#brapi_query_result_ajax').html(textStatus);
             }
           });
-        })
+        });
       
     });
     
@@ -180,6 +180,15 @@ $(function() {
         $('input[name="' + $(this).attr('name') + '"]').val($(this).val());
       });
     }
+
+    // Manage API versions.
+    var $version_select = $('#brapi_api_version')
+      .change(function() {
+        $('fieldset.brapi-query-filters').hide();
+        $('fieldset.brapi-query-api-' + $(this).val()).show();
+      });
+    $('fieldset.brapi-query-filters').hide();
+    $('fieldset.brapi-query-api-' + $version_select.val()).show();
 
   }
 

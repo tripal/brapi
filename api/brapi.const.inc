@@ -43,6 +43,19 @@ define('BRAPI_VERSION_OPTIONS', 'brapi_version_options');
 define('BRAPI_XSD_DATE_FORMAT', "Y-m-d");
 
 /**
+ * Returns BrAPI versions.
+ *
+ * @return array
+ *   An array of version machine name => version name.
+ */
+function brapi_get_versions() {
+  return array(
+    '1_0' => '1.0',
+    '1_1' => '1.1',
+  );
+}
+
+/**
  * Tells if a given URL query parameter is not a field filter.
  *
  * @param $parameter string
@@ -422,12 +435,23 @@ function brapi_get_calls() {
           '1.1' => 'brapi_v1_germplasm_search_json',
         ),
         'parameters' => array(
+          '1.0' => array(
+            'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+            // 'include' => array('synonyms'),
+          ),
           '1.1' => array(
             'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
             // 'include' => array('synonyms'),
           ),
         ),
         'filters' => array(
+          '1.0' => array(
+            'germplasm' => array(
+              'germplasmDbId',
+              'germplasmName',
+              'germplasmPUI',
+            ),
+          ),
           '1.1' => array(
             'germplasm' => array(
               'germplasmDbId',
