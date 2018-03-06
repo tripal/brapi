@@ -273,6 +273,7 @@ function brapi_cvs_autocomplete($string) {
   $matches = array();
 
   if ($string) {
+    // Get last term entered after the last coma for completion.
     $items = array_map('trim', explode(',', $string));
     $last_item = array_pop($items);
     $prefix = implode(', ', $items);
@@ -320,6 +321,7 @@ function brapi_terms_autocomplete($string) {
   $matches = array();
 
   if ($string) {
+    // Get last term entered after the last coma for completion.
     $items = array_map('trim', explode(',', $string));
     $last_item = array_pop($items);
     $prefix = implode(', ', $items);
@@ -376,6 +378,11 @@ function brapi_filter_autocomplete($data_type, $field, $string) {
       && is_array($field_fetcher)
       && ('cvterm' == $field_fetcher['field_type'])) {
 
+    // Get last term entered after the last coma for completion.
+    $items = array_map('trim', explode(',', $string));
+    $last_item = array_pop($items);
+    $prefix = implode(', ', $items);
+
     ob_start();
     try {
       $records = chado_select_record(
@@ -393,9 +400,10 @@ function brapi_filter_autocomplete($data_type, $field, $string) {
          array('cvterm_id' => $cvterm_ids)
       );
       foreach ($cvterm_records as $record) {
-        if (($string == '*')
-            || (FALSE !== strpos($record->name, $string))) {
-          $matches[$record->name] = check_plain($record->name);
+        if (($last_item == '*')
+            || (FALSE !== strpos($record->name, $last_item))) {
+          $value = (!empty($prefix) ? $prefix . ', ' : '') . $record->name;
+          $matches[$value] = check_plain($record->name);
         }
       }
     }
@@ -988,6 +996,8 @@ function brapi_encode_date($brapi_date, $format = NULL) {
   switch ($format) {
     case 'timestamp':
       $encoded_date = $date->format('U');
+      // Clear time part.
+      $encoded_date -= $encoded_date%86400;
       break;
     case 'custom':
       $date_format = variable_get(BRAPI_CUSTOM_DATE_FORMAT, '');
@@ -2876,7 +2886,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
         foreach ($call_methods[$method] as $filter_name => $filter_type) {
           if (is_array($filter_type)) {
             $options = array(
-              t('Not set') => '',
+              '' => t('Not set'),
             )
             + array_combine($filter_type, $filter_type);
             

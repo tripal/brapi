@@ -180,20 +180,27 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     // Check if the field is available.
     if (isset($data_mapping[$object_type]['fields'][$field])) {
       $field_fetcher = $data_mapping[$object_type]['fields'][$field];
-      // Split multiple values.
+      // Generate an array of values.
       if (is_array($values)) {
+        // Collapse all first.
         $values = implode(',', $values);
       }
       if (FALSE !== strpos($values, ',')) {
+        // Explode multiple values.
         $values = array_map('trim', explode(',', $values));
       }
+      else {
+        // Single value.
+        $values = array($values);
+      }
+
       switch (gettype($field_fetcher)) {
         case 'string':
           // Field is in object table.
           $selectors[$field_fetcher] = $values;
           $debug_data[] = "Filter on field '$field' ($field_fetcher)"
             . " with value(s): "
-            . (is_array($values) ? implode(', ', $values) : $values);
+            . implode(', ', $values);
           // Add to wildcard search list if needed.
           if ($non_exact_match) {
             brapi_non_exact_search(
@@ -211,7 +218,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
 
         case 'array':
           $debug_data[] = "Filter on linked field '$field' with value(s): "
-            . (is_array($values) ? implode(', ', $values) : $values);
+            . implode(', ', $values);
           // Get available values from database mapping.
           if (isset($field_fetcher['foreign_key'])) {
             $foreign_key = $field_fetcher['foreign_key'];
@@ -228,6 +235,19 @@ function brapi_v1_object_search_json($object_type, $parameters) {
               break;
 
             case 'date':
+              // Input format YYYY-MM-DD (ISO_8601)
+              $new_date_values = array();
+              foreach ($values as $value) {
+                if (preg_match('/^\d\d\d\d-\d\d-\d\d$/', $value)) {
+                  $new_date = brapi_encode_date($value);
+                  $new_date_values[] = $new_date;
+                  $debug_data[] = "Formatted date '$value' into '$new_date'.";
+                }
+                else {
+                  $debug_data[] = "Invalid date format '$value' ignored.";
+                }
+              }
+              $values = $new_date_values;
               break;
 
             case 'string':
@@ -248,9 +268,6 @@ function brapi_v1_object_search_json($object_type, $parameters) {
             case 'cvterm':
               // Get terms cvterm_id.
               $term_ids = array();
-              if (!is_array($values)) {
-                $values = array($values);
-              }
               // Loop on each value.
               foreach ($values as $value) {
                 // Try to get term.
@@ -285,6 +302,11 @@ function brapi_v1_object_search_json($object_type, $parameters) {
               );
           }
 
+          // Do not treat single values as arrays.
+          if (1 == count($values)) {
+            $values = array_pop($values);
+          }
+          
           $selector = array_merge(
             $field_fetcher['selector'],
             array($field_fetcher['column'] => $values)
@@ -437,6 +459,9 @@ function brapi_v1_object_search_json($object_type, $parameters) {
       );
     }
 
+    // Force pager values as Tripal 2 pager system is not working properly.
+    brapi_force_pager($options['pager']);
+    
     // Support pager and sorting.
     $chado_objects = chado_generate_var(
       $data_mapping[$object_type]['table'],
@@ -524,6 +549,7 @@ function brapi_v1_about_json() {
         'www'   => $base_url . '/',
       ),
     ),
+    array(),
     array(),
   );
 }
