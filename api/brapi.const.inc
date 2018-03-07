@@ -238,6 +238,7 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_external_call_json',
           '1.1' => 'brapi_v1_external_call_json',
         ),
         'aggregatable' => TRUE,
@@ -252,7 +253,36 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_external_call_json',
           '1.1' => 'brapi_v1_external_call_json',
+        ),
+        'aggregatable' => TRUE,
+      ),
+      'allelematrix'     => array(
+        'title'          => 'Allele Matrices',
+        'description'    => 'List allele matrices',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'active version' => BRAPI_SERVICE_VERSION,
+        'callback versions' => array(
+          '1.2' => 'brapi_v1_external_call_json',
+        ),
+        'aggregatable' => TRUE,
+      ),
+      'allelematrix-search'      => array(
+        'title'          => 'MarkerProfile Allele Matrix',
+        'description'    => 'Search allele matrices',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'active version' => BRAPI_SERVICE_VERSION,
+        'callback versions' => array(
+          '1.2' => 'brapi_v1_external_call_json',
         ),
         'aggregatable' => TRUE,
       ),
@@ -293,6 +323,7 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_call_json',
           '1.1' => 'brapi_v1_call_json',
         ),
         'arguments'      => array(
@@ -315,6 +346,7 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_crops_json',
           '1.1' => 'brapi_v1_crops_json',
         ),
         'aggregatable' => TRUE,
@@ -346,6 +378,7 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_germplasm_json',
           '1.1' => 'brapi_v1_germplasm_json',
         ),
         'arguments'      => array(
@@ -375,7 +408,7 @@ function brapi_get_calls() {
             'name' => 'germplasmDbId',
             'type' => 'string',
             'description' => 'correspond to a Chado stock.uniquename value',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -396,7 +429,7 @@ function brapi_get_calls() {
             'name' => 'germplasmDbId',
             'type' => 'string',
             'description' => 'correspond to a Chado stock.uniquename value',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -410,14 +443,15 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_pedigree_json',
+          '1.0' => 'brapi_v1_germplasm_pedigree_10_json',
+          '1.1' => 'brapi_v1_germplasm_pedigree_11_json',
         ),
         'arguments'      => array(
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
             'description' => 'correspond to a Chado stock.uniquename value',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -456,6 +490,32 @@ function brapi_get_calls() {
             ),
           ),
           '1.1' => array(
+            'germplasm' => array(
+              'germplasmDbId',
+              'defaultDisplayName',
+              'accessionNumber',
+              'germplasmName',
+              'germplasmPUI',
+              'pedigree',
+              'seedSource',
+              'synonyms',
+              'commonCropName',
+              'instituteCode',
+              'instituteName',
+              'biologicalStatusOfAccessionCode',
+              'countryOfOriginCode',
+              'typeOfGermplasmStorageCode',
+              'genus',
+              'species',
+              'taxonIds',
+              'speciesAuthority',
+              'subtaxa',
+              'subtaxaAuthority',
+              'donors',
+              'acquisitionDate',
+            ),
+          ),
+          '1.2' => array(
             'germplasm' => array(
               'germplasmDbId',
               'defaultDisplayName',
@@ -1053,6 +1113,7 @@ function brapi_get_calls() {
         ),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
+          '1.0' => 'brapi_v1_authentication_json',
           '1.1' => 'brapi_v1_authentication_json',
         ),
         'aggregatable' => FALSE,

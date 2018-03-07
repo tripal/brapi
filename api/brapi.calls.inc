@@ -68,7 +68,7 @@ function brapi_call_wrapper($call_name) {
     }
   }
 
-  $args = array_slice(func_get_args(), 2);
+  $args = array_slice(func_get_args(), 1);
   // Replace slash and other non-word characters by '_' and lower-case string.
   $alter_name = strtolower(preg_replace('/\W+/', '_', $call_name));
   // Remove leading and trailing underscores.
@@ -77,9 +77,9 @@ function brapi_call_wrapper($call_name) {
   // Uncomment the line below to find out names to use.
   // drupal_set_message('BrAPI alter call name: "' . $alter_name . '"', 'debug');
   try {
-    list($data, $metadata, $debug_data) = call_user_func_array($call_func, $args);
     $debug_data[] = "Call name: $call_name";
     $debug_data[] = "Handling function: $call_func";
+    list($data, $metadata, $debug_data) = call_user_func_array($call_func, $args);
     // Allow other modules to alter output.
     $context = array(
       'metadata' => &$metadata,
@@ -1505,10 +1505,28 @@ function brapi_v1_delete_germplasm_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_pedigree_json($germplasm_id) {
+function brapi_v1_germplasm_pedigree_10_json($germplasm_id) {
 
   $actions = array(
-    'read'   => 'brapi_v1_read_germplasm_pedigree_json',
+    'read'   => 'brapi_v1_read_germplasm_pedigree_10_json',
+  );
+
+  return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
+}
+
+/**
+ * Germplasm pedigree call v1.1.
+ *
+ * BRAPI: Germplasm Pedigree
+ * URL: brapi/v1/germplasm/\<id\>/pedigree
+ * Displays pedigree of a germplasm.
+ *
+ * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
+ */
+function brapi_v1_germplasm_pedigree_11_json($germplasm_id) {
+
+  $actions = array(
+    'read'   => 'brapi_v1_read_germplasm_pedigree_11_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1523,7 +1541,43 @@ function brapi_v1_germplasm_pedigree_json($germplasm_id) {
  * @return array
  *   a JSON array containing the stock details.
  */
-function brapi_v1_read_germplasm_pedigree_json($stock) {
+function brapi_v1_read_germplasm_pedigree_10_json($stock) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $germplasm_data = array();
+
+  $fields = array(
+    'germplasmDbId',
+    'defaultDisplayName',
+    'parent1Id',
+    'parent2Id',
+    'pedigree',
+  );
+  foreach ($fields as $field_name) {
+    $germplasm_data[$field_name] =
+      brapi_get_field('germplasm', $stock, $field_name);
+  }
+
+  $data = array('result' => array('data' => array($germplasm_data)));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Returns a JSON array containing the details of a given germplasm.
+ *
+ * @param object $stock
+ *   A Tripal Chado stock object.
+ *
+ * @return array
+ *   a JSON array containing the stock details.
+ */
+function brapi_v1_read_germplasm_pedigree_11_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = array();
