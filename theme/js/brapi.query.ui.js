@@ -72,7 +72,7 @@ $(function() {
           }
           service_url = service_url.replace(/\/+$/, '');
           // Add URL argument.
-          $form.find('.brapi-query-argument input').each(function(index, item) {
+          $form.find('input.brapi-query-argument').each(function(index, item) {
             var regex = new RegExp('\{' + $(item).attr('name') + '\}', 'g');
             if (service_url.match(regex)) {
               service_url = service_url.replace(regex, $(item).val());
