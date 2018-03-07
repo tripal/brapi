@@ -36,7 +36,7 @@ $(function() {
     .addClass('brapi-processed')
   ;
   if ($calls.length) {
-    // Get call selection dropdown.
+    // Get call selection drop-down.
     var $select = $('#brapi_call_select')
       .change(function() {
         $('form.brapi-query-call').hide();
@@ -147,8 +147,30 @@ $(function() {
               $('#brapi_query_result_ajax').html(output.trim());
             },
             error: function(jqXHR, textStatus, errorThrown) {
-              alert('Failed to run BrAPI call: ' + textStatus);
-              $('#brapi_query_result_ajax').html(textStatus);
+              if ('application/json' == jqXHR.getResponseHeader('Content-Type')) {
+                var brapi_error = JSON.parse(jqXHR.responseText);
+                var brapi_error_massage = '';
+                brapi_error.metadata.status.forEach(function (element) {
+                  brapi_error_massage += element.code + ': ' + element.message + "\n";
+                });
+                alert("BrAPI call failed:\n" + brapi_error_massage);
+              }
+              else {
+                alert('Failed to run BrAPI call: ' + textStatus + "\n" + errorThrown);
+              }
+              $('#brapi_query_result_ajax').html(
+                'HTTP status code '
+                + jqXHR.status
+                + ': '
+                + jqXHR.statusText
+                + "\n\n"
+                + "Content type: "
+                + jqXHR.getResponseHeader('Content-Type')
+                + "\n\n"
+                + jqXHR.responseText
+              );
+              console.log('All headers:');
+              console.log(jqXHR.getAllResponseHeaders());
             }
           });
         });

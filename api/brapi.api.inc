@@ -2896,7 +2896,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       $call_fieldset['arguments'][$argument['name']] = array(
         '#type' => 'textfield',
         '#title' => $argument['name'],
-        '#required' => FALSE,
+        '#required' => $argument['required'],
         '#size' => 40,
         '#attributes' => array(
           'class' => array('brapi-query-argument'),
