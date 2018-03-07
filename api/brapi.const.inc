@@ -1291,6 +1291,11 @@ function brapi_get_calls() {
  *      - use_ranking: tells if the field table has a rank column to use;
  *      - fallback: another field name (or ordered array of field names) that can
  *        be used to fetch a value if none has been found with current field;
+ *      - alias_for: if set to another field name, current field settings will
+ *        be ignored and the other field will be used instead. When using this
+ *        value, make sure other fields are not alias for this field and if they
+ *        are, they should be updated to be aliases for the field used here as
+ *        alias target in order to avoid risks of infinite loops;
  *   - a closure: the closure is run to fetch or store the field value with the
  *     following arguments:
  *      - $data_type: the type of record in the BrAPI terminology (germplasm,
@@ -1325,6 +1330,9 @@ function brapi_get_data_mapping() {
         'accession' => 'uniquename',
         'fields' => array(
           'germplasmDbId' => 'uniquename',
+          'germplasmDbIds' => array(
+            'alias_for' => 'germplasmDbId',
+          ),
           'defaultDisplayName' => 'name',
           'accessionNumber' => array(
             'table' => 'stockprop',
@@ -1334,6 +1342,9 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
+          'accessionNumbers' => array(
+            'alias_for' => 'accessionNumber',
+          ),
           'germplasmName' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -1342,6 +1353,9 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
+          'germplasmNames' => array(
+            'alias_for' => 'germplasmName',
+          ),
           'germplasmPUI' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -1349,6 +1363,9 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['persistent unique identifier'],
             ),
             'field_type' => 'string',
+          ),
+          'germplasmPUIs' => array(
+            'alias_for' => 'germplasmPUI',
           ),
           'germplasmPUIDrupalURL' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             global $base_url;
@@ -1482,6 +1499,8 @@ function brapi_get_data_mapping() {
             'return_array' => TRUE,
             'use_ranking' => TRUE,
           ),
+          // Set later.
+          'commonCropName' => NULL,
           'commonCropNameProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -1498,6 +1517,8 @@ function brapi_get_data_mapping() {
             'selector' => array(),
             'field_type' => 'string',
           ),
+          // Set later.
+          'instituteCode' => NULL,
           // From MCPD cvterm 'institute code'.
           'instituteCodeProp' => array(
             'table' => 'stockprop',
@@ -1527,6 +1548,8 @@ function brapi_get_data_mapping() {
             }
             return $institute_code_stock_collection;
           },
+          // Set later.
+          'instituteName' => NULL,
           // Note: the use of MCPD 'institute code' should be privileged
           // against the use of 'Breeding institute name'. If 'institute code'
           // is set, then this field should be left empty.
@@ -1567,6 +1590,8 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'cvterm',
           ),
+          // Set later.
+          'countryOfOriginCode' => NULL,
           'countryOfOriginCodeProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
@@ -1594,6 +1619,8 @@ function brapi_get_data_mapping() {
             'field_type' => 'cvterm',
             'return_array' => TRUE,
           ),
+          // Set later.
+          'genus' => NULL,
           // Genus from MCPD.
           'genusProp' => array(
             'table' => 'stockprop',
@@ -1612,6 +1639,14 @@ function brapi_get_data_mapping() {
             'selector' => array(),
             'field_type' => 'string',
           ),
+          'germplasmGenus' => array(
+            'alias_for' => 'genus',
+          ),
+          'germplasmSpecies' => array(
+            'alias_for' => 'species',
+          ),
+          // Set later.
+          'species' => NULL,
           // Species from MCPD.
           'speciesProp' => array(
             'table' => 'stockprop',
@@ -1653,6 +1688,24 @@ function brapi_get_data_mapping() {
               'type_id' => $cv_settings['subtaxaAuthority'],
             ),
             'field_type' => 'string',
+          ),
+          'taxonId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $taxon_id = NULL;
+            switch ($op) {
+              case NULL:
+                $taxon_id = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $taxon_id = NULL;
+                break;
+
+              default:
+            }
+            return $taxon_id;
+          },
+          'taxonIds' => array(
+            'alias_for' => 'taxonId',
           ),
           'donors' => array(
             'table' => 'stockprop',

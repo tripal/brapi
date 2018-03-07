@@ -256,6 +256,34 @@ function brapi_get_cv_settings($reset = FALSE) {
 }
 
 /**
+ * Returns the field fetcher for the given field.
+ *
+ * This function mainly handles field aliases.
+ *
+ * @param $data_mapping array
+ *   the data mapping structure returned by brapi_get_data_mapping().
+ * @param $data_type
+ *   name of the object type.
+ * @param $field_name
+ *   name of the requested object field.
+ *
+ * @return mixed
+ *   an object field fetcher settings used to get/set field values.
+ *
+ * @see brapi_get_data_mapping()
+ */
+function brapi_get_field_fetcher($data_mapping, $data_type, $field_name) {
+  $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
+  while (is_array($field_fetcher)
+         && isset($field_fetcher['alias_for'])
+         && $field_fetcher['alias_for']) {
+    $field_fetcher =
+      $data_mapping[$data_type]['fields'][$field_fetcher['alias_for']];
+  }
+  return $field_fetcher;
+}
+
+/**
  * Autocomplete for Chado CVs.
  *
  * Autocomplete helper function that returns suggestions of Chado CVs according
@@ -374,7 +402,7 @@ function brapi_filter_autocomplete($data_type, $field, $string) {
   if ($string
       && isset($brapi_data_mapping[$data_type])
       && isset($brapi_data_mapping[$data_type]['fields'][$field])
-      && ($field_fetcher = $brapi_data_mapping[$data_type]['fields'][$field])
+      && ($field_fetcher = brapi_get_field_fetcher($data_mapping, $data_type, $field))
       && is_array($field_fetcher)
       && ('cvterm' == $field_fetcher['field_type'])) {
 
@@ -1040,7 +1068,11 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
     $data_mapping = brapi_get_data_mapping();
   }
 
-  $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
+  $field_fetcher = brapi_get_field_fetcher(
+    $data_mapping,
+    $data_type,
+    $field_name
+  );
 
   if (isset($field_fetcher['foreign_key'])) {
     $foreign_key = $field_fetcher['foreign_key'];
@@ -1124,21 +1156,21 @@ function brapi_decode_value($value, $type) {
  *   Throw an exception is the value type is not correct.
  */
 function brapi_encode_value($value, $type) {
-  switch ($data_mapping[$data_type]['fields'][$field_name]['field_type']) {
+  switch ($type) {
     case 'bool':
-      $single_value = $single_value ? '1' : '0';
+      $value = $value ? '1' : '0';
       break;
 
     case 'date':
-      $single_value = brapi_encode_date($single_value);
+      $value = brapi_encode_date($value);
       break;
 
     case 'cvterm':
-      if ($term = tripal_get_cvterm(array('name' => $single_value))) {
-        $current_value = $term->cvterm_id;
+      if ($term = tripal_get_cvterm(array('name' => $value))) {
+        $value = $term->cvterm_id;
       }
       else {
-        $current_value = NULL;
+        $value = NULL;
       }
       break;
 
@@ -1224,7 +1256,7 @@ function brapi_get_field(
   }
 
   // Get values using mapping.
-  $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
+  $field_fetcher = brapi_get_field_fetcher($data_mapping, $data_type, $field_name);
   $value = '';
   switch (gettype($field_fetcher)) {
     case 'string':
@@ -1429,7 +1461,7 @@ function brapi_set_field(
   }
 
   // Set values using mapping.
-  $field_fetcher = $data_mapping[$data_type]['fields'][$field_name];
+  $field_fetcher = brapi_get_field_fetcher($data_mapping, $data_type, $field_name);
   switch (gettype($field_fetcher)) {
     case "string":
       // Set through object.
@@ -2220,10 +2252,10 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
  */
 function brapi_data_field_supports($object_type, $field, $operation) {
   $data_mapping = brapi_get_data_mapping();
-  if (!isset($data_mapping[$object_type]['fields'][$field])) {
+  $field_fetcher = brapi_get_field_fetcher($data_mapping, $object_type, $field);
+  if (!$field_fetcher) {
     return FALSE;
   }
-  $field_fetcher = $data_mapping[$object_type]['fields'][$field];
   switch (gettype($field_fetcher)) {
     case 'string':
     case 'array':
@@ -2314,7 +2346,11 @@ function brapi_get_call_filters($requested_call_name) {
                 drupal_set_message('Warning: invalid filtering field ' . $field_name . ' for call ' . $call . '(v' . $api_version . ')');
                 continue;
               }
-              $field_fetcher = $data_type_fields[$field_name];
+              $field_fetcher = brapi_get_field_fetcher(
+                $data_mapping,
+                $data_type,
+                $field_name
+              );
               // Get widget type according to field type.
               switch (gettype($field_fetcher)) {
                 case "string":

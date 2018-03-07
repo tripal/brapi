@@ -179,7 +179,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     $field_identifiers = array();
     // Check if the field is available.
     if (isset($data_mapping[$object_type]['fields'][$field])) {
-      $field_fetcher = $data_mapping[$object_type]['fields'][$field];
+      $field_fetcher = brapi_get_field_fetcher($data_mapping, $object_type, $field);
       // Generate an array of values.
       if (is_array($values)) {
         // Collapse all first.
