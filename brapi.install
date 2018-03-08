@@ -273,7 +273,13 @@ function brapi_cleanup_cvterms($remove = FALSE) {
 
   if ($cvterm_to_remove) {
     $t = get_t();
-    drupal_set_message('warning', $t('Obsolete BrAPI CV terms were not removed. To remove them manually, use the following SQL command: "DELETE FROM cvterm WHERE cvterm_id IN (%cvterm_ids);"', array('%cvterm_ids' => implode(',', $cvterm_to_remove))));
+    drupal_set_message(
+      $t(
+        'Obsolete BrAPI CV terms were not removed. To remove them manually, use the following SQL command: "DELETE FROM cvterm WHERE cvterm_id IN (%cvterm_ids);"',
+        array('%cvterm_ids' => implode(',', $cvterm_to_remove))
+      ),
+      'warning'
+    );
   }
 }
 
@@ -314,7 +320,14 @@ function brapi_update_cv_settings() {
       else {
         // Not found, clear.
         $new_brapi_cv_settings[$brapi_term] = 0;
-        drupal_set_message(t('BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $brapi_term)), 'warning');
+        $t = get_t();
+        drupal_set_message(
+          $t(
+            'BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.',
+            array('@term_name' => $brapi_term)
+          ),
+          'warning'
+        );
       }
     }
   }

@@ -75,7 +75,7 @@ function brapi_call_wrapper($call_name) {
   $alter_name = preg_replace('/^_+/', '', $alter_name);
   $alter_name = preg_replace('/_+$/', '', $alter_name);
   // Uncomment the line below to find out names to use.
-  // drupal_set_message('BrAPI alter call name: "' . $alter_name . '"', 'debug');
+  // drupal_set_message(t('BrAPI alter call name: "@alter_name"', array('@alter_name' => $alter_name)), 'debug');
   try {
     $debug_data[] = "Call name: $call_name";
     $debug_data[] = "Handling function: $call_func";

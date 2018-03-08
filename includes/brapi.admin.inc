@@ -747,11 +747,11 @@ function brapi_admin_form_submit($form_id, &$form_state) {
         variable_set(BRAPI_CUSTOM_DATE_FORMAT, $form_state['values']['custom_date_format']);
       }
       else {
-        drupal_set_message('No custom date format specified while this format has been selected!', 'warning');
+        drupal_set_message(t('No custom date format specified while this format has been selected!'), 'warning');
       }
       break;
     default:
-      drupal_set_message('Invalid date format specification!', 'error');
+      drupal_set_message(t('Invalid date format specification!'), 'error');
       break;
   }
 
@@ -765,7 +765,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     }
     else {
       $brapi_cv_settings[$term_label] = 0;
-      drupal_set_message('Term not found: "' . $term_label . '"', 'warning');
+      drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
     }
   }
 
@@ -784,7 +784,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
           $cvterm_ids[$cvterm_id] = $cvterm_id;
         }
         else {
-          drupal_set_message('Term not found: "' . $term_label . '"', 'warning');
+          drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
         }
       }
     }
@@ -909,10 +909,10 @@ function brapi_reset_mcpd_form_confirm_submit($form_id, &$form_state) {
     $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
     $loaded = tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
     if ($loaded && !empty($newcvs)) {
-      drupal_set_message('MCPD CV loaded or updated successfully.');
+      drupal_set_message(t('MCPD CV loaded or updated successfully.'));
     }
     else {
-      drupal_set_message('Failed to load or update MCPD CV!', 'warning');
+      drupal_set_message(t('Failed to load or update MCPD CV!'), 'warning');
     }
   }
 

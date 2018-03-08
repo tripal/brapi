@@ -88,7 +88,7 @@ function brapi_boot() {
     }
   }
   elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-    drupal_set_message('BrAPI: Authentication is only supported through HTTPS (secure http)!', 'error');
+    drupal_set_message(t('BrAPI: Authentication is only supported through HTTPS (secure http)!'), 'error');
   }
 }
 
