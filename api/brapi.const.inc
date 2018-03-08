@@ -1931,7 +1931,7 @@ function brapi_get_data_mapping() {
         'identifier' => 'stock_id',
         'accession' => 'uniquename',
         'fields' => array(
-          //@TODO list:
+          // @TODO list:
           // "observationUnitDbId": "abc123",
 
           // Table fields.
@@ -2373,13 +2373,14 @@ function brapi_get_data_mapping() {
         'accession' => 'project_id',
         'fields' => array(
           // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
-          'programDbId' => 'project_id',
-          'name' => 'name',
           'abbreviation' => 'name',
+          'name' => 'name',
           'objective' => 'description',
+          'programDbId' => 'project_id',
+
+          // Aliases.
+
+          // Table joins.
           'contact_id' => array(
             'table' => 'project_contact',
             'column' => 'contact_id',
@@ -2388,6 +2389,8 @@ function brapi_get_data_mapping() {
             'return_array' => TRUE,
             'use_ranking' => FALSE,
           ),
+
+          // Function fields.
           'leadPerson' => function ($data_type, $project, $field_name, $op, $values = NULL) use ($cv_settings) {
             $lead_contact = NULL;
             switch ($op) {
@@ -2472,12 +2475,17 @@ function brapi_get_data_mapping() {
         'accession' => 'name',
         'fields' => array(
           // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
-          'observationVariableDbId' => 'cvterm_id',
           'name' => 'name',
-          'ontologyDbId' => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
+          'observationVariableDbId' => 'cvterm_id',
+          'objective' => 'definition',
+
+          // Aliases.
+          'abbreviation' => 'name',
+
+          // Table joins.
+
+          // Function fields.
+          'leadPerson' => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
             $lead_contact = NULL;
             switch ($op) {
               case NULL:
@@ -2561,19 +2569,15 @@ function brapi_get_data_mapping() {
         'accession' => 'nd_geolocation_id',
         'fields' => array(
           // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+          'altitude' => 'altitude',
+          'latitude' => 'latitude',
           'locationDbId' => 'nd_geolocation_id',
+          'longitude' => 'longitude',
           'name' => 'description',
-          'locationType' => array(
-            'table' => 'nd_geolocationprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['LocationType'],
-            ),
-            'field_type' => 'string',
-          ),
+
+          // Aliases.
+
+          // Table joins.
           'abbreviation' => array(
             'table' => 'nd_geolocationprop',
             'column' => 'value',
@@ -2598,17 +2602,6 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'latitude' => 'latitude',
-          'longitude' => 'longitude',
-          'altitude' => 'altitude',
-          'instituteName' => array(
-            'table' => 'nd_geolocationprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['InstituteName'],
-            ),
-            'field_type' => 'string',
-          ),
           'instituteAddress' => array(
             'table' => 'nd_geolocationprop',
             'column' => 'value',
@@ -2617,6 +2610,24 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
+          'instituteName' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['InstituteName'],
+            ),
+            'field_type' => 'string',
+          ),
+          'locationType' => array(
+            'table' => 'nd_geolocationprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['LocationType'],
+            ),
+            'field_type' => 'string',
+          ),
+
+          // Function fields.
           'additionalInfo' => function ($data_type, $geoloc, $field_name, $op, $values = NULL) use ($cv_settings) {
             $info = array();
             switch ($op) {
@@ -2649,7 +2660,7 @@ function brapi_get_data_mapping() {
                     $info[$geolocationprop->type_id->name] = $geolocationprop->value;
                   }
                 }
-                
+
                 if (empty($info)) {
                   $info = NULL;
                 }

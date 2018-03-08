@@ -2852,7 +2852,7 @@ function brapi_v1_variable_json($variable_id) {
     'list' => 'brapi_v1_variable_search_json',
   );
 
-  return brapi_process_crud('variables/{variableDbId}', $actions, 'variable', $variable_id);
+  return brapi_process_crud('variables/{observationVariableDbId}', $actions, 'variable', $variable_id);
 }
 
 /**
