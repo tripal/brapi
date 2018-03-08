@@ -53,15 +53,15 @@ class BrapiSiteController extends EntityAPIController {
     $content = parent::buildContent($entity, $view_mode, $langcode, $content);
 
     $content['brapi_site_url'] = array(
-      '#markup' => 
-        '<strong>URL:</strong> '
-        . theme(
-          'brapi_site_url',
-          array(
-            'brapi_url' => check_plain($entity->url),
-            'brapi_site' => $entity,
-          )
-        ),
+      '#markup' =>
+      '<strong>URL:</strong> '
+      . theme(
+        'brapi_site_url',
+        array(
+          'brapi_url' => check_plain($entity->url),
+          'brapi_site' => $entity,
+        )
+      ),
     );
 
     if ('full' == $view_mode) {

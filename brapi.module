@@ -171,8 +171,6 @@ function brapi_menu() {
     'page arguments' => array('brapi_reset_mcpd_form_confirm', array()),
     'access callback' => 'user_access',
     'access arguments' => array(BRAPI_ADMIN_PERMISSION),
-    // 'type' => MENU_LOCAL_TASK,
-    // 'weight' => 1,
   );
 
   // Help page based using theme/templates/brapi_help.tpl.php file.
@@ -379,7 +377,11 @@ function brapi_chado_query_alter(&$sql, &$args) {
   // Fix Tripal paging issue.
   $pager = brapi_force_pager();
   if ($pager && $pager['limit'] && $pager['element']) {
-    $sql = preg_replace('/OFFSET \d+/', 'OFFSET ' . ($pager['limit']*$pager['element']), $sql);
+    $sql = preg_replace(
+      '/OFFSET \d+/',
+      'OFFSET ' . ($pager['limit'] * $pager['element']),
+      $sql
+    );
   }
   // Get all fields to wildcard search.
   $non_exact_fields = brapi_non_exact_search();

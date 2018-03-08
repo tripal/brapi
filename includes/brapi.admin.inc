@@ -88,27 +88,27 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $germplasm_pui_storage = 'germplasmPUI';
   }
   $form['storage_options']['germplasm_pui'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way germplasm persistent unique identifier are stored in your database.'),
-      '#options' => $germplasm_pui_options,
-      '#default_value' => $germplasm_pui_storage,
-      '#title' => t('Germplasm PUI storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way germplasm persistent unique identifier are stored in your database.'),
+    '#options' => $germplasm_pui_options,
+    '#default_value' => $germplasm_pui_storage,
+    '#title' => t('Germplasm PUI storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Crop list storage.
   $crop_list_storage = isset($storage_options['crop_list']) ?
     $storage_options['crop_list']
     : '';
   $form['storage_options']['crop_list'] = array(
-      '#type' => 'textfield',
-      '#description' => t('Enter the list of (no space coma-separated) supported crops here or leave this field empty to use the Chado organism.species field values.'),
-      '#default_value' => $crop_list_storage,
-      '#title' => t('List of supported crops ("crops" call)'),
-      '#title_display' => 'before',
-      '#required' => FALSE,
-      '#size' => 80,
+    '#type' => 'textfield',
+    '#description' => t('Enter the list of (no space coma-separated) supported crops here or leave this field empty to use the Chado organism.species field values.'),
+    '#default_value' => $crop_list_storage,
+    '#title' => t('List of supported crops ("crops" call)'),
+    '#title_display' => 'before',
+    '#required' => FALSE,
+    '#size' => 80,
   );
   // Common crop name storage.
   $crop_name_options = array(
@@ -124,14 +124,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $crop_name_storage = 'commonCropNameProp';
   }
   $form['storage_options']['common_crop_name'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way common crop name are stored in your database.'),
-      '#options' => $crop_name_options,
-      '#default_value' => $crop_name_storage,
-      '#title' => t('Common crop name storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way common crop name are stored in your database.'),
+    '#options' => $crop_name_options,
+    '#default_value' => $crop_name_storage,
+    '#title' => t('Common crop name storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Genus storage.
   $genus_options = array(
@@ -147,14 +147,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $genus_storage = 'genusProp';
   }
   $form['storage_options']['genus_storage'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way genus are stored in your database.'),
-      '#options' => $genus_options,
-      '#default_value' => $genus_storage,
-      '#title' => t('Genus storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way genus are stored in your database.'),
+    '#options' => $genus_options,
+    '#default_value' => $genus_storage,
+    '#title' => t('Genus storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Species storage.
   $species_options = array(
@@ -170,14 +170,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $species_storage = 'speciesProp';
   }
   $form['storage_options']['species_storage'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way species names are stored in your database.'),
-      '#options' => $species_options,
-      '#default_value' => $species_storage,
-      '#title' => t('Species storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way species names are stored in your database.'),
+    '#options' => $species_options,
+    '#default_value' => $species_storage,
+    '#title' => t('Species storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Country of origin code storage.
   $country_of_origin_code_options = array(
@@ -193,14 +193,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $country_of_origin_code_storage = 'countryOfOriginCodeProp';
   }
   $form['storage_options']['country_of_origin_code'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way country of origin codes are stored in your database.'),
-      '#options' => $country_of_origin_code_options,
-      '#default_value' => $country_of_origin_code_storage,
-      '#title' => t('Country of origin code storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way country of origin codes are stored in your database.'),
+    '#options' => $country_of_origin_code_options,
+    '#default_value' => $country_of_origin_code_storage,
+    '#title' => t('Country of origin code storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Institute code storage.
   $institute_code_options = array(
@@ -216,14 +216,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $institute_code_storage = 'instituteCodeProp';
   }
   $form['storage_options']['institute_code'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way institute codes are stored in your database.'),
-      '#options' => $institute_code_options,
-      '#default_value' => $institute_code_storage,
-      '#title' => t('Institute code storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way institute codes are stored in your database.'),
+    '#options' => $institute_code_options,
+    '#default_value' => $institute_code_storage,
+    '#title' => t('Institute code storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   // Institute name storage.
   $institute_name_options = array(
@@ -239,14 +239,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $institute_name_storage = 'instituteNameProp';
   }
   $form['storage_options']['institute_name'] = array(
-      '#type' => 'select',
-      '#description' => t('Select the way institute names are stored in your database.'),
-      '#options' => $institute_name_options,
-      '#default_value' => $institute_name_storage,
-      '#title' => t('Institute name storage'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#description' => t('Select the way institute names are stored in your database.'),
+    '#options' => $institute_name_options,
+    '#default_value' => $institute_name_storage,
+    '#title' => t('Institute name storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
 
   // Date settings.
@@ -263,15 +263,15 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     $default_date_format = 'xsd';
   }
   $form['storage_options']['date_format'] = array(
-      '#type' => 'select',
-      '#id' => 'brapi_date_settings',
-      '#description' => t('Select the format used to store dates in the database.'),
-      '#options' => $date_options,
-      '#default_value' => $default_date_format,
-      '#title' => t('Date storage format'),
-      '#title_display' => 'before',
-      '#required' => TRUE,
-      '#multiple' => FALSE,
+    '#type' => 'select',
+    '#id' => 'brapi_date_settings',
+    '#description' => t('Select the format used to store dates in the database.'),
+    '#options' => $date_options,
+    '#default_value' => $default_date_format,
+    '#title' => t('Date storage format'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
   );
   $form['storage_options']['custom_date_format'] = array(
     '#type' => 'textfield',
@@ -738,9 +738,11 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     case 'xsd':
       variable_set(BRAPI_DATE_FORMAT, 'xsd');
       break;
+
     case 'timestamp':
       variable_set(BRAPI_DATE_FORMAT, 'timestamp');
       break;
+
     case 'custom':
       if ($form_state['values']['custom_date_format']) {
         variable_set(BRAPI_DATE_FORMAT, 'custom');
@@ -750,6 +752,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
         drupal_set_message(t('No custom date format specified while this format has been selected!'), 'warning');
       }
       break;
+
     default:
       drupal_set_message(t('Invalid date format specification!'), 'error');
       break;
@@ -790,7 +793,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     }
 
     if (!empty($cvterm_ids)) {
-      if (1 == count($cvterm_ids)){
+      if (1 == count($cvterm_ids)) {
         $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
       }
       else {
@@ -888,7 +891,7 @@ function brapi_reset_mcpd_form_confirm($form_id, &$form_state) {
     'Are you sure you want to reload MCPD controlled vocabulary stored into Chado and use the version @mcpd_version provided with this module instead? If the MCPD CV already exists in your Chado instance, it will be updated to MCPD @mcpd_version but existing terms not present in @mcpd_version will be kept. Any association with existing terms will be kept while those terms might be updated. This action cannot be undone.',
     array('@mcpd_version' => BRAPI_MCPD_VERSION)
   );
-  $form = array('confirm' =>array('#type' => 'hidden', '#value' => 'true'));
+  $form = array('confirm' => array('#type' => 'hidden', '#value' => 'true'));
 
   return confirm_form(
     $form,

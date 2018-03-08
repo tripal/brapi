@@ -216,7 +216,8 @@ If you want to add BrAPI fields on your pages that should be automatically and
 dynamically populated using external BrAPI site, you can use the following HTML
 snippet:
 
-  <form class="brapi-autoquery" action="https://BRAPI_SERVER/brapi/v1/SERVICE?PARAMETERS..." method="GET">
+  <form class="brapi-autoquery"
+    action="https://BRAPI_SERVER/brapi/v1/SERVICE?PARAMETERS..." method="GET">
     <input type="hidden" name="brapi_html" value="URL_ENCODED_HTML_STRING"/>
     <input type="submit" name="submit" value="Get BrAPI data"/>
   </form>

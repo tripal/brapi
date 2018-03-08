@@ -1,21 +1,22 @@
 /**
  * @file
- * BrAPI Javascript library
- *
+ * BrAPI Javascript library.
  */
-(function ($/*, Drupal, window, document, undefined*/) {
+
+(function ($) {
 "use strict";
 
   Drupal.brapi = Drupal.brapi || {};
 
   Drupal.behaviors.brapi = {
-    attach: function(context, settings) {
+    attach: function (context, settings) {
 /******************************************************************************/
-$(function() {
+$(function () {
   var $settings = $('form#brapi_query_settings');
 
-  // BrAPI query interface Javascript.
-  //----------------------------------
+  /**
+   * BrAPI query interface Javascript.
+   */
 
   // Show Ajax elements and hide static ones.
   $('#brapi_query_settings, #brapi_call_settings, #brapi_query_result_ajax')
@@ -26,24 +27,23 @@ $(function() {
   $('#brapi_site_urls')
     .not('.brapi-processed')
     .addClass('brapi-processed')
-    .change(function() {
+    .change(function () {
       $('#brapi_query_url').val($(this).val());
     });
 
   // Simplify interface with a call selection by drop-down.
   var $calls = $('#brapi_query_calls')
     .not('.brapi-processed')
-    .addClass('brapi-processed')
-  ;
+    .addClass('brapi-processed');
   if ($calls.length) {
     // Get call selection drop-down.
     var $select = $('#brapi_call_select')
-      .change(function() {
+      .change(function () {
         $('form.brapi-query-call').hide();
         $select.find('option:selected').data('form').show();
       });
 
-    $('form.brapi-query-call').each(function (index, element){
+    $('form.brapi-query-call').each(function (index, element) {
       var call_name = $(element).find('span[name="call_name"]').first().text();
       var version_classes = $(element).attr('class').match(/brapi-query-api-\w+/g);
       // Root call.
@@ -60,7 +60,7 @@ $(function() {
       }
       $(element)
         .hide()
-        .submit(function(event) {
+        .submit(function (event) {
           event.preventDefault();
           var $form = $(this);
           // Check and fix URL (make sure we got http/https and no trailing '/' on
@@ -73,7 +73,7 @@ $(function() {
           }
           service_url = service_url.replace(/\/+$/, '');
           // Add URL argument.
-          $form.find('input.brapi-query-argument').each(function(index, item) {
+          $form.find('input.brapi-query-argument').each(function (index, item) {
             var regex = new RegExp('\{' + $(item).attr('name') + '\}', 'g');
             if (service_url.match(regex)) {
               service_url = service_url.replace(regex, $(item).val());
@@ -89,7 +89,7 @@ $(function() {
             query_string = (query_string ? query_string + '&pretty=0' : 'pretty=0');
           }
           service_url += '?' + query_string;
-          $form.find('input.brapi-query-filter-get, select.brapi-query-filter-get').each(function(index, item) {
+          $form.find('input.brapi-query-filter-get, select.brapi-query-filter-get').each(function (index, item) {
             if ('' != $(item).val()) {
               service_url += '&' + $(item).attr('name') + '=' + encodeURI($(item).val());
             }
@@ -98,7 +98,7 @@ $(function() {
           $form.attr('action', service_url);
           // Get filter data.
           var filter_data = {};
-          $form.find('input.brapi-query-filter-post, select.brapi-query-filter-post').each(function(index, item) {
+          $form.find('input.brapi-query-filter-post, select.brapi-query-filter-post').each(function (index, item) {
             if ('' != $(item).val()) {
               filter_data[$(item).attr('name')] = $(item).val();
             }
@@ -121,8 +121,7 @@ $(function() {
                 .append('<h4 id="brapi_query_debug_title">Data sent</h4>')
                 .append('<div id="brapi_query_debug_url"></div>')
                 .append('<div id="brapi_query_debug_method"></div>')
-                .append('<code></code>')
-              ;
+                .append('<code></code>');
             }
             $debug_zone.find('#brapi_query_debug_url').html('URL: ' + service_url);
             $debug_zone.find('#brapi_query_debug_method').html('Method: ' + (filter_data ? 'POST' : 'GET'));
@@ -144,10 +143,10 @@ $(function() {
             type: filter_data ? 'POST' : 'GET',
             data: filter_data,
             dataType: 'text',
-            success: function(output) {
+            success: function (output) {
               $('#brapi_query_result_ajax').html(output.trim());
             },
-            error: function(jqXHR, textStatus, errorThrown) {
+            error: function (jqXHR, textStatus, errorThrown) {
               if ('application/json' == jqXHR.getResponseHeader('Content-Type')) {
                 var brapi_error = JSON.parse(jqXHR.responseText);
                 var brapi_error_massage = '';
@@ -164,8 +163,7 @@ $(function() {
                 + jqXHR.status
                 + ': '
                 + jqXHR.statusText
-                + "\n\n"
-                + "Content type: "
+                + "\n\nContent type: "
                 + jqXHR.getResponseHeader('Content-Type')
                 + "\n\n"
                 + jqXHR.responseText
@@ -207,7 +205,7 @@ $(function() {
 
     // Manage API versions.
     var $version_select = $('#brapi_api_version')
-      .change(function() {
+      .change(function () {
         $('fieldset.brapi-query-filters, #brapi_call_select option').hide();
         $(
           'fieldset.brapi-query-api-'
@@ -226,7 +224,7 @@ $(function() {
     $("#brapi_query_calls input.brapi-datepicker")
       .not('.brapi-processed')
       .addClass('brapi-processed')
-      .datepicker({dateFormat: 'yy-mm-dd'}); // ISO_8601
+      .datepicker({dateFormat: 'yy-mm-dd'}); // ISO_8601.
   }
 
 });

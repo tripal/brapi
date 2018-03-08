@@ -6,7 +6,6 @@
  *
  * @ingroup brapi
  */
-
 ?>
 
 <h3>Breeding API Query Interface</h3>
@@ -29,7 +28,7 @@
       }
       ?>
     </select>
-    
+
   </div>
   <?php
   }
@@ -37,7 +36,7 @@
   <div class="container-inline">
     <label for="brapi_api_version"><?php echo t('API Version:'); ?></label>
     <select id="brapi_api_version" name="brapi_api_version">
-      <?php 
+      <?php
         foreach (brapi_get_versions() as $api_version_mn => $api_version_name) {
           echo '      <option value="'
             . $api_version_mn
@@ -52,7 +51,7 @@
       ?>
     </select>
   </div>
-  
+
 </form>
 
 <div id="brapi_query_calls">

@@ -28,7 +28,7 @@
 }
 
 .brapi-argument::after {
-content: "}";
+  content: "}";
 }
 
 .brapi-argument {
@@ -92,8 +92,9 @@ content: "}";
 }
 
 /* Breeding API Query Interface */
-
-#brapi_query_settings, #brapi_call_settings, #brapi_query_result_ajax {
+#brapi_query_settings,
+#brapi_call_settings,
+#brapi_query_result_ajax {
   display: none;
 }
 

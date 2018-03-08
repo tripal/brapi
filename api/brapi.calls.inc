@@ -75,7 +75,15 @@ function brapi_call_wrapper($call_name) {
   $alter_name = preg_replace('/^_+/', '', $alter_name);
   $alter_name = preg_replace('/_+$/', '', $alter_name);
   // Uncomment the line below to find out names to use.
-  // drupal_set_message(t('BrAPI alter call name: "@alter_name"', array('@alter_name' => $alter_name)), 'debug');
+  // @code
+  // drupal_set_message(
+  //   t(
+  //     'BrAPI alter call name: "@alter_name"',
+  //     array('@alter_name' => $alter_name)
+  //   ),
+  //   'debug'
+  // );
+  // @encode
   try {
     $debug_data[] = "Call name: $call_name";
     $debug_data[] = "Handling function: $call_func";
@@ -89,12 +97,12 @@ function brapi_call_wrapper($call_name) {
     $output = brapi_output_json($data, $metadata, $debug_data);
   }
   catch (BrapiException $be) {
-    // Drupal alter
-    $output = $be->getJSONOutput();
+    // Drupal alter.
+    $output = $be->getJsonOutput();
     drupal_alter('brapi_' . $alter_name . '_brapi_error', $output);
   }
   catch (Exception $e) {
-    // Drupal alter
+    // Drupal alter.
     $output = brapi_raise_error_json(
       500,
       $e->getMessage()
@@ -209,7 +217,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
                   'table' => $data_mapping[$object_type]['table'],
                   'column' => $field_fetcher,
                   'match' => $non_exact_match,
-                )
+                ),
               )
             );
             $debug_data[] = "Using $non_exact_match on field '$field' ($field_fetcher)";
@@ -230,7 +238,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
           switch ($field_fetcher['field_type']) {
             case 'bool':
               $values = array_map(
-                function($v) {
+                function ($v) {
                   return (bool) $v;
                 },
                 $values
@@ -239,7 +247,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
 
             case 'int':
               $values = array_map(
-                function($v) {
+                function ($v) {
                   return (int) $v;
                 },
                 $values
@@ -248,7 +256,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
 
             case 'float':
               $values = array_map(
-                function($v) {
+                function ($v) {
                   return (float) $v;
                 },
                 $values
@@ -327,7 +335,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
           if (1 == count($values)) {
             $values = array_pop($values);
           }
-          
+
           $selector = array_merge(
             $field_fetcher['selector'],
             array($field_fetcher['column'] => $values)
@@ -482,7 +490,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
 
     // Force pager values as Tripal 2 pager system is not working properly.
     brapi_force_pager($options['pager']);
-    
+
     // Support pager and sorting.
     $chado_objects = chado_generate_var(
       $data_mapping[$object_type]['table'],
@@ -713,9 +721,9 @@ function brapi_v1_authentication_json() {
             'You are already logged in as "@username". Please logout first.',
             array('@username' => $user->name)
           ),
-          array(),
-          TRUE
-        )
+        ),
+        array(),
+        TRUE
       );
     }
 
@@ -1362,13 +1370,11 @@ function brapi_v1_delete_germplasm_json($stock) {
  * URL: brapi/v1/germplasm/\<id\>/pedigree
  * Displays pedigree of a germplasm.
  *
- * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
- *
  * About pedigree string:
  * ----------------------
  *
- * The pedigree identifies the parents and crossing sequences used to produce the
- * cultivar.  The method used to illustrate pedigrees is a slightly modified
+ * The pedigree identifies the parents and crossing sequences used to produce
+ * the cultivar.  The method used to illustrate pedigrees is a slightly modified
  * version of the system proposed by Purdy et al. in 1969 (see Crop Sci. 8:405-
  * 406).  Use of abbreviations has been minimized.  Crosses are symbolized by
  * combinations of slash marks ("/") with female and male parents listed to left
@@ -1429,10 +1435,10 @@ function brapi_v1_delete_germplasm_json($stock) {
  * indicate the total number of crosses made with the recurrent parent (see
  * Examples 2 and 3).  Left and right parentheses are used to bracket both the
  * pedigree and designation of breeding lines contained within a cultivar's
- * pedigree (see Example 4).  Commas are used to separate breeding line pedigrees
- * from designations within the parentheses.
+ * pedigree (see Example 4).  Commas are used to separate breeding line
+ * pedigrees from designations within the parentheses.
  *
- *
+ * @code
  *      -------------------------------------------------------------------
  *      Example 2:  Pedigree with three backcrosses of female recurrent parent
  *                  for TAM 107 hard red winter wheat.
@@ -1505,6 +1511,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  *                                 Pitic 62
  *
  *      -------------------------------------------------------------------
+ * @endcode
  *
  * Narratives providing more detailed information are used where necessary for
  * clarification.  Pedigrees of cultivars screened from another cultivar are
@@ -1522,6 +1529,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  * @return array
  *   a JSON structure. See official BrAPI documentation.
  *
+ * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
  * @see https://github.com/plantbreeding/API/blob/master/Specification/Germplasm/GermplasmDetailsByGermplasmDbId.md
  *
  * @ingroup brapi
@@ -1628,7 +1636,7 @@ function brapi_v1_read_germplasm_pedigree_11_json($stock) {
 /**
  * Helper function that returns CV/CV term filter for an attribute.
  *
- * @param $attribute_settings array
+ * @param array $attribute_settings
  *   An array containing the attribute settings.
  *
  * @return array
@@ -1660,8 +1668,8 @@ function brapi_v1_get_attribute_filter($attribute_settings) {
   }
 
   $filter_values = array(
-      ':cvterm_ids' => array_keys($cvterm_ids),
-      ':cv_ids' => array_keys($cv_ids),
+    ':cvterm_ids' => array_keys($cvterm_ids),
+    ':cv_ids' => array_keys($cv_ids),
   );
 
   $sql_filter = '';
@@ -1696,7 +1704,6 @@ function brapi_v1_attributes_json() {
   // Note: attributeCategoryDbId is +1 than the real index in the category array
   // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
   // 1 but is $germplasm_categories[0].
-
   $debug_data = array();
   $attributes_data = array();
   foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
@@ -1751,7 +1758,6 @@ function brapi_v1_attributes_json() {
       $attribute_result = chado_query($sql_query, $filter_values);
       while ($attribute = $attribute_result->fetchAssoc()) {
         // Add some fields.
-        // $attribute['attributeDbId'] = (string) ($attribute_index + 1);
         $attribute['attributeCategoryDbId'] = (string) ($attribute_settings['category'] + 1);
         $attribute['code'] = $attribute_settings['name'];
 
@@ -1977,7 +1983,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
 
     $attribute_result = chado_query($sql_query, $filter_values);
     while ($attribute_value = $attribute_result->fetchAssoc()) {
-      $attribute_value['attributeDbId'] = $attribute_index+1;
+      $attribute_value['attributeDbId'] = $attribute_index + 1;
       $attribute_value['code'] = $attribute_settings['name'];
       $attribute_value['determinedDate'] = NULL;
       $germplasm_data['data'][] = $attribute_value;
@@ -2235,7 +2241,7 @@ function brapi_get_location_details($geolocation) {
     $geolocation_data[$field_name] =
       brapi_get_field('location', $geolocation, $field_name);
   }
-  
+
   // Field countryName mus not be null.
   if (is_null($geolocation_data['countryName'])) {
     $geolocation_data['countryName'] = '';
@@ -2250,7 +2256,7 @@ function brapi_get_location_details($geolocation) {
   if (isset($geolocation_data['altitude']) && $geolocation_data['altitude']) {
     $geolocation_data['altitude'] = (float) $geolocation_data['altitude'];
   }
-  
+
   return $geolocation_data;
 }
 
@@ -2658,11 +2664,17 @@ function brapi_get_sample_details($stock) {
 
   $fields = array(
     'sampleDbId',
-    // 'observationUnitDbId',
-    'germplasmDbId', 'studyDbId',
-    'plotDbId', 'plantDbId', 'plateDbId', 'plateIndex',
-    'takenBy', 'sampleTimestamp', 'sampleType',
-    'tissueType', 'notes',
+    'germplasmDbId',
+    'studyDbId',
+    'plotDbId',
+    'plantDbId',
+    'plateDbId',
+    'plateIndex',
+    'takenBy',
+    'sampleTimestamp',
+    'sampleType',
+    'tissueType',
+    'notes',
   );
 
   // Handle 'include'.

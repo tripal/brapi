@@ -65,21 +65,27 @@ function brapi_get_versions() {
 /**
  * Tells if a given URL query parameter is not a field filter.
  *
- * @param $parameter string
+ * @param string $parameter
  *   Parameter name.
+ *
+ * @return bool
+ *   True if the given parameter name is a query parameter and not a filter or
+ *   something else.
  */
 function brapi_is_query_parameter($parameter) {
   $parameters = array(
-    'debug' => true,
-    'matchMethod' => true,
-    'page' => true,
-    'pageSize' => true,
-    'pretty' => true,
+    'debug' => TRUE,
+    'matchMethod' => TRUE,
+    'page' => TRUE,
+    'pageSize' => TRUE,
+    'pretty' => TRUE,
   );
   return isset($parameters[$parameter]);
 }
 
 /**
+ * Returns BrAPI CV settings.
+ *
  * Returns an array of CV terms used by the Breeding API that are not part of
  * the MCPD ontology.
  *
@@ -177,7 +183,7 @@ function brapi_get_mcpd_mapping() {
         'name' => 'other identification numbers associated with the accession',
       ),
       'TypeOfGermplasmStorageCode' => array(
-        'related' => 'TypeOfGermplasmStorageCode'
+        'related' => 'TypeOfGermplasmStorageCode',
       ),
     );
   }
@@ -496,11 +502,9 @@ function brapi_get_calls() {
         'parameters' => array(
           '1.0' => array(
             'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
-            // 'include' => array('synonyms'),
           ),
           '1.1' => array(
             'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
-            // 'include' => array('synonyms'),
           ),
         ),
         'filters' => array(
@@ -1291,17 +1295,21 @@ function brapi_get_calls() {
         ),
         'aggregatable' => TRUE,
       ),
-      // 'variables/datatypes' => array(
-      //   'title'          => 'Variable Data Types',
-      //   'description'    => 'Variable data type list',
-      //   'datatypes'      => array('json'),
-      //   'methods'        => array(
-      //     'GET'  => BRAPI_USE_PERMISSION,
-      //     'POST' => BRAPI_USE_PERMISSION,
-      //   ),
-      //
-      //   'aggregatable' => TRUE,
-      // ),
+      'variables/datatypes' => array(
+        'title'          => 'Variable Data Types',
+        'description'    => 'Variable data type list',
+        'datatypes'      => array('json'),
+        'methods'        => array(
+          'GET'  => BRAPI_USE_PERMISSION,
+          'POST' => BRAPI_USE_PERMISSION,
+        ),
+        'api versions' => array('1.0'),
+        'active version' => BRAPI_SERVICE_VERSION,
+        'callback versions' => array(
+          '1.0' => 'brapi_v1_external_call_json',
+        ),
+        'aggregatable' => TRUE,
+      ),
       'variables-search' => array(
         'title'          => 'Variable Search',
         'description'    => 'Search variables',
@@ -1423,8 +1431,9 @@ function brapi_get_calls() {
  *        'YYYY/MM/DD' format; 'cvterm' are cvterm_id turned into cvterm.name;
  *      - return_array: tells if an array of values should be returned;
  *      - use_ranking: tells if the field table has a rank column to use;
- *      - fallback: another field name (or ordered array of field names) that can
- *        be used to fetch a value if none has been found with current field;
+ *      - fallback: another field name (or ordered array of field names) that
+ *        can be used to fetch a value if none has been found with current
+ *        field;
  *      - alias_for: if set to another field name, current field settings will
  *        be ignored and the other field will be used instead. When using this
  *        value, make sure other fields are not alias for this field and if they
@@ -1439,9 +1448,9 @@ function brapi_get_calls() {
  *      - $field_name: the name of the record field to work on;
  *      - $op: the operation to perform. Can be one of 'create', 'read',
  *         'update', 'delete' and 'filter'. If not provided, 'read' is assumed;
- *      - $value (not provided for 'read' $op and optional for 'delete' $op): the
- *        new field value (or value to delete in case of 'delete' $op) or the
- *        values to use for filtering.
+ *      - $value (not provided for 'read' $op and optional for 'delete' $op):
+ *        the new field value (or value to delete in case of 'delete' $op) or
+ *        the values to use for filtering.
  *     If the function is called with a NULL operation, the function must return
  *     an associative array with the supported operations as keys and TRUE as
  *     values.
@@ -1791,7 +1800,7 @@ function brapi_get_data_mapping() {
             return $germplasm_pui;
           },
           'instituteCodeStockCollection' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
-            // if not specified through MCPD, uses stockcollection.uniquename
+            // If not specified through MCPD, uses stockcollection.uniquename.
             $institute_code_stock_collection = NULL;
             switch ($op) {
               case NULL:
@@ -1811,7 +1820,7 @@ function brapi_get_data_mapping() {
             return $institute_code_stock_collection;
           },
           'instituteNameStockCollection' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
-            // if not specified through MCPD, uses stockcollection.name
+            // If not specified through MCPD, uses stockcollection.name.
             $institute_name_stock_collection = NULL;
             switch ($op) {
               case NULL:
@@ -1917,7 +1926,7 @@ function brapi_get_data_mapping() {
 
               case 'read':
                 $taxon_id = NULL;
-                // $taxon_id = array(array('sourceName' => 'ncbiTaxon', 'taxonId' => 'http://purl.obolibrary.org/obo/NCBITaxon_4641'), ...);
+                // @todo Implement taxonId management.
                 break;
 
               default:
@@ -1931,22 +1940,18 @@ function brapi_get_data_mapping() {
         'identifier' => 'stock_id',
         'accession' => 'uniquename',
         'fields' => array(
-          // @TODO list:
-          // "observationUnitDbId": "abc123",
-
+          // @todo list:
+          // Ex.: "observationUnitDbId" => "abc123".
           // Table fields.
           'sampleDbId' => 'uniquename',
 
           // Aliases.
-
           // Table joins.
           'experimentId' => array(
             'table' => 'nd_experiment_stock',
             'column' => 'nd_experiment_id',
             'selector' => array(),
             'field_type' => 'string',
-            // 'return_array' => TRUE,
-            // 'use_ranking' => FALSE,
           ),
           'notes' => array(
             'table' => 'stockprop',
@@ -2191,7 +2196,6 @@ function brapi_get_data_mapping() {
           'residues' => 'residues',
 
           // Aliases.
-
           // Table joins.
           'synonyms' => array(
             'table' => 'featureprop',
@@ -2260,7 +2264,7 @@ function brapi_get_data_mapping() {
 
             return $analysis;
           },
-          'refAlt' =>  function ($data_type, $feature, $field_name, $op, $values = NULL) {
+          'refAlt' => function ($data_type, $feature, $field_name, $op, $values = NULL) {
             $ref_alt = array();
             switch ($op) {
               case NULL:
@@ -2273,7 +2277,8 @@ function brapi_get_data_mapping() {
                   $feature,
                   'residues'
                 );
-                // @todo: replace UPAC codes by corresponding list of nucleotides.
+                // @todo: replace UPAC codes by corresponding list of
+                // nucleotides.
                 $ref_alt = array($residues);
                 break;
 
@@ -2284,14 +2289,15 @@ function brapi_get_data_mapping() {
         ),
       ),
       'allelematrix' => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2303,16 +2309,18 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'trait'        => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2324,16 +2332,18 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'study'        => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2345,16 +2355,18 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'attribute'    => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2366,6 +2378,7 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'program'      => array(
         'table' => 'project',
@@ -2379,7 +2392,6 @@ function brapi_get_data_mapping() {
           'programDbId' => 'project_id',
 
           // Aliases.
-
           // Table joins.
           'contact_id' => array(
             'table' => 'project_contact',
@@ -2428,14 +2440,15 @@ function brapi_get_data_mapping() {
         ),
       ),
       'studyType'    => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2447,16 +2460,18 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'phenotype'    => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2468,6 +2483,7 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'variable'     => array(
         'table' => 'cvterm',
@@ -2483,7 +2499,6 @@ function brapi_get_data_mapping() {
           'abbreviation' => 'name',
 
           // Table joins.
-
           // Function fields.
           'leadPerson' => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
             $lead_contact = NULL;
@@ -2522,14 +2537,15 @@ function brapi_get_data_mapping() {
         ),
       ),
       'map'          => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2541,16 +2557,18 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'observation'  => array(
+        // @code
         // 'table' => 'xxx',
         // 'identifier' => 'xx_id',
         // 'accession' => 'uniquename',
         // 'fields' => array(
-          // Table fields.
-          // Aliases.
-          // Table joins.
-          // Function fields.
+        //  // Table fields.
+        //  // Aliases.
+        //  // Table joins.
+        //  // Function fields.
         //   'xxxDbId' => 'uniquename',
         //   'defaultDisplayName' => 'name',
         //   'type' => array(
@@ -2562,6 +2580,7 @@ function brapi_get_data_mapping() {
         //     'field_type' => 'string',
         //   ),
         // ),
+        // @endcode
       ),
       'location'     => array(
         'table' => 'nd_geolocation',
@@ -2576,7 +2595,6 @@ function brapi_get_data_mapping() {
           'name' => 'description',
 
           // Aliases.
-
           // Table joins.
           'abbreviation' => array(
             'table' => 'nd_geolocationprop',
@@ -2643,7 +2661,7 @@ function brapi_get_data_mapping() {
                 if (!$geolocationprops) {
                   $geolocationprops = array();
                 }
-                else if (!is_array($geolocationprops)) {
+                elseif (!is_array($geolocationprops)) {
                   $geolocationprops = array($geolocationprops);
                 }
                 $used_types = array(

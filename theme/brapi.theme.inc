@@ -310,9 +310,9 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
           . '</span></div>';
       }
     }
-    
+
     // Version.
-    $proxied = false;
+    $proxied = FALSE;
     $version = $brapi_call ? $brapi_call_data['active version'] : t('n/a');
     if (!$version) {
       if ($simplified) {
@@ -321,9 +321,9 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
       }
       $version = t('Not provided');
     }
-    else if ('proxy' == $version) {
+    elseif ('proxy' == $version) {
       $version = t('Proxied');
-      $proxied = true;
+      $proxied = TRUE;
     }
 
     // Aggregation.
@@ -368,12 +368,12 @@ function brapi_theme_prepare_call_table($simplified = FALSE) {
         elseif (array_key_exists('POST', $brapi_call_data['methods'])) {
           $methods = 'READ, FILTERING';
         }
-        
+
         if (array_key_exists('DELETE', $brapi_call_data['methods'])) {
           $methods .= ', DELETE';
         }
-        
-        // handle special case of login
+
+        // Handle special case of login.
         if ('token' == $brapi_call) {
           $methods = 'LOGIN, LOGOUT';
         }

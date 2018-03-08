@@ -27,10 +27,10 @@ require_once 'brapi.const.inc';
  */
 class BrapiException extends Exception {
 
-  protected $http_error_code = 500;
+  protected $httpErrorCode = 500;
   protected $data = array();
-  protected $debug_data = array();
-  protected $is_raw = FALSE;
+  protected $debugData = array();
+  protected $isRaw = FALSE;
 
   /**
    * Constructs a BrAPI exception.
@@ -43,36 +43,36 @@ class BrapiException extends Exception {
     $is_raw = FALSE
   ) {
     parent::__construct($message);
-    $this->http_error_code = $http_error_code;
+    $this->httpErrorCode = $http_error_code;
     $this->data = $data;
-    $this->debug_data = $debug_data;
-    $this->is_raw = $is_raw;
+    $this->debugData = $debug_data;
+    $this->isRaw = $is_raw;
   }
 
   /**
    * Returns exception HTTP status code.
    */
   public function getStatusCode() {
-    return $this->http_error_code;
+    return $this->httpErrorCode;
   }
 
   /**
    * Generates JSON output.
    */
-  public function getJSONOutput() {
-    if ($this->is_raw) {
+  public function getJsonOutput() {
+    if ($this->isRaw) {
       return brapi_raise_raw_error_json(
-        $this->http_error_code,
+        $this->httpErrorCode,
         $this->data,
-        $this->debug_data
+        $this->debugData
       );
     }
     else {
       $return = brapi_raise_error_json(
-        $this->http_error_code,
+        $this->httpErrorCode,
         $this->getMessage(),
         $this->data,
-        $this->debug_data
+        $this->debugData
       );
       return $return;
     }
@@ -84,12 +84,13 @@ class BrapiException extends Exception {
  * Checks if an array contains the given values.
  *
  * @param mixed $mixed
- *   a value or an array of value to look for.
+ *   A value or an array of value to look for.
  * @param array $array
- *   the array to look into and check if the values are.
+ *   The array to look into and check if the values are.
  * @param bool $must_have_all
- *   if true and $mixed is an array, all the values of $mixed must be found in
+ *   If true and $mixed is an array, all the values of $mixed must be found in
  *   the $array array.
+ *
  * @return bool
  *   TRUE if the requested values have been found in the given array.
  */
@@ -119,10 +120,10 @@ function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
  * by this Breeding API installation.
  *
  * @$reset bool
- *   forces MCPD settings to be refreshed.
+ *   Forces MCPD settings to be refreshed.
  *
  * @return array
- *   keys are MCPD terms and values are arrays of associated chado cvterm_id.
+ *   Keys are MCPD terms and values are arrays of associated chado cvterm_id.
  *
  * @see brapi_get_mcpd_mapping()
  * @see brapi_get_cv_settings()
@@ -171,7 +172,7 @@ function hook_brapi_cv_settings_alter(&$cv_settings) {
  * Reset CV settings to default.
  *
  * @return array
- *   key are Breeding API term/field names and values are corresponding Chado
+ *   Key are Breeding API term/field names and values are corresponding Chado
  *   cvterm_id.
  *
  * @see brapi_get_mcpd_settings()
@@ -223,7 +224,7 @@ function brapi_reset_cv_settings() {
  *   Clear current settings and reload them from database.
  *
  * @return array
- *   key are Breeding API term/field names and values are corresponding Chado
+ *   Key are Breeding API term/field names and values are corresponding Chado
  *   cvterm_id.
  *
  * @see brapi_get_mcpd_settings()
@@ -263,15 +264,15 @@ function brapi_get_cv_settings($reset = FALSE) {
  *
  * This function mainly handles field aliases.
  *
- * @param $data_mapping array
- *   the data mapping structure returned by brapi_get_data_mapping().
- * @param $data_type
- *   name of the object type.
- * @param $field_name
- *   name of the requested object field.
+ * @param array $data_mapping
+ *   The data mapping structure returned by brapi_get_data_mapping().
+ * @param string $data_type
+ *   Name of the object type.
+ * @param string $field_name
+ *   Name of the requested object field.
  *
  * @return mixed
- *   an object field fetcher settings used to get/set field values.
+ *   An object field fetcher settings used to get/set field values.
  *
  * @see brapi_get_data_mapping()
  */
@@ -465,7 +466,7 @@ function brapi_filter_autocomplete($data_type, $field, $string) {
  *   Name of the CV the property term belongs to.
  *
  * @return string
- *   the property value.
+ *   The property value.
  *
  * @ingroup brapi_api
  */
@@ -517,7 +518,7 @@ function brapi_get_stock_property_values($stock_id, $property_name, $cv_name = B
  *     cvterms.
  *
  * @return array
- *   an array of Tripal CHADO CV term objects or an empty array if no matching
+ *   An array of Tripal CHADO CV term objects or an empty array if no matching
  *   term was found.
  *
  * @ingroup brapi_api
@@ -713,17 +714,17 @@ function brapi_get_stock_cvterm_values($stock_id, $term_selectors) {
  * Returns a CV terms object.
  *
  * @param string $term_name
- *   name of the CV term or a string containing its ID or its CV name.
+ *   Name of the CV term or a string containing its ID or its CV name.
  *   Supported format are (in check order):
  *   - <cvterm_id>
  *   - id:<cvterm_id>
  *   - <cvterm_name> (cv:<cv_name>)
- *   - <cvterm_name>
+ *   - <cvterm_name>.
  * @param string $cv
- *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
+ *   Optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
  *
  * @return string
- *   returns the corresponding CV term object or NULL if not found or multiple
+ *   Returns the corresponding CV term object or NULL if not found or multiple
  *   matches.
  *
  * @ingroup brapi_api
@@ -792,27 +793,27 @@ function brapi_get_cvterm($term_name, $cv = BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV
  * Returns a CV terms database identifier.
  *
  * @param mixed $filter
- *   can be either a string corresponding to a CV term name
+ *   Can be either a string corresponding to a CV term name
  *   or a string containing its ID or its CV name,
  *     where supported format are (in check order):
  *     - <cvterm_id>
  *     - id:<cvterm_id>
  *     - <cvterm_name> (cv:<cv_name>)
  *     - <cvterm_name>
- *  or an array with one of the following keys:
- *   - 'name': string corresponding a term name or array of string corresponding
- *     to term names;
- *   - 'related': either the parent term name or an array with the fields
- *     'name' as a string for parent term name or an array of strings for a list
- *     of parent term names, 'cv' (string) for the CV the related terms
- *     belong to and 'relationship' (string) for the type of relationship.
+ *   or an array with one of the following keys:
+ *     - 'name': string corresponding a term name or array of string
+ *       corresponding to term names;
+ *     - 'related': either the parent term name or an array with the fields
+ *       'name' as a string for parent term name or an array of strings for a
+ *       list of parent term names, 'cv' (string) for the CV the related terms
+ *       belong to and 'relationship' (string) for the type of relationship.
  * @param string $cv
- *   optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
+ *   Optional name of the CV (default: BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV).
  *   Set this parameter to FALSE (or NULL) if you do not want to specify the
  *   CV name (and discard default name).
  *
  * @return int
- *   returns the corresponding cvterm_id or NULL if not found or multiple
+ *   Returns the corresponding cvterm_id or NULL if not found or multiple
  *   matches for a single name (when $filter is a string).
  *
  * @ingroup brapi_api
@@ -952,16 +953,18 @@ function brapi_get_related_cvterm_id($parent_cvterm, $cv = BRAPI_MULTICROP_PASSP
 }
 
 /**
+ * Parses a date from a database value.
+ *
  * Parses a date from a database value using the selected date format according
  * to the specified format or, if not set, BrAPI settings.
  *
  * @param string $stored_value
- *   database value to parse.
+ *   Database value to parse.
  * @param string $format
- *   format to use for parsing. Supported formats are xsd, timestamp and custom.
+ *   Format to use for parsing. Supported formats are xsd, timestamp and custom.
  *
  * @return string
- *   the date in BrAPI format (xsd:date, YYYY-MM-DD).
+ *   The date in BrAPI format (xsd:date, YYYY-MM-DD).
  *
  * @ingroup brapi_api
  */
@@ -980,6 +983,7 @@ function brapi_parse_date($stored_value, $format = NULL) {
     case 'timestamp':
       $parsed_date = date(BRAPI_XSD_DATE_FORMAT, $stored_value);
       break;
+
     case 'custom':
       $date_format = variable_get(BRAPI_CUSTOM_DATE_FORMAT, '');
       if (!$date_format) {
@@ -988,7 +992,9 @@ function brapi_parse_date($stored_value, $format = NULL) {
       $date = date_create_from_format($date_format, $stored_value);
       $parsed_date = $date->format(BRAPI_XSD_DATE_FORMAT);
       break;
+
     case 'xsd':
+
     default:
       $parsed_date = $stored_value;
       break;
@@ -998,6 +1004,8 @@ function brapi_parse_date($stored_value, $format = NULL) {
 }
 
 /**
+ * Formats the given BrAPI date.
+ *
  * Formats the given BrAPI date (xsd format) into the requested format or the
  * default date format setup in the settings.
  *
@@ -1028,8 +1036,9 @@ function brapi_encode_date($brapi_date, $format = NULL) {
     case 'timestamp':
       $encoded_date = $date->format('U');
       // Clear time part.
-      $encoded_date -= $encoded_date%86400;
+      $encoded_date -= $encoded_date % 86400;
       break;
+
     case 'custom':
       $date_format = variable_get(BRAPI_CUSTOM_DATE_FORMAT, '');
       if (!$date_format) {
@@ -1037,6 +1046,7 @@ function brapi_encode_date($brapi_date, $format = NULL) {
       }
       $encoded_date = $date->format($date_format);
       break;
+
     case 'xsd':
     default:
       $encoded_date = $brapi_date;
@@ -1060,7 +1070,7 @@ function brapi_encode_date($brapi_date, $format = NULL) {
  *   A field name such as the one returned as keys of the field 'fields' of a
  *   datatype returned by brapi_get_data_mapping().
  * @param mixed $values
- *   value or array of values that must match the field.
+ *   Value or array of values that must match the field.
  *
  * @return mixed
  *   Value or array of values to use to identify the field record.
@@ -1090,13 +1100,15 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
 }
 
 /**
+ * Decode a database value.
+ *
  * Decode a database value according to its type and turns it into a BrAPI
  * value.
  *
  * @param string $value
- *   the given raw database value.
+ *   The given raw database value.
  * @param string $type
- *   value type.
+ *   Value type.
  *
  * @return string
  *   Returns the decoded value according to the given type.
@@ -1135,26 +1147,29 @@ function brapi_decode_value($value, $type) {
       break;
 
     default:
-      throw new Exception(t(
-        "Failed to decode value ('@value')! Invalid value type @type!",
-        array(
-          '@type' => $type,
-          '@value' => $value,
+      throw new Exception(
+        t(
+          "Failed to decode value ('@value')! Invalid value type @type!",
+          array(
+            '@type' => $type,
+            '@value' => $value,
+          )
         )
-      ));
-      break;
+      );
   }
   return $value;
 }
 
 /**
+ * Encode a BrAPI value.
+ *
  * Encode a BrAPI value according to its type and turns it into a database
  * value.
  *
  * @param string $value
- *   the given BrAPI value.
+ *   The given BrAPI value.
  * @param string $type
- *   value type.
+ *   Value type.
  *
  * @return string
  *   Returns the encoded value according to the given type.
@@ -1188,15 +1203,17 @@ function brapi_encode_value($value, $type) {
       break;
 
     default:
-      throw new Exception(t(
-        "Failed to encode value ('@value')! Invalid value type @type!",
-        array(
-          '@type' => $type,
-          '@value' => $value,
+      throw new Exception(
+        t(
+          "Failed to encode value ('@value')! Invalid value type @type!",
+          array(
+            '@type' => $type,
+            '@value' => $value,
+          )
         )
-      ));
-      break;
+      );
   }
+  return $value;
 }
 
 /**
@@ -1356,7 +1373,7 @@ function brapi_get_field(
 
         // Process fallback fields until we got something or if we processed
         // all the fallbacks.
-        while (empty($values) && !empty($fallback_stack)){
+        while (empty($values) && !empty($fallback_stack)) {
           $fallback = array_shift($fallback_stack);
           // Skip this fallback?
           if ($fallback && !in_array($fallback, $skip_fallback_array)) {
@@ -1391,7 +1408,6 @@ function brapi_get_field(
 
     case 'object':
       // Get from a function.
-      // if ('Closure' == get_class($field_fetcher)) {
       if (is_callable($field_fetcher)) {
         $value = $field_fetcher($data_type, $object, $field_name, 'read');
       }
@@ -2247,16 +2263,16 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
 /**
  * Tells if a given field of a given data type supports a given operation type.
  *
- * @param $object_type string
- *   type of object/data. eg. 'germplasm'
- * @param $field string
- *   name of the field. eg. 'germplasmPUI'
- * @param $operation string
- *   type of operation to check. Possible values are 'create', 'read',
+ * @param string $object_type
+ *   Type of object/data. eg. 'germplasm'.
+ * @param string $field
+ *   Name of the field. eg. 'germplasmPUI'.
+ * @param string $operation
+ *   Type of operation to check. Possible values are 'create', 'read',
  *   'update', 'delete' and 'filter'.
  *
  * @return bool
- *  TRUE if the operation is supported and FALSE otherwise.
+ *   TRUE if the operation is supported and FALSE otherwise.
  */
 function brapi_data_field_supports($object_type, $field, $operation) {
   $data_mapping = brapi_get_data_mapping();
@@ -2268,7 +2284,7 @@ function brapi_data_field_supports($object_type, $field, $operation) {
     case 'string':
     case 'array':
       return TRUE;
-      break;
+
     case 'object':
       if (is_callable($field_fetcher)) {
         // Check if the function supports filtering.
@@ -2281,7 +2297,7 @@ function brapi_data_field_supports($object_type, $field, $operation) {
           : FALSE;
       }
       return FALSE;
-      break;
+
     default:
       return FALSE;
   };
@@ -2375,7 +2391,7 @@ function brapi_get_call_filters($requested_call_name) {
                   $data_type_filtrable_fields[$field_name] = 'string';
                   break;
 
-               case "array":
+                case "array":
                   switch ($field_fetcher['field_type']) {
                     case 'string':
                       $data_type_filtrable_fields[$field_name] = 'string';
@@ -2398,7 +2414,8 @@ function brapi_get_call_filters($requested_call_name) {
                       break;
 
                     case 'cvterm':
-                      $data_type_filtrable_fields[$field_name] = "$data_type/$field_name";
+                      $data_type_filtrable_fields[$field_name] =
+                        "$data_type/$field_name";
                       break;
 
                     default:
@@ -2406,10 +2423,10 @@ function brapi_get_call_filters($requested_call_name) {
                   }
                   break;
 
-               case "object":
+                case "object":
                   break;
 
-               default:
+                default:
                   break;
               }
             }
@@ -2454,7 +2471,7 @@ function brapi_get_call_filters($requested_call_name) {
  *   have it guessed automatically. It may contain identifiers.
  *
  * @return int
- *  Returns the number of external site queried that successfully answered.
+ *   Returns the number of external site queried that successfully answered.
  *
  * @ingroup brapi_api
  */
@@ -2513,7 +2530,10 @@ function brapi_aggregate_call(
     $results = $query->execute();
     if (!empty($results)) {
       // Load data about each connection.
-      $brapi_sites = entity_load('brapi_site', array_keys($results['brapi_site']));
+      $brapi_sites = entity_load(
+        'brapi_site',
+        array_keys($results['brapi_site'])
+      );
 
       $aggregated_from_list = array();
       foreach ($brapi_sites as $bsid => $brapi_site) {
@@ -2540,9 +2560,7 @@ function brapi_aggregate_call(
           $options = array(
             'http' => array(
               'method'  => 'POST',
-              // 'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
               'header'  => "Content-Type: application/json\r\n",
-              // . 'Content-Length: ' . strlen($json_post_data) . "\r\n",
               'content' => $json_post_data,
             ),
           );
@@ -2562,7 +2580,10 @@ function brapi_aggregate_call(
         // @code
         // if ($username && $password) {
         //   ... array($brapi_site->username, $brapi_site->password);
-        //   $options['http']['header'] .= 'Authorization: Bearer ' . base64_encode($bearer) . "\r\n";
+        //   $options['http']['header'] .=
+        //     'Authorization: Bearer '
+        //     . base64_encode($bearer)
+        //     . "\r\n";
         // }
         // @endcode
         try {
@@ -2577,8 +2598,8 @@ function brapi_aggregate_call(
               // Count the answer.
               ++$queried_site_count;
               $data = brapi_merge_array($data, $call_result);
-              //unset($data['metadata']);
               // @todo +FIXME: take into account metadata (pager, files).
+              // @code unset($data['metadata']); @endcode
             }
           }
         }
@@ -2626,12 +2647,12 @@ function brapi_aggregate_call(
  * @endcode
  *
  * @param array $a
- *   first array.
+ *   First array.
  * @param array $b
- *   second array.
+ *   Second array.
  *
  * @return array
- *   merged array.
+ *   Merged array.
  */
 function brapi_merge_array($a, $b) {
   if (isset($a[0])) {
@@ -2706,14 +2727,14 @@ function brapi_transcribe_search_string_to_postgres(
 /**
  * Adds given fields to the non-exact search list and return that list.
  *
- * @param $fields array
- *   an associative array which keys are field names and values are associative
+ * @param array $fields
+ *   An associative array which keys are field names and values are associative
  *   arrays with 3 keys: 'table' (name of the Chado table), 'column' (name of
  *   the Chado table column holding the string value) and 'match' (one of the
  *   following matching methods: 'case_insensitive', 'wildcard').
  *
  * @return array
- *   an associative array which keys are field names and values are associative
+ *   An associative array which keys are field names and values are associative
  *   arrays with 3 keys: 'table' (name of the Chado table), 'column' (name of
  *   the Chado table column holding the string value) and 'match' (one of the
  *   following matching methods: 'case_insensitive', 'wildcard').
@@ -2735,7 +2756,7 @@ function brapi_non_exact_search($fields = FALSE) {
 /**
  * Forces the pager settings to bypass Tripal 2 paging issue.
  *
- * @param $pager array
+ * @param array $pager
  *   an array with 2 keys: 'limit' and 'element'. If not set or empty, the last
  *   given pager value is kept.
  *
@@ -2769,7 +2790,7 @@ function brapi_force_pager($pager = FALSE) {
  *   The $data variable contains the structure of the result part of the call
  *   result.
  * @param array $context
- *   'metadata' and 'debug' structures can be accessed and modified
+ *   BrAPI 'metadata' and 'debug' structures can be accessed and modified
  *   through $context['metadata'] and $context['debug'] fields.
  *
  * @see brapi_get_calls()
@@ -2793,7 +2814,7 @@ function hook_brapi_CALL_FUNC_NAME_alter(&$data, &$context) {
  * * call 'germplasm/{germplasmDbId}' -->
  *   MY_MODULE_brapi_germplasm_germplasmdbid_brapi_error_alter
  *
- * @param $message
+ * @param string $message
  *   contains the error content displayed to the user. To change
  *   the status code returned, implementation should use
  *   drupal_add_http_header('Status', $http_error_code).
@@ -2818,7 +2839,7 @@ function hook_brapi_CALL_FUNC_NAME_brapi_error_alter(&$message) {
  * * call 'germplasm/{germplasmDbId}' -->
  *   MY_MODULE_brapi_germplasm_germplasmdbid_error_alter
  *
- * @param $message
+ * @param string $message
  *   contains the error content displayed to the user. To change
  *   the status code returned, implementation should use
  *   drupal_add_http_header('Status', $http_error_code).
@@ -2876,17 +2897,48 @@ function brapi_get_menu_call_mapping($reset = FALSE) {
 /**
  * Returns the query interface form for a given call.
  *
- * @param $form
- * @param $form_state
- * @param $call_name
- * @param $call_info
+ * @param object $form
+ *   Drupal form. See Form API.
+ * @param object $form_state
+ *   Drupal form state. See Form API.
+ * @param string $call_name
+ *   BrAPI call name.
+ * @param array $call_info
+ *   Call information structure slightly different from the one returned by
+ *   brapi_get_calls().
+ *   Ex.: @code array(
+ *     'arguments' => array(
+ *       3 => array(
+ *         'name' => 'someTypeDbId',
+ *         'type' => 'string',
+ *         'description' => 'Some argument description',
+ *         'required' => 1,
+ *       ),
+ *     ),
+ *     'parameters-filters' => array(
+ *       '1.0' => array(
+ *         'GET' => array(
+ *           'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+ *           ...
+ *         ),
+ *         'POST' => array(
+ *           filterParamName1 => string,
+ *           filterParamName2 => germplasm/typeOfGermplasmStorageCode,
+ *           filterParamName3 => date,
+ *           ...
+ *         ),
+ *       ),
+ *       '1.1' => ...
+ *       ...
+ *     ),
+ *     'api versions' => array('1.0', '1.1', ...),
+ *   ); @endcode.
  *
  * @return array
  *   The renderable form array.
  */
 function brapi_query_form($form, &$form_state, $call_name, $call_info) {
-
-  # Call action URL.
+  // Call action URL.
   global $base_url;
   $call_url = url(BRAPI_SERVICE_PREFIX_V1 . '/' . $call_name);
   $version_classes = array_map(
@@ -2966,7 +3018,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               '' => t('Not set'),
             )
             + array_combine($filter_type, $filter_type);
-            
+
             $filter_fieldset[$filter_name] = array(
               '#type' => 'select',
               '#options' => $options,
@@ -3048,7 +3100,6 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       'class' => array('brapi-query-parameters'),
     ),
 
-    
     'page' => array(
       '#type' => 'textfield',
       '#title' => t('Page number'),
@@ -3056,7 +3107,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       '#size' => 10,
       '#maxlength' => 10,
     ),
-    
+
     'pageSize' => array(
       '#type' => 'textfield',
       '#title' => t('Results per page'),
@@ -3064,14 +3115,14 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
       '#size' => 10,
       '#maxlength' => 10,
     ),
-    
+
     'pretty' => array(
       '#type' => 'checkbox',
       '#title' => t('Output pretty JSON'),
       '#return_value' => '1',
       '#default_value' => TRUE,
     ),
-    
+
   );
 
   if (user_access('administer')) {

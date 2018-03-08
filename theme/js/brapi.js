@@ -1,17 +1,17 @@
 /**
  * @file
- * BrAPI Javascript library
- *
+ * BrAPI Javascript library.
  */
+
 (function ($) {
 "use strict";
 
   Drupal.brapi = Drupal.brapi || {};
 
   Drupal.behaviors.brapi = {
-    attach: function(context, settings) {
+    attach: function (context, settings) {
 /******************************************************************************/
-$(function() {
+$(function () {
 
   /**
   * Auto-process page BrAPI queries: display matching accession name.
@@ -24,7 +24,7 @@ $(function() {
   * </form>
   * @endcode
   * where "BRAPI_SERVER" is the BrAPI server name, "SERVICE?PARAMETERS..." is
-  * the BrAPI service to query with its optional parameters and values and 
+  * the BrAPI service to query with its optional parameters and values and
   * "URL_ENCODED_HTML_STRING" is the URL-encoded HTML code to use to replace
   * the form. In this string, not encoded place-holder string will be replaced
   * by properties of the (first) JSON object returned. A place-holder is a
@@ -40,10 +40,10 @@ $(function() {
   $('form.brapi-autoquery')
     .not('.brapi-processed')
     .addClass('brapi-processed')
-    .each(function(index, item) {
+    .each(function (index, item) {
       var $brapi_form = $(item);
       var filter_data = {};
-      $brapi_form.find('.brapi-query-filter-post input, .brapi-query-filter-post select').each(function(filter_index, filter_item) {
+      $brapi_form.find('.brapi-query-filter-post input, .brapi-query-filter-post select').each(function (filter_index, filter_item) {
         if ('' != $(filter_item).val()) {
           filter_data[$(filter_item).attr('name')] = $(filter_item).val();
         }
@@ -60,7 +60,7 @@ $(function() {
         type: $brapi_form.attr('method'),
         data: filter_data,
         dataType: 'json',
-        success: function(output) {
+        success: function (output) {
           if (output
               && output.result
               && output.result.data
@@ -89,15 +89,14 @@ $(function() {
             $brapi_form.html('n/a');
           }
         },
-        error: function(jqXHR, textStatus, errorThrown) {
+        error: function (jqXHR, textStatus, errorThrown) {
           $brapi_form.html('n/a (error)');
         }
       });
-    })
-  ;
+    });
 
   // Settings.
-  $('#brapi_date_settings').change(function() {
+  $('#brapi_date_settings').change(function () {
     switch ($(this).val()) {
       case 'custom':
         $('#brapi_custom_date_format')
@@ -105,6 +104,7 @@ $(function() {
           .parent()
             .removeClass('form-disabled');
         break;
+
       default:
         $('#brapi_custom_date_format')
           .attr('disabled', true)
@@ -113,7 +113,7 @@ $(function() {
         break;
     }
   }).change();
-  
+
 });
 /******************************************************************************/
     }
