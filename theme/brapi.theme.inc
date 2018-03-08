@@ -593,6 +593,7 @@ function brapi_preprocess_brapi_query(&$variables) {
     $variables['calls'][$brapi_call] = array(
       'arguments' => $call_args,
       'parameters-filters' => brapi_get_call_filters($brapi_call),
+      'api versions' => $brapi_call_data['api versions'],
     );
   }
 }

@@ -13,7 +13,7 @@
 /******************************************************************************/
 $(function() {
   var $settings = $('form#brapi_query_settings');
-  
+
   // BrAPI query interface Javascript.
   //----------------------------------
 
@@ -45,15 +45,16 @@ $(function() {
 
     $('form.brapi-query-call').each(function (index, element){
       var call_name = $(element).find('span[name="call_name"]').first().text();
+      var version_classes = $(element).attr('class').match(/brapi-query-api-\w+/g);
       // Root call.
       if ('' == call_name) {
         call_name = '/';
-        $('<option value="">Root call</option>')
+        $('<option value="" class="' + version_classes.join(' ') + '">Root call</option>')
           .appendTo($select)
           .data('form', $(element));
       }
       else {
-        $('<option value="' + call_name + '">' + call_name + '</option>')
+        $('<option value="' + call_name + '" class="' + version_classes.join(' ') + '">' + call_name + '</option>')
           .appendTo($select)
           .data('form', $(element));
       }
@@ -174,9 +175,9 @@ $(function() {
             }
           });
         });
-      
+
     });
-    
+
     // Enable active call form.
     $select.find('option:selected').data('form').show();
 
@@ -194,7 +195,8 @@ $(function() {
     // Then loop on names and makes them act as one field.
     for (var checkbox_name in checkbox_names) {
       $('input[name="' + checkbox_name + '"]').change(function () {
-        $('input[name="' + $(this).attr('name') + '"]').attr('checked', $(this).is(':checked'));
+        $('input[name="' + $(this).attr('name') + '"]')
+        .attr('checked', $(this).is(':checked'));
       });
     }
     for (var text_name in text_names) {
@@ -206,8 +208,13 @@ $(function() {
     // Manage API versions.
     var $version_select = $('#brapi_api_version')
       .change(function() {
-        $('fieldset.brapi-query-filters').hide();
-        $('fieldset.brapi-query-api-' + $(this).val()).show();
+        $('fieldset.brapi-query-filters, #brapi_call_select option').hide();
+        $(
+          'fieldset.brapi-query-api-'
+          + $(this).val()
+          + ', option.brapi-query-api-'
+          + $(this).val())
+        .show();
       });
     $('fieldset.brapi-query-filters').hide();
     $('fieldset.brapi-query-api-' + $version_select.val()).show();

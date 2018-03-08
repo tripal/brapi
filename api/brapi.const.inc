@@ -43,16 +43,23 @@ define('BRAPI_VERSION_OPTIONS', 'brapi_version_options');
 define('BRAPI_XSD_DATE_FORMAT', "Y-m-d");
 
 /**
- * Returns BrAPI versions.
+ * Returns BrAPI versions covered by calls defined in this file.
  *
  * @return array
  *   An array of version machine name => version name.
  */
 function brapi_get_versions() {
-  return array(
-    '1_0' => '1.0',
-    '1_1' => '1.1',
-  );
+  static $api_versions;
+
+  if (!isset($api_versions)) {
+    foreach (brapi_get_calls() as $call_name => $call_info) {
+      foreach ($call_info['api versions'] as $version) {
+        $version_mn = preg_replace('/\W+/', '_', $version);
+        $api_versions[$version_mn] = $version;
+      }
+    }
+  }
+  return $api_versions;
 }
 
 /**
@@ -191,6 +198,7 @@ function brapi_get_mcpd_mapping() {
  *     call;
  *   - 'methods' (array): array of HTTP methods as keys and their associated
  *     permission as values;
+ *   - 'api versions' (array): list of BrAPI version having the call;
  *   - 'active version': label of the active implementation version of the call.
  *     must be one of the 'callback versions' labels (see below);
  *   - 'callback versions': associative array of callback version labels with
@@ -224,6 +232,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET' => 'access content',
         ),
+        'api versions' => array('1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_about_json',
@@ -238,6 +247,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_external_call_json',
@@ -253,6 +263,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_external_call_json',
@@ -268,6 +279,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.2' => 'brapi_v1_external_call_json',
@@ -282,6 +294,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.2' => 'brapi_v1_external_call_json',
@@ -296,6 +309,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_attributes_json',
@@ -310,6 +324,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_categories_json',
@@ -323,6 +338,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_call_json',
@@ -346,6 +362,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_crops_json',
@@ -361,6 +378,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_germplasm_json',
@@ -378,6 +396,7 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_germplasm_json',
@@ -401,6 +420,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_germplasm_attributes_json',
@@ -422,6 +442,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -443,6 +464,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_germplasm_pedigree_10_json',
@@ -466,6 +488,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_germplasm_search_json',
@@ -555,6 +578,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_location_json',
@@ -576,6 +600,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_location_json',
@@ -590,6 +615,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -604,6 +630,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -618,6 +645,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -632,6 +660,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -646,6 +675,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -660,6 +690,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -674,6 +705,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_marker_json',
@@ -687,6 +719,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_marker_json',
@@ -709,6 +742,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_marker_search_json',
@@ -723,6 +757,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -737,6 +772,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -751,6 +787,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -765,6 +802,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -779,6 +817,7 @@ function brapi_get_calls() {
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -801,6 +840,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_program_json',
@@ -814,6 +854,7 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'  => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_program_json',
@@ -836,6 +877,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_program_search_json',
@@ -850,6 +892,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_sample_json',
@@ -866,6 +909,7 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_sample_json',
@@ -888,6 +932,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_sample_search_json',
@@ -902,6 +947,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -916,6 +962,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -930,6 +977,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -952,6 +1000,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -974,6 +1023,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -996,6 +1046,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1018,6 +1069,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1040,6 +1092,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1062,6 +1115,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1084,6 +1138,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1098,6 +1153,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1113,6 +1169,7 @@ function brapi_get_calls() {
           'POST'   => BRAPI_USE_PERMISSION,
           'DELETE' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.0' => 'brapi_v1_authentication_json',
@@ -1128,6 +1185,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1142,6 +1200,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1164,6 +1223,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1178,6 +1238,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1200,6 +1261,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_variable_json',
@@ -1214,6 +1276,7 @@ function brapi_get_calls() {
           'GET'    => BRAPI_USE_PERMISSION,
           'POST'   => BRAPI_UPDATE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_variable_json',
@@ -1247,6 +1310,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_variable_search_json',
@@ -1261,6 +1325,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1283,6 +1348,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
@@ -1297,6 +1363,7 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
+        'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',

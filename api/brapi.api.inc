@@ -2889,10 +2889,17 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
   # Call action URL.
   global $base_url;
   $call_url = url(BRAPI_SERVICE_PREFIX_V1 . '/' . $call_name);
+  $version_classes = array_map(
+    function ($version) {
+      $version_mn = preg_replace('/\W+/', '_', $version);
+      return 'brapi-query-api-' . $version_mn;
+    },
+    $call_info['api versions']
+  );
   $form['#action'] = $call_url;
   $form['#attributes'] = array(
     'target' => 'brapi_query_result_iframe',
-    'class' => array('brapi-query-call'),
+    'class' => array_merge(array('brapi-query-call'), $version_classes),
   );
   $form['call_name'] = array(
     '#markup' => '<span class="hidden brapi-hidden" name="call_name">' . $call_name . '</span>',
