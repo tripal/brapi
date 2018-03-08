@@ -226,12 +226,33 @@ function brapi_v1_object_search_json($object_type, $parameters) {
           else {
             $foreign_key = $id_field;
           }
-          // @todo fix values according to data types.
+          // Fix values according to data types.
           switch ($field_fetcher['field_type']) {
             case 'bool':
+              $values = array_map(
+                function($v) {
+                  return (bool) $v;
+                },
+                $values
+              );
               break;
 
             case 'int':
+              $values = array_map(
+                function($v) {
+                  return (int) $v;
+                },
+                $values
+              );
+              break;
+
+            case 'float':
+              $values = array_map(
+                function($v) {
+                  return (float) $v;
+                },
+                $values
+              );
               break;
 
             case 'date':
@@ -1143,7 +1164,7 @@ function brapi_v1_read_germplasm_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = brapi_get_germplasm_details($stock);
-  $data = array('result' => array('data' => array($germplasm_data)));
+  $data = array('result' => $germplasm_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -1558,7 +1579,7 @@ function brapi_v1_read_germplasm_pedigree_10_json($stock) {
       brapi_get_field('germplasm', $stock, $field_name);
   }
 
-  $data = array('result' => array('data' => array($germplasm_data)));
+  $data = array('result' => $germplasm_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -1594,7 +1615,7 @@ function brapi_v1_read_germplasm_pedigree_11_json($stock) {
       brapi_get_field('germplasm', $stock, $field_name);
   }
 
-  $data = array('result' => array('data' => array($germplasm_data)));
+  $data = array('result' => $germplasm_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -1676,7 +1697,7 @@ function brapi_v1_attributes_json() {
   // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
   // 1 but is $germplasm_categories[0].
 
-  $metadata = brapi_prepare_metadata(1);
+  $metadata = brapi_prepare_metadata();
   $debug_data = array();
   $attributes_data = array();
   foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
@@ -1730,7 +1751,7 @@ function brapi_v1_attributes_json() {
       $attribute_result = chado_query($sql_query, $filter_values);
       while ($attribute = $attribute_result->fetchAssoc()) {
         // Add some fields.
-        $attribute['attributeDbId'] = (string) ($attribute_index + 1);
+        // $attribute['attributeDbId'] = (string) ($attribute_index + 1);
         $attribute['attributeCategoryDbId'] = (string) ($attribute_settings['category'] + 1);
         $attribute['code'] = $attribute_settings['name'];
 
@@ -1813,7 +1834,7 @@ function brapi_v1_categories_json() {
     );
   }
 
-  $data = array('result' => array('data' => array($categories_data)));
+  $data = array('result' => array('data' => $categories_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -1938,7 +1959,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
     }
   }
 
-  $data = array('result' => array('data' => array($germplasm_data)));
+  $data = array('result' => array($germplasm_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -2087,7 +2108,7 @@ function brapi_v1_read_marker_json($feature) {
   }
 
   $marker_data = brapi_get_marker_details($feature);
-  $data = array('result' => array('data' => array($marker_data)));
+  $data = array('result' => array('data' => $marker_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -2189,6 +2210,22 @@ function brapi_get_location_details($geolocation) {
     $geolocation_data[$field_name] =
       brapi_get_field('location', $geolocation, $field_name);
   }
+  
+  // Field countryName mus not be null.
+  if (is_null($geolocation_data['countryName'])) {
+    $geolocation_data['countryName'] = '';
+  }
+  // Type cast needed for latitude, longitude and altitude.
+  if (isset($geolocation_data['latitude']) && $geolocation_data['latitude']) {
+    $geolocation_data['latitude'] = (float) $geolocation_data['latitude'];
+  }
+  if (isset($geolocation_data['longitude']) && $geolocation_data['longitude']) {
+    $geolocation_data['longitude'] = (float) $geolocation_data['longitude'];
+  }
+  if (isset($geolocation_data['altitude']) && $geolocation_data['altitude']) {
+    $geolocation_data['altitude'] = (float) $geolocation_data['altitude'];
+  }
+  
   return $geolocation_data;
 }
 
@@ -2285,6 +2322,10 @@ function brapi_get_program_details($project) {
   foreach ($fields as $field_name) {
     $project_data[$field_name] =
       brapi_get_field('program', $project, $field_name);
+  }
+  // Lead person must not be null bu empty.
+  if (is_null($project_data['leadPerson'])) {
+    $project_data['leadPerson'] = '';
   }
   return $project_data;
 }

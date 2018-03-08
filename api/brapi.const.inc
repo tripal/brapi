@@ -961,7 +961,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -983,7 +983,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1005,7 +1005,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1027,7 +1027,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1049,7 +1049,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1071,7 +1071,7 @@ function brapi_get_calls() {
             'name' => 'studyDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1270,7 +1270,7 @@ function brapi_get_calls() {
             'name' => 'vendorPlateDbId',
             'type' => 'string',
             'description' => 'n/a',
-            'required' => FALSE,
+            'required' => TRUE,
           ),
         ),
         'aggregatable' => TRUE,
@@ -1350,7 +1350,8 @@ function brapi_get_calls() {
  *      - column: the name of the column holding the field value;
  *      - selector: a Tripal selector as described here as '$values':
  *        http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
- *      - field_type: one of 'string', 'int', 'bool', 'date' and 'cvterm'.
+ *      - field_type: one of 'string', 'int', 'float', 'bool', 'date' and
+ *        'cvterm'.
  *        'date' can be litteral or timestamps while the later are turned into
  *        'YYYY/MM/DD' format; 'cvterm' are cvterm_id turned into cvterm.name;
  *      - return_array: tells if an array of values should be returned;
@@ -2580,6 +2581,10 @@ function brapi_get_data_mapping() {
                   if (!in_array($geolocationprop->type_id->cvterm_id, $used_types)) {
                     $info[$geolocationprop->type_id->name] = $geolocationprop->value;
                   }
+                }
+                
+                if (empty($info)) {
+                  $info = NULL;
                 }
                 break;
 

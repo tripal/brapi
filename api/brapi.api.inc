@@ -1107,11 +1107,15 @@ function brapi_get_field_selector($data_type, $field_name, $values) {
 function brapi_decode_value($value, $type) {
   switch ($type) {
     case 'bool':
-      $value = $value ? TRUE : FALSE;
+      $value = (bool) $value;
       break;
 
     case 'int':
-      $value = intval($value);
+      $value = (int) $value;
+      break;
+
+    case 'float':
+      $value = (float) $value;
       break;
 
     case 'date':
@@ -1178,6 +1182,7 @@ function brapi_encode_value($value, $type) {
       break;
 
     case 'int':
+    case 'float':
     case 'string':
       // For other types, values are left as they are.
       break;
@@ -2380,6 +2385,10 @@ function brapi_get_call_filters($requested_call_name) {
                       $data_type_filtrable_fields[$field_name] = 'int';
                       break;
 
+                    case 'float':
+                      $data_type_filtrable_fields[$field_name] = 'float';
+                      break;
+
                     case 'bool':
                       $data_type_filtrable_fields[$field_name] = 'bool';
                       break;
@@ -2961,7 +2970,9 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
               ),
             );
           }
-          elseif (('string' == $filter_type) || ('int' == $filter_type)) {
+          elseif (('string' == $filter_type)
+                  || ('int' == $filter_type)
+                  || ('float' == $filter_type)) {
             $filter_fieldset[$filter_name] = array(
               '#type' => 'textfield',
               '#title' => $filter_name,
