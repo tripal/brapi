@@ -1697,7 +1697,6 @@ function brapi_v1_attributes_json() {
   // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
   // 1 but is $germplasm_categories[0].
 
-  $metadata = brapi_prepare_metadata();
   $debug_data = array();
   $attributes_data = array();
   foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
@@ -1711,6 +1710,7 @@ function brapi_v1_attributes_json() {
     // Only query if we got CVs or CV terms.
     if (count($filter_values[':cvterm_ids'])
         || count($filter_values[':cv_ids'])) {
+      // Get results.
       $sql_query = '
         SELECT
           cv.name AS "name",
@@ -1801,8 +1801,33 @@ function brapi_v1_attributes_json() {
         }
         $attributes_data[] = $attribute;
       }
-
     }
+  }
+
+  usort($attributes_data, function ($a, $b) {
+    return strnatcmp($a['name'], $b['name']);
+  });
+  $metadata = brapi_prepare_metadata(count($attributes_data));
+
+  if (isset($metadata['pagination']['pageSize'])
+      && $metadata['pagination']['pageSize']
+      && isset($metadata['pagination']['currentPage'])) {
+    // Use client page selection.
+    $page_size = $metadata['pagination']['pageSize'];
+    $data_offset = $page_size * $metadata['pagination']['currentPage'];
+    $attributes_data = array_splice(
+      $attributes_data,
+      $data_offset,
+      $page_size
+    );
+  }
+  else {
+    // Default paging.
+    $attributes_data = array_splice(
+      $attributes_data,
+      0,
+      BRAPI_DEFAULT_PAGE_SIZE
+    );
   }
 
   $data = array('result' => array('data' => $attributes_data));
