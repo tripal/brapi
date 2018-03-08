@@ -1509,7 +1509,7 @@ function brapi_get_data_mapping() {
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
-              'type_id' => $cv_settings['donor'],
+              'type_id' => $cv_settings['donor institute'],
             ),
             'field_type' => 'string',
             'return_array' => TRUE,
@@ -1674,7 +1674,7 @@ function brapi_get_data_mapping() {
                     sp_donor.rank AS "rank"
                   FROM
                     {stock} s
-                    LEFT JOIN {stockprop} sp_donor ON sp_donor.stock_id = s.stock_id AND sp_donor.type_id = :donor
+                    JOIN {stockprop} sp_donor ON sp_donor.stock_id = s.stock_id AND sp_donor.type_id = :donor
                     LEFT JOIN {stockprop} sp_dan ON sp_dan.stock_id = s.stock_id AND sp_dan.type_id = :dan AND sp_dan.rank = sp_donor.rank
                     LEFT JOIN {stockprop} sp_dgpui ON sp_dgpui.stock_id = s.stock_id AND sp_dgpui.type_id = :dpui AND sp_dgpui.rank = sp_donor.rank
                   WHERE
@@ -1684,7 +1684,7 @@ function brapi_get_data_mapping() {
                 $filter_values = array(
                   ':stock_id' => $stock->stock_id,
                   ':dan' => $cv_settings['donor accession number'],
-                  ':donor' => $cv_settings['donor'],
+                  ':donor' => $cv_settings['donor institute'],
                   ':dpui' => $cv_settings['DonorGermplasmPUI'],
                 );
                 $prevloc_result = chado_query($sql_query, $filter_values);

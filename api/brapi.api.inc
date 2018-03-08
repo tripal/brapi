@@ -2346,7 +2346,17 @@ function brapi_get_call_filters($requested_call_name) {
             // Loop on each field.
             foreach ($field_names as $field_name) {
               if (!isset($data_type_fields[$field_name])) {
-                drupal_set_message('Warning: invalid filtering field ' . $field_name . ' for call ' . $call . '(v' . $api_version . ')');
+                drupal_set_message(
+                  t(
+                    'Warning: invalid filtering field @field_name for call @call (v@api_version)',
+                    array(
+                      '@field_name' => $field_name,
+                      '@call' => $call,
+                      '@api_version' => $api_version,
+                    )
+                  ),
+                  'warning'
+                );
                 continue;
               }
               $field_fetcher = brapi_get_field_fetcher(
@@ -2564,7 +2574,16 @@ function brapi_aggregate_call(
           }
         }
         catch (Exception $error_handle) {
-          drupal_set_message("ERROR calling '$url': " . $error_handle->getMessage(), 'error');
+          drupal_set_message(
+            t(
+              "ERROR calling '@url': @message",
+              array(
+                '@url' => $url,
+                '@message' => $error_handle->getMessage(),
+              )
+            ),
+            'error'
+          );
         }
       }
       // Add to metadata the list of caller URLs.
