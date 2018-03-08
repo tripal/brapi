@@ -87,6 +87,7 @@ function brapi_get_cv() {
   return array(
     'CountryCode'      => 'Geo-location country code (nd_geolocationprop.type_id).',
     'CountryName'      => 'Geo-location country name (nd_geolocationprop.type_id).',
+    'DonorGermplasmPUI' => 'Donor germplasm persistent unique identifier.',
     'FemaleParentOf'   => 'Female parent relationship (subject stock is the female parent of the object stock)',
     'Germplasm'        => 'Germplasm type (default stock.type_id)',
     'GermplasmSynonym' => 'Germplasm name synonym (germplasm stockprop.type_id)',
@@ -148,10 +149,11 @@ function brapi_get_mcpd_mapping() {
           'relationship' => 'is_a',
         ),
       ),
-      'donor' => array(
+      'donor institute' => array(
         'name' => 'donor institute name',
         'fallback' => array('donor institute code'),
       ),
+      'donor accession number' => array('name' => 'donor accession number'),
       'genus' => array('name' => 'genus'),
       'germplasmName' => array('name' => 'accession name'),
       'instituteCode' => array(
@@ -1503,7 +1505,7 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'donors' => array(
+          'donorsProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
@@ -1656,6 +1658,52 @@ function brapi_get_data_mapping() {
           ),
 
           // Function fields.
+          'donors' => function ($data_type, $stock, $field_name, $op, $values = NULL) use ($cv_settings) {
+            $donors = NULL;
+            switch ($op) {
+              case NULL:
+                $donors = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $sql_query = '
+                  SELECT
+                    sp_donor.value AS "donorInstituteCode",
+                    sp_dan.value AS "donorAccessionNumber",
+                    sp_dgpui.value AS "DonorGermplasmPUI",
+                    sp_donor.rank AS "rank"
+                  FROM
+                    {stock} s
+                    LEFT JOIN {stockprop} sp_donor ON sp_donor.stock_id = s.stock_id AND sp_donor.type_id = :donor
+                    LEFT JOIN {stockprop} sp_dan ON sp_dan.stock_id = s.stock_id AND sp_dan.type_id = :dan AND sp_dan.rank = sp_donor.rank
+                    LEFT JOIN {stockprop} sp_dgpui ON sp_dgpui.stock_id = s.stock_id AND sp_dgpui.type_id = :dpui AND sp_dgpui.rank = sp_donor.rank
+                  WHERE
+                   s.stock_id = :stock_id
+                  ORDER BY sp_donor.rank ASC
+                ;';
+                $filter_values = array(
+                  ':stock_id' => $stock->stock_id,
+                  ':dan' => $cv_settings['donor accession number'],
+                  ':donor' => $cv_settings['donor'],
+                  ':dpui' => $cv_settings['DonorGermplasmPUI'],
+                );
+                $prevloc_result = chado_query($sql_query, $filter_values);
+                if ($prevloc_result) {
+                  $donors = array();
+                  while ($prevloc = $prevloc_result->fetchAssoc()) {
+                    $donors[$prevloc['rank']] = array(
+                      'donorAccessionNumber' => $prevloc['donorAccessionNumber'],
+                      'donorInstituteCode' => $prevloc['donorInstituteCode'],
+                      'donorGermplasmPUI' => $prevloc['donorGermplasmPUI'],
+                    );
+                  }
+                }
+                break;
+
+              default:
+            }
+            return $donors;
+          },
           'germplasmPUIDrupalURL' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             global $base_url;
             $germplasm_pui = '';

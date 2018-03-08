@@ -427,7 +427,8 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       );
     }
 
-    $form['chado_mcpd'][$term_name] = array(
+    $term_machine_name = preg_replace('/\W+/', '_', $term_name);
+    $form['chado_mcpd'][$term_machine_name] = array(
       '#type' => 'textfield',
       '#description' => $description,
       '#default_value' => implode(', ', $default_ids),
@@ -770,7 +771,8 @@ function brapi_admin_form_submit($form_id, &$form_state) {
 
   // MCPD part.
   foreach (brapi_get_mcpd_settings() as $term_label => $term_mapping) {
-    $user_terms = $form_state['values'][$term_label];
+    $term_machine_name = preg_replace('/\W+/', '_', $term_label);
+    $user_terms = $form_state['values'][$term_machine_name];
     $cvterm_ids = array();
     foreach (array_map('trim', explode(',', $user_terms)) as $user_term) {
       if ($user_term) {

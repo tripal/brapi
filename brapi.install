@@ -3,14 +3,10 @@
 /**
  * @file
  * Installation of Breeding API module.
- *
- * @ingroup brapi
  */
 
 /**
  * Implements hook_enable().
- *
- * @ingroup brapi
  */
 function brapi_enable() {
   // Make sure the BrAPI CV is still there.
@@ -26,8 +22,6 @@ function brapi_enable() {
 
 /**
  * Implements hook_requirements().
- *
- * @ingroup brapi
  */
 function brapi_requirements($phase) {
   $t = get_t();
@@ -47,8 +41,6 @@ function brapi_requirements($phase) {
 
 /**
  * Implements hook_install().
- *
- * @ingroup brapi
  */
 function brapi_install() {
   $t = get_t();
@@ -141,8 +133,6 @@ function brapi_schema() {
 
 /**
  * Update aggregation option variable to remove the first '/' of calls.
- *
- * @ingroup brapi
  */
 function brapi_update_7100(&$sandbox) {
   $old_aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
@@ -157,8 +147,6 @@ function brapi_update_7100(&$sandbox) {
 
 /**
  * Update BrAPI CV.
- *
- * @ingroup brapi
  */
 function brapi_update_7101(&$sandbox) {
   brapi_cleanup_cvterms(TRUE);
@@ -166,9 +154,22 @@ function brapi_update_7101(&$sandbox) {
 }
 
 /**
+ * Update BrAPI CV-MCPD settings.
+ */
+function brapi_update_7102(&$sandbox) {
+  brapi_cleanup_cvterms(TRUE);
+  brapi_add_cvterms();
+  $current_brapi_cv_settings = variable_get(BRAPI_CV_SETTINGS, array());
+  brapi_update_cv_settings();
+  $new_brapi_cv_settings = variable_get(BRAPI_CV_SETTINGS, array());
+  if (isset($current_brapi_cv_settings['donor'])) {
+    $new_brapi_cv_settings['donor institute'] = $current_brapi_cv_settings['donor'];
+  }
+  variable_set(BRAPI_CV_SETTINGS, $new_brapi_cv_settings);
+}
+
+/**
  * Implements hook_uninstall().
- *
- * @ingroup brapi
  */
 function brapi_uninstall() {
   $t = get_t();
@@ -189,8 +190,6 @@ function brapi_uninstall() {
 
 /**
  * Adds MCPD and Breeeding API controlled vocabulary if missing.
- *
- * @ingroup brapi
  */
 function brapi_add_cvs() {
   $t = get_t();
@@ -231,8 +230,6 @@ function brapi_add_cvs() {
 
 /**
  * Adds controlled vocabulary terms needed by this module.
- *
- * @ingroup brapi
  */
 function brapi_add_cvterms() {
   $brapi_cv = brapi_get_cv();
@@ -249,8 +246,6 @@ function brapi_add_cvterms() {
 
 /**
  * Cleanup unused BrAPI CV terms.
- *
- * @ingroup brapi
  */
 function brapi_cleanup_cvterms($remove = FALSE) {
   $brapi_cv = brapi_get_cv();
@@ -284,11 +279,60 @@ function brapi_cleanup_cvterms($remove = FALSE) {
 
 /**
  * Remove BrAPI CV from Chado.
- *
- * @ingroup brapi
  */
 function brapi_remove_cvs() {
   // Remove Breeding API CV.
   $cv_match = array('name' => BRAPI_CV);
   chado_delete_record('cv', $cv_match);
+}
+
+/**
+ * Updates CV and MCPD settings according to new terms.
+ */
+function brapi_update_cv_settings() {
+  // Clear any existing cache of CV setting.
+  cache_set(BRAPI_CV_SETTINGS, FALSE);
+  // Get current settings.
+  $current_brapi_cv_settings = variable_get(BRAPI_CV_SETTINGS, array());
+  // Prepare new settings.
+  $new_brapi_cv_settings = array();
+
+  // Keep current settings, remove old ones and add new ones.
+  foreach (brapi_get_cv() as $brapi_term => $term_definition) {
+    // If term already saved in current settings keep it.
+    if (isset($current_brapi_cv_settings[$brapi_term])) {
+      $new_brapi_cv_settings[$brapi_term] =
+        $current_brapi_cv_settings[$brapi_term];
+    }
+    else {
+      // Otherwise get term from BrAPI CV.
+      $cvterm_id = brapi_get_cvterm_id($brapi_term, BRAPI_CV);
+      if ($cvterm_id) {
+        // Term found.
+        $new_brapi_cv_settings[$brapi_term] = $cvterm_id;
+      }
+      else {
+        // Not found, clear.
+        $new_brapi_cv_settings[$brapi_term] = 0;
+        drupal_set_message(t('BrAPI term "@term_name" not found in BrAPI controlled vocabulary! You may need to re-install BrAPI module.', array('@term_name' => $brapi_term)), 'warning');
+      }
+    }
+  }
+
+  // Do the same with new MCPD settings.
+  $mcpd_cv_settings = brapi_get_mcpd_settings(TRUE);
+  foreach ($mcpd_cv_settings as $brapi_term => $term_ids) {
+    // If term already saved in current settings keep it.
+    if (isset($current_brapi_cv_settings[$brapi_term])) {
+      $new_brapi_cv_settings[$brapi_term] =
+        $current_brapi_cv_settings[$brapi_term];
+    }
+    else {
+      // Otherwise use the default MCPD one.
+      $new_brapi_cv_settings[$brapi_term] = $term_ids;
+    }
+  }
+
+  // Save updated settings.
+  variable_set(BRAPI_CV_SETTINGS, $new_brapi_cv_settings);
 }

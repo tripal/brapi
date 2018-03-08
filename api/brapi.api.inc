@@ -118,6 +118,9 @@ function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
  * Returns multi-crop passport descriptor controlled vocabulary settings used
  * by this Breeding API installation.
  *
+ * @$reset bool
+ *   forces MCPD settings to be refreshed.
+ *
  * @return array
  *   keys are MCPD terms and values are arrays of associated chado cvterm_id.
  *
@@ -127,10 +130,10 @@ function brapi_array_contains($mixed, $array, $must_have_all = TRUE) {
  *
  * @ingroup brapi_api
  */
-function brapi_get_mcpd_settings() {
+function brapi_get_mcpd_settings($reset = FALSE) {
   static $mcpd_settings;
   static $mcpd_mapping;
-  if (!$mcpd_settings) {
+  if (!$mcpd_settings || $reset) {
     if (!$mcpd_mapping) {
       $mcpd_mapping = brapi_get_mcpd_mapping();
     }
@@ -202,7 +205,7 @@ function brapi_reset_cv_settings() {
   }
 
   // Merge with MCPD terms.
-  $mcpd_cv_settings = brapi_get_mcpd_settings();
+  $mcpd_cv_settings = brapi_get_mcpd_settings(TRUE);
   $settings = array_merge($brapi_cv_settings, $mcpd_cv_settings);
 
   variable_set(BRAPI_CV_SETTINGS, $settings);
