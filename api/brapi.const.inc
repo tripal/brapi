@@ -1303,10 +1303,11 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0'),
+        'api versions' => array('1.0', '1.1'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_external_call_json',
+          '1.0' => 'brapi_v1_variable_datatypes_json',
+          '1.1' => 'brapi_v1_variable_datatypes_json',
         ),
         'aggregatable' => TRUE,
       ),
@@ -1771,7 +1772,7 @@ function brapi_get_data_mapping() {
                     $donors[$prevloc['rank']] = array(
                       'donorAccessionNumber' => $prevloc['donorAccessionNumber'],
                       'donorInstituteCode' => $prevloc['donorInstituteCode'],
-                      'donorGermplasmPUI' => $prevloc['donorGermplasmPUI'],
+                      'germplasmPUI' => $prevloc['donorGermplasmPUI'],
                     );
                   }
                 }
@@ -1941,7 +1942,6 @@ function brapi_get_data_mapping() {
         'accession' => 'uniquename',
         'fields' => array(
           // @todo list:
-          // Ex.: "observationUnitDbId" => "abc123".
           // Table fields.
           'sampleDbId' => 'uniquename',
 
@@ -2019,6 +2019,20 @@ function brapi_get_data_mapping() {
               default:
             }
             return $source_db_id;
+          },
+          'observationUnitDbId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
+            $observation = NULL;
+            switch ($op) {
+              case NULL:
+                $observation = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $observation = NULL;
+
+              default:
+            }
+            return $observation;
           },
           'plateDbId' => function ($data_type, $stock, $field_name, $op, $values = NULL) use ($cv_settings) {
             $plate_db_id = NULL;

@@ -1699,8 +1699,8 @@ function brapi_v1_attributes_json() {
   // Get call parameters.
   $args = brapi_get_url_call_args();
   $category_id = isset($args['attributeCategoryDbId']) ?
-    intval($args['attributeCategoryDbId'])
-    : 0;
+    $args['attributeCategoryDbId']
+    : '0';
   // Note: attributeCategoryDbId is +1 than the real index in the category array
   // to avoid having a 0 ID. Therefore first category has attributeCategoryDbId
   // 1 but is $germplasm_categories[0].
@@ -1860,7 +1860,7 @@ function brapi_v1_categories_json() {
   $categories_data = array();
   foreach ($germplasm_categories as $category_index => $category) {
     $categories_data[] = array(
-      'attributeCategoryDbId' => $category_index + 1,
+      'attributeCategoryDbId' => (string) ($category_index + 1),
       'name' => $category,
     );
   }
@@ -1955,7 +1955,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
     $filter_values[':stock_id'] = $stock->stock_id;
     $sql_query = '
       SELECT
-        cv.name AS "name",
+        cv.name AS "attributeName",
         CASE
           WHEN scvt.is_not = TRUE THEN \'NOT \' || cvt.name
           ELSE cvt.name
@@ -1983,14 +1983,14 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
 
     $attribute_result = chado_query($sql_query, $filter_values);
     while ($attribute_value = $attribute_result->fetchAssoc()) {
-      $attribute_value['attributeDbId'] = $attribute_index + 1;
-      $attribute_value['code'] = $attribute_settings['name'];
+      $attribute_value['attributeDbId'] = (string) ($attribute_index + 1);
+      $attribute_value['attributeCode'] = $attribute_settings['name'];
       $attribute_value['determinedDate'] = NULL;
       $germplasm_data['data'][] = $attribute_value;
     }
   }
 
-  $data = array('result' => array($germplasm_data));
+  $data = array('result' => $germplasm_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -2242,9 +2242,9 @@ function brapi_get_location_details($geolocation) {
       brapi_get_field('location', $geolocation, $field_name);
   }
 
-  // Field countryName mus not be null.
-  if (is_null($geolocation_data['countryName'])) {
-    $geolocation_data['countryName'] = '';
+  // Field countryCode must not be null.
+  if (is_null($geolocation_data['countryCode'])) {
+    $geolocation_data['countryCode'] = '';
   }
   // Type cast needed for latitude, longitude and altitude.
   if (isset($geolocation_data['latitude']) && $geolocation_data['latitude']) {
@@ -2640,7 +2640,7 @@ function brapi_v1_read_sample_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $sample_data = brapi_get_sample_details($stock);
-  $data = array('result' => array('data' => array($sample_data)));
+  $data = array('result' => $sample_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -2663,18 +2663,19 @@ function brapi_get_sample_details($stock) {
   $sample_data = array();
 
   $fields = array(
-    'sampleDbId',
     'germplasmDbId',
-    'studyDbId',
-    'plotDbId',
+    'notes',
+    'observationUnitDbId',
     'plantDbId',
     'plateDbId',
     'plateIndex',
-    'takenBy',
+    'plotDbId',
+    'sampleDbId',
     'sampleTimestamp',
     'sampleType',
+    'studyDbId',
+    'takenBy',
     'tissueType',
-    'notes',
   );
 
   // Handle 'include'.
@@ -2922,6 +2923,52 @@ function brapi_v1_read_variable_json($project) {
   );
 }
 
+
+/**
+ * Observation variable data types call.
+ *
+ * BRAPI: types
+ * URL: brapi/v1/variables/datatypes
+ * Displays variables.
+ *
+ * GET: returns variables data types.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/variables/datatypes
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/ObservationVariables/VariableDataTypeList.md
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_variable_datatypes_json() {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $datatypes = array(
+    'Code',
+    'Duration',
+    'Nominal',
+    'Numerical',
+    'Ordinal',
+    'Text',
+    'Date',
+  );
+
+  $data = array('result' => array('data' => $datatypes));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+            
+            
 /**
  * Returns a JSON array containing the list of variable.
  *
