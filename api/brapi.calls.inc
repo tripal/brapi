@@ -812,7 +812,7 @@ function brapi_v1_authentication_json() {
  * - call (string)
  *     The name of a call.
  */
-function brapi_v1_call_json($selected_call_name) {
+function brapi_v1_call_10_json($selected_call_name) {
 
   // Init status and debug data.
   $call_data = array();
@@ -871,6 +871,103 @@ function brapi_v1_call_json($selected_call_name) {
           'call' => $call_name,
           'datatypes' => $call_settings['datatypes'],
           'methods' => array_keys($call_settings['methods']),
+        );
+        // @todo Manage current user permission for methods (except for /token).
+      }
+    }
+    $metadata = brapi_prepare_metadata(count($call_data));
+
+    return array(
+      array('result' => array('data' => $call_data)),
+      $metadata,
+      $debug_data,
+    );
+  }
+  // Unsupported.
+  else {
+    throw new BrapiException(
+      400,
+      '',
+      array('error' => t('Unsupported method!')),
+      array(),
+      TRUE
+    );
+  }
+}
+
+/**
+ * Call list/search call.
+ *
+ * BRAPI: Call search
+ * URL:  brapi/v1/calls
+ * Displays the list of available calls.
+ *
+ * GET: search and returns the list of supported BrAPI calls.
+ *
+ * Supported GET parameters:
+ * - call (string)
+ *     The name of a call.
+ */
+function brapi_v1_call_12_json($selected_call_name) {
+
+  // Init status and debug data.
+  $call_data = array();
+  $metadata = brapi_prepare_metadata();
+  $debug_data = array();
+
+  // Get call parameters.
+  $args = brapi_get_url_call_args();
+  $datatype_filter = isset($args['datatype']) ? $args['datatype'] : FALSE;
+
+  static $aggregation_options;
+  // Get call aggregation settings.
+  if (!isset($aggregation_options)) {
+    $aggregation_options = variable_get(BRAPI_AGGREGATION_OPTIONS, array());
+  }
+
+  // GET: get list of calls.
+  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    foreach (brapi_get_calls() as $call_name => $call_settings) {
+      // Check for unsupported calls.
+      if (!$call_settings['active version']) {
+        continue;
+      }
+      // Check proxied-only calls.
+      $proxied = FALSE;
+      if ('proxy' == $call_settings['active version']) {
+        if (!isset($aggregation_options[$call_name])
+            || !count($aggregation_options[$call_name])) {
+          continue;
+        }
+        $proxied = TRUE;
+        // @todo Check properties of remote calls?
+      }
+
+      // Check call name.
+      $has_requested_name = TRUE;
+      if ($selected_call_name) {
+        $has_requested_name = ($selected_call_name == $call_name);
+      }
+
+      // Check call supported datatypes.
+      $supported_datatypes = array();
+      if (isset($call_settings['datatypes'])) {
+        $supported_datatypes = $call_settings['datatypes'];
+      }
+      $has_requested_filters = TRUE;
+      if ($datatype_filter) {
+        $has_requested_filters = brapi_array_contains(
+          $datatype_filter,
+          $supported_datatypes
+        );
+      }
+
+      if ($call_name && $has_requested_name && $has_requested_filters) {
+        $call_data[] = array(
+          'call' => $call_name,
+          'datatypes' => $call_settings['datatypes'],
+          'methods' => array_keys($call_settings['methods']),
+          'versions' => array_keys($call_settings['callback versions']),
         );
         // @todo Manage current user permission for methods (except for /token).
       }
@@ -2275,7 +2372,7 @@ function brapi_v1_read_location_json($geolocation) {
   $geolocation_data = array();
 
   $geolocation_data = brapi_get_location_details($geolocation);
-  $data = array('result' => array('data' => array($geolocation_data)));
+  $data = array('result' => array($geolocation_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
   return array(
@@ -2922,7 +3019,6 @@ function brapi_v1_read_variable_json($project) {
     $debug_data,
   );
 }
-
 
 /**
  * Observation variable data types call.

@@ -347,8 +347,9 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_call_json',
-          '1.1' => 'brapi_v1_call_json',
+          '1.0' => 'brapi_v1_call_10_json',
+          '1.1' => 'brapi_v1_call_10_json',
+          '1.2' => 'brapi_v1_call_12_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -1518,7 +1519,7 @@ function brapi_get_data_mapping() {
           ),
           'species' => array(
             // Default settings updated later.
-            'alias_for' => 'speciesProp',
+            'alias_for' => 'speciesOrganism',
           ),
           'taxonIds' => array(
             'alias_for' => 'taxonId',
@@ -2742,7 +2743,7 @@ function brapi_get_data_mapping() {
       $germplasm_fields['genus']['alias_for'] = $storage_options['genus'];
     }
 
-    // Set "species" settings, default to prop.
+    // Set "species" settings, default to organism.
     $use_specified_settings = array_key_exists(
       $storage_options['species'],
       $germplasm_fields
