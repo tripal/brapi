@@ -1468,6 +1468,23 @@ function brapi_get_data_mapping() {
 
   if (!isset($brapi_data_mapping)) {
     $cv_settings = brapi_get_cv_settings();
+    $organism_info_func = function ($data_type, $stock, $field_name, $op, $values = NULL) {
+      $data = '';
+      switch ($op) {
+        case NULL:
+          $data = array('read' => TRUE);
+          break;
+
+        case 'read':
+          $organism_info = brapi_get_organism_info($stock->organism_id->organism_id);
+          $data = $organism_info[$field_name];
+          break;
+
+        default:
+      }
+      return $data;
+    };
+    
     $brapi_data_mapping = array(
       'germplasm'      => array(
         'table' => 'stock',
@@ -1519,7 +1536,19 @@ function brapi_get_data_mapping() {
           ),
           'species' => array(
             // Default settings updated later.
-            'alias_for' => 'speciesOrganism',
+            'alias_for' => 'speciesFunc',
+          ),
+          'speciesAuthority' => array(
+            // Default settings updated later.
+            'alias_for' => 'speciesAuthorityFunc',
+          ),
+          'subtaxa' => array(
+            // Default settings updated later.
+            'alias_for' => 'subtaxaFunc',
+          ),
+          'subtaxaAuthority' => array(
+            // Default settings updated later.
+            'alias_for' => 'subtaxaAuthorityFunc',
           ),
           'taxonIds' => array(
             'alias_for' => 'taxonId',
@@ -1673,7 +1702,7 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'speciesAuthority' => array(
+          'speciesAuthorityProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
@@ -1699,19 +1728,19 @@ function brapi_get_data_mapping() {
             ),
             'field_type' => 'string',
           ),
-          'subtaxa' => array(
-            'table' => 'stockprop',
-            'column' => 'value',
-            'selector' => array(
-              'type_id' => $cv_settings['subtaxa'],
-            ),
-            'field_type' => 'string',
-          ),
-          'subtaxaAuthority' => array(
+          'subtaxaAuthorityProp' => array(
             'table' => 'stockprop',
             'column' => 'value',
             'selector' => array(
               'type_id' => $cv_settings['subtaxaAuthority'],
+            ),
+            'field_type' => 'string',
+          ),
+          'subtaxaProp' => array(
+            'table' => 'stockprop',
+            'column' => 'value',
+            'selector' => array(
+              'type_id' => $cv_settings['subtaxa'],
             ),
             'field_type' => 'string',
           ),
@@ -1919,6 +1948,10 @@ function brapi_get_data_mapping() {
             }
             return $pedigree;
           },
+          'speciesFunc' => $organism_info_func,
+          'speciesAuthorityFunc' => $organism_info_func,
+          'subtaxaFunc' => $organism_info_func,
+          'subtaxaAuthorityFunc' => $organism_info_func,
           'taxonId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             $taxon_id = NULL;
             switch ($op) {
@@ -2743,13 +2776,29 @@ function brapi_get_data_mapping() {
       $germplasm_fields['genus']['alias_for'] = $storage_options['genus'];
     }
 
-    // Set "species" settings, default to organism.
+    // Set "species" and associated settings, default to organism through
+    // functions.
     $use_specified_settings = array_key_exists(
       $storage_options['species'],
       $germplasm_fields
     );
     if ($use_specified_settings) {
-      $germplasm_fields['species']['alias_for'] = $storage_options['species'];
+      switch ($storage_options['species']) {
+        case 'speciesProp':
+          $germplasm_fields['species']['alias_for'] = 'speciesProp';
+          $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityProp';
+          $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaProp';
+          $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaAuthorityProp';
+          break;
+
+        case 'speciesOrganism':
+        default:
+          $germplasm_fields['species']['alias_for'] = 'speciesFunc';
+          $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityFunc';
+          $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaFunc';
+          $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaAuthorityFunc';
+          break;
+      }
     }
 
     // Set "country of origin" settings, default to prop.

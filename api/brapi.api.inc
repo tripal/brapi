@@ -3141,3 +3141,79 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
 
   return $form;
 }
+
+/**
+ * Returns information about an organism.
+ *
+ * @param $organism_id (integer)
+ *   organism_id of the organism of interest.
+ *
+ * @return array
+ *   An array with the following keys:
+ *   - "species": name of the species/group or NULL;
+ *   - "speciesAuthority": species authority or NULL;
+ *   - "subtaxa": name of the subspecies or subgroup or NULL;
+ *   - "subtaxaAuthority": subtaxa authority or NULL.
+ */
+function brapi_get_organism_info($organism_id) {
+  static $organism_data = array();
+  $cv_settings = brapi_get_cv_settings();
+
+  if (!array_key_exists($organism_id, $organism_data)) {
+    $sql_query = '
+      SELECT
+        so.species AS "species",
+        sop.value AS "speciesAuthority",
+        sso.species AS "subtaxa",
+        ssop.value AS "subtaxaAuthority"
+      FROM {organism} o
+      LEFT JOIN {phylonode_organism} po ON (po.organism_id = o.organism_id)
+      LEFT JOIN {phylonode} pn ON (po.phylonode_id = pn.phylonode_id)
+      LEFT JOIN {phylonode} spn ON (
+        spn.left_idx <= pn.left_idx
+        AND spn.right_idx >= pn.right_idx
+        AND spn.type_id IN (:species)
+      )
+      LEFT JOIN {phylonode_organism} spno ON (spno.phylonode_id = spn.phylonode_id)
+      LEFT JOIN {organism} so ON (spno.organism_id = so.organism_id)
+      LEFT JOIN {organismprop} sop ON (
+        spno.organism_id = sop.organism_id
+        AND sop.type_id IN (:species_authority)
+      )
+      LEFT JOIN {phylonode} sspn ON (
+        sspn.left_idx <= pn.left_idx
+        AND sspn.right_idx >= pn.right_idx
+        AND sspn.type_id IN (:subtaxa)
+      )
+      LEFT JOIN {phylonode_organism} sspno ON (sspno.phylonode_id = sspn.phylonode_id)
+      LEFT JOIN {organism} sso ON (sspno.organism_id = sso.organism_id)
+      LEFT JOIN {organismprop} ssop ON (
+        sspno.organism_id = ssop.organism_id
+        AND ssop.type_id IN (:subtaxa_authority)
+      )
+      WHERE
+        o.organism_id = :organism_id
+      ;'
+    ;
+    $filter_values = array(
+      ':organism_id' => $organism_id,
+      ':species' => $cv_settings['species'],
+      ':species_authority' => $cv_settings['speciesAuthority'],
+      ':subtaxa' => $cv_settings['subtaxa'],
+      ':subtaxa_authority' => $cv_settings['subtaxaAuthority'],
+    );
+    $species_result = chado_query($sql_query, $filter_values);
+    if ($species_result) {
+      $organism_data[$organism_id] = $species_result->fetchAssoc();
+    }
+    else {
+      $organism_data[$organism_id] = array(
+        'species' => NULL,
+        'speciesAuthority' => NULL,
+        'subtaxa' => NULL,
+        'subtaxaAuthority' => NULL,
+      );
+    }
+  }
+  return $organism_data[$organism_id];
+}

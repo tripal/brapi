@@ -159,7 +159,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   // Species storage.
   $species_options = array(
     'speciesProp' => t('Stored in stockprop table'),
-    'speciesOrganism' => t('Stored in organism table'),
+    'speciesOrganism' => t('Stored in organism + phylonode tables'),
   );
   $species_storage = isset($storage_options['species']) ?
     $storage_options['species']
@@ -167,11 +167,11 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   if (!$species_storage
       || (($species_storage != 'speciesProp')
           && ($species_storage != 'speciesOrganism'))) {
-    $species_storage = 'speciesProp';
+    $species_storage = 'speciesOrganism';
   }
   $form['storage_options']['species_storage'] = array(
     '#type' => 'select',
-    '#description' => t('Select the way species names are stored in your database.'),
+    '#description' => t('Select the way species and subtaxa names and their associated authorities are stored in your database.'),
     '#options' => $species_options,
     '#default_value' => $species_storage,
     '#title' => t('Species storage'),
