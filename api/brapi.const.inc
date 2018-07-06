@@ -1778,7 +1778,7 @@ function brapi_get_data_mapping() {
                   SELECT
                     sp_donor.value AS "donorInstituteCode",
                     sp_dan.value AS "donorAccessionNumber",
-                    sp_dgpui.value AS "DonorGermplasmPUI",
+                    sp_dgpui.value AS "donorGermplasmPUI",
                     sp_donor.rank AS "rank"
                   FROM
                     {stock} s

@@ -2006,6 +2006,17 @@ function brapi_get_user_json_input() {
         ));
       }
     }
+    
+    watchdog(
+      'brapi',
+      "Raw data received (POST/PUT/UPDATE):\n|@raw|\n\nJSON data parsed:\n@json",
+      array(
+        '@raw' => (isset($user_data_string) ? $user_data_string : ''),
+        '@json' => print_r($user_data, TRUE),
+      ),
+      WATCHDOG_DEBUG,
+      NULL
+    );
   }
   return $user_data;
 }
