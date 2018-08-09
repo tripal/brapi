@@ -158,7 +158,7 @@ function brapi_v1_object_search_json($object_type, $parameters) {
     $debug_data[] = $e->getMessage();
   }
 
-  // Combine call parameters.
+  // Combine POST/GET call parameters.
   $filters = array_merge(
     $user_data,
     brapi_get_url_call_args()
@@ -2133,9 +2133,9 @@ function brapi_v1_crops_json() {
   else {
     $sql_query = "
       SELECT species
-      FROM organism o
+      FROM {organism} o
       WHERE EXISTS
-        (SELECT TRUE FROM stock s WHERE s.organism_id = o.organism_id LIMIT 1)
+        (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
       ORDER BY species;";
     $crop_result = chado_query($sql_query);
     while ($crop = $crop_result->fetchAssoc()) {

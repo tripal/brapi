@@ -315,7 +315,7 @@ function brapi_cvs_autocomplete($string) {
           cv.cv_id AS \"id\",
           cv.name AS \"cv\"
         FROM
-          cv cv
+          {cv} cv
         WHERE
           cv.name ILIKE :user_input
     ;";
@@ -364,8 +364,8 @@ function brapi_terms_autocomplete($string) {
           cvt.name AS \"term\",
           cv.name AS \"cv\"
         FROM
-          cvterm cvt
-            INNER JOIN cv USING (cv_id)
+          {cvterm} cvt
+            INNER JOIN {cv} USING (cv_id)
         WHERE
           cvt.name ILIKE :user_input
     ;";
