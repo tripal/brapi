@@ -1956,14 +1956,8 @@ function brapi_get_user_json_input() {
   static $user_data;
   if (!isset($user_data)) {
     $user_data = array();
-    $user_data_string = '';
     // Read stream from user JSON POST/PUT data.
-    $user_data_stream = fopen("php://input", "r");
-    while ($data_buffer = fread($user_data_stream, 1024)) {
-      $user_data_string .= $data_buffer;
-    }
-    fclose($user_data_stream);
-
+    $user_data_string = file_get_contents('php://input');
     // Tries to decode JSON data if some.
     if (!empty($user_data_string)) {
       $user_data = json_decode($user_data_string, TRUE);
@@ -2061,6 +2055,20 @@ function brapi_prepare_metadata($item_count = 1) {
 
     $page_size   = isset($args['pageSize']) ? $args['pageSize'] : FALSE;
     $page_number = isset($args['page']) ? $args['page'] : FALSE;
+
+    // Check from POST data.
+    try {
+      $user_data = brapi_get_user_json_input();
+      if (isset($user_data['pageSize'])) {
+        $page_size = $user_data['pageSize'];
+      }
+      if (isset($user_data['page'])) {
+        $page_number = $user_data['page'];
+      }
+    }
+    catch (Exception $e) {
+      // Ignore error and just skip user data. It will be handled elsewhere.
+    }
 
     // Set default page size if needed.
     if (!$page_size || !is_numeric($page_size) || ($page_size <= 0)) {
