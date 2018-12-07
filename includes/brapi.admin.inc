@@ -499,6 +499,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   );
 
   for ($i = 0; $i < $form_state['category_count']; ++$i) {
+    $category_list_name = $germplasm_attributes[$i]['category'];
     $form['germplasm_attributes']['attribute'][$i] = array(
       '#type' => 'fieldset',
       '#title' => t('Attribute settings'),
@@ -517,7 +518,9 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#type' => 'textfield',
       '#title' => t('Category name'),
       '#title_display' => 'before',
-      '#default_value' => $germplasm_category_list[$germplasm_attributes[$i]['category']],
+      '#default_value' => $category_list_name ?
+        $germplasm_category_list[$category_list_name]
+        : '',
       '#required' => FALSE,
       '#size' => 80,
       '#maxlength' => 1024,
@@ -908,10 +911,10 @@ function brapi_reset_mcpd_form_confirm($form_id, &$form_state) {
  */
 function brapi_reset_mcpd_form_confirm_submit($form_id, &$form_state) {
   if (isset($form_state['values']['confirm'])) {
-    $newcvs = array();
+    module_load_install('brapi'); // For using brapi_load_obo().
     $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
-    $loaded = tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
-    if ($loaded && !empty($newcvs)) {
+    $loaded = brapi_load_obo('Multi-Crop Passport Descriptors Ontology', $mcpd_path);
+    if ($loaded) {
       drupal_set_message(t('MCPD CV loaded or updated successfully.'));
     }
     else {

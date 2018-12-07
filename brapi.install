@@ -26,7 +26,57 @@ function brapi_enable() {
 function brapi_requirements($phase) {
   $t = get_t();
   $requirements = array();
-  if ($phase == 'install') {
+  // Check Tripal 2 or 3 requirements.
+  $meets_tripal_requirements = FALSE;
+  if (module_exists('tripal_core')) {
+    // Tripal 2.
+    if (!module_exists('tripal_views')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal Views must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else if (!module_exists('tripal_db')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal DB must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else if (!module_exists('tripal_cv')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal CV must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else {
+      $meets_tripal_requirements = TRUE;
+    }
+  }
+  else if (module_exists('tripal')) {
+    // Tripal 3.
+    if (!module_exists('tripal_chado')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal Chado must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else if (!module_exists('tripal_chado_views')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal Chado Views must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else {
+      $meets_tripal_requirements = TRUE;
+    }
+  }
+
+  if (($phase == 'install') && $meets_tripal_requirements) {
     // Make sure chado is installed.
     if (!$GLOBALS["chado_is_installed"]) {
       $requirements['brapi'] = array(
@@ -191,6 +241,27 @@ function brapi_uninstall() {
 /**
  * Adds MCPD and Breeeding API controlled vocabulary if missing.
  */
+function brapi_load_obo($name, $file) {
+  $return = FALSE;
+  if (module_exists('tripal_cv')) {
+    // Tripal v2.
+    $newcvs = array();
+    $return = tripal_cv_load_obo_v1_2($file, NULL, $newcvs);
+  }
+  else if (module_exists('tripal_chado')) {
+    module_load_include('inc', 'tripal_chado', 'includes/tripal_chado.cv');
+    // Tripal v3.
+    if ($obo_id = chado_insert_obo($name, $file)) {
+      tripal_cv_load_obo($obo_id);
+    }
+    $return = $obo_id;
+  }
+  return $return;
+}
+
+/**
+ * Adds MCPD and Breeeding API controlled vocabulary if missing.
+ */
 function brapi_add_cvs() {
   $t = get_t();
   // Install MCPD CV if not available.
@@ -201,9 +272,9 @@ function brapi_add_cvs() {
     $mcpd_cv = current($mcpd_cv);
   }
   if (!$mcpd_cv) {
-    $newcvs = array();
+    
     $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
-    tripal_cv_load_obo_v1_2($mcpd_path, NULL, $newcvs);
+    brapi_load_obo('Multi-Crop Passport Descriptors Ontology', $mcpd_path);
   }
 
   // Install relationship CV if not available.
@@ -216,7 +287,7 @@ function brapi_add_cvs() {
   if (!$relationship_cv) {
     $newcvs = array();
     $relationship_path = drupal_get_path('module', 'tripal_cv') . '/files/legacy_ro.obo';
-    tripal_cv_load_obo_v1_2($relationship_path, NULL, $newcvs);
+    brapi_load_obo('Relationship', $relationship_path);
   }
 
   // Insert Breeding API CV if missing.

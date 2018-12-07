@@ -4,10 +4,6 @@ core = 7.x
 package = Tripal Extensions
 configure = admin/tripal/extension/brapi/configuration
 
-dependencies[] = tripal_core
-dependencies[] = tripal_views
-dependencies[] = tripal_db
-dependencies[] = tripal_cv
 dependencies[] = brapi_site
 
 scripts[] = theme/js/brapi.js
