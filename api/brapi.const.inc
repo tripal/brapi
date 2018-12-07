@@ -2748,40 +2748,36 @@ function brapi_get_data_mapping() {
     $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];
 
     // Set "germplasmPUI" settings.
-    $use_specified_settings = array_key_exists(
-      $storage_options['germplasm_pui'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['germplasm_pui'])
+      && !empty($germplasm_fields[$storage_options['germplasm_pui']]);
     if ($use_specified_settings) {
       $germplasm_fields['germplasmPUI'] =
         &$germplasm_fields[$storage_options['germplasm_pui']];
     }
 
     // Set "common crop name" settings, default to prop.
-    $use_specified_settings = array_key_exists(
-      $storage_options['common_crop_name'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['common_crop_name'])
+      && !empty($germplasm_fields[$storage_options['common_crop_name']]);
     if ($use_specified_settings) {
       $germplasm_fields['commonCropName']['alias_for'] =
         $storage_options['common_crop_name'];
     }
 
     // Set "genus" settings, default to prop.
-    $use_specified_settings = array_key_exists(
-      $storage_options['genus'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['genus'])
+      && !empty($germplasm_fields[$storage_options['genus']]);
     if ($use_specified_settings) {
       $germplasm_fields['genus']['alias_for'] = $storage_options['genus'];
     }
 
     // Set "species" and associated settings, default to organism through
     // functions.
-    $use_specified_settings = array_key_exists(
-      $storage_options['species'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['species'])
+      && !empty($germplasm_fields[$storage_options['species']]);
     if ($use_specified_settings) {
       switch ($storage_options['species']) {
         case 'speciesProp':
@@ -2802,30 +2798,27 @@ function brapi_get_data_mapping() {
     }
 
     // Set "country of origin" settings, default to prop.
-    $use_specified_settings = array_key_exists(
-      $storage_options['country_of_origin_code'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['country_of_origin_code'])
+      && !empty($germplasm_fields[$storage_options['country_of_origin_code']]);
     if ($use_specified_settings) {
       $germplasm_fields['countryOfOriginCode']['alias_for'] =
         $storage_options['country_of_origin_code'];
     }
 
     // Set "institute code" settings, default to prop.
-    $use_specified_settings = array_key_exists(
-      $storage_options['institute_code'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['institute_code'])
+      && !empty($germplasm_fields[$storage_options['institute_code']]);
     if ($use_specified_settings) {
       $germplasm_fields['instituteCode']['alias_for'] =
         $storage_options['institute_code'];
     }
 
     // Set "institute name" settings, default to prop.
-    $use_specified_settings = array_key_exists(
-      $storage_options['institute_name'],
-      $germplasm_fields
-    );
+    $use_specified_settings =
+      !empty($storage_options['institute_name'])
+      && !empty($germplasm_fields[$storage_options['institute_name']]);
     if ($use_specified_settings) {
       $germplasm_fields['instituteName']['alias_for'] =
         $storage_options['institute_name'];
