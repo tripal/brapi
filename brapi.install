@@ -251,10 +251,15 @@ function brapi_load_obo($name, $file) {
     }
     $return = $obo_id;
   }
-  elseif (module_exists('tripal_cv')) {
+  elseif (module_exists('tripal_cv') && function_exists('tripal_cv_load_obo_v1_2')) {
     // Tripal v2.
     $newcvs = array();
     $return = tripal_cv_load_obo_v1_2($file, NULL, $newcvs);
+  }
+  else {
+    throw new Exception(t(
+      "Unable to find a way to load MCPD OBO file!"
+    ));
   }
 
   return $return;
