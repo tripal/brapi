@@ -8,5 +8,3 @@ dependencies[] = brapi_site
 
 scripts[] = theme/js/brapi.js
 
-files[] = brapi.test
-
