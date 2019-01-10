@@ -11,6 +11,14 @@ name: multicrop passport ontology
 comment: release date: June 30, 2015\nversion: 2.1. Adapted from FAO/Bioversity Multi-Crop Passport Descriptors, December 2015\ncoverage: Multi-Crop Passport Descriptors\ncreator: Jeffrey Detras, Tom Hazekamp and Richard Bruskiewich, updated by Leo Valette\npublisher: Bioversity International and IRRI under the Generation Challenge Program
 xref: GCPDomainModel:CO_000\:0000165
 
+[Typedef]
+id: CO_020:0000001
+name: range_of
+
+[Typedef]
+id: CO_020:0000002
+name: descriptor_of
+
 [Term]
 id: CO_020:0000003
 name: collecting number
@@ -771,12 +779,3 @@ comment: Elaborate in REMARKS field e.g., "under development"
 is_a: CO_020:0000107 ! MLS status of the accession
 created_by: lvalette
 creation_date: 2015-07-01T16:56:21Z
-
-[Typedef]
-id: CO_020:0000001
-name: range_of
-
-[Typedef]
-id: CO_020:0000002
-name: descriptor_of
-
