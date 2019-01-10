@@ -772,15 +772,6 @@ is_a: CO_020:0000107 ! MLS status of the accession
 created_by: lvalette
 creation_date: 2015-07-01T16:56:21Z
 
-[Term]
-id: ID:0000000
-name: persistent unique identifier
-comment: Any persistent, unique identifier assigned to the accession so it can be unambiguously referenced at the global level and the information associated with it harvested through automated means. Report one PUID for each accession. \n\nThe Secretariat of the International Treaty on Plant Genetic Resources for Food and Agriculture (PGRFA) is facilitating the assignment of a persistent unique identifier (PUID), in the form of  a DOI, to PGRFA at the accession level (http://www.planttreaty.org/doi). \nGenebanks not applying a true PUID to their accessions should use, and request recipients to use, the concatenation of INSTCODE, ACCENUMB, and GENUS as a globally unique identifier \nsimilar in most respects to the PUID whenever they exchange information on accessions with third parties (e.g. NOR017:NGB17773:ALLIUM).
-synonym: "PUID" RELATED []
-is_a: CO_020:0000074 ! multicrop passport descriptor
-created_by: lvalette
-creation_date: 2015-12-15T09:38:00Z
-
 [Typedef]
 id: CO_020:0000001
 name: range_of
