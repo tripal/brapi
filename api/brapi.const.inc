@@ -1821,8 +1821,16 @@ function brapi_get_data_mapping() {
                 break;
 
               case 'read':
-                if ($nid = chado_get_nid_from_id('stock', $stock->stock_id)) {
-                  $germplasm_pui = $base_url . '/' . drupal_get_path_alias('node/' . $nid);
+                $pui = NULL;
+                // Tripal 2.
+                if (function_exists('chado_get_nid_from_id')) {
+                  $pui = chado_get_nid_from_id('stock', $stock->stock_id);
+                  $germplasm_pui = $base_url . '/' . drupal_get_path_alias('node/' . $pui);
+                }
+                // Tripal 3.
+                if (function_exists('chado_get_record_entity_by_table')) {
+                  $pui = chado_get_record_entity_by_table('stock', $stock->stock_id);
+                  $germplasm_pui = $base_url . '/' . drupal_get_path_alias('bio_data/' . $pui);
                 }
                 break;
 
