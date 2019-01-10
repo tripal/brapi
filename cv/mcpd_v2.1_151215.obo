@@ -3,7 +3,7 @@ date: 15:12:2015 09:57
 saved-by: lvalette
 auto-generated-by: OBO-Edit 2.3.1
 default-namespace: multicrop passport ontology
-ontology: MCPD
+ontology: CO_020
 
 [Term]
 id: CO_020:0000000
