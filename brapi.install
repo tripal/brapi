@@ -243,12 +243,7 @@ function brapi_uninstall() {
  */
 function brapi_load_obo($name, $file) {
   $return = FALSE;
-  if (module_exists('tripal_cv')) {
-    // Tripal v2.
-    $newcvs = array();
-    $return = tripal_cv_load_obo_v1_2($file, NULL, $newcvs);
-  }
-  else if (module_exists('tripal_chado')) {
+  if (module_exists('tripal_chado')) {
     module_load_include('inc', 'tripal_chado', 'includes/tripal_chado.cv');
     // Tripal v3.
     if ($obo_id = chado_insert_obo($name, $file)) {
@@ -256,6 +251,12 @@ function brapi_load_obo($name, $file) {
     }
     $return = $obo_id;
   }
+  elseif (module_exists('tripal_cv')) {
+    // Tripal v2.
+    $newcvs = array();
+    $return = tripal_cv_load_obo_v1_2($file, NULL, $newcvs);
+  }
+
   return $return;
 }
 
