@@ -394,6 +394,11 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       }
     }
 
+    // Set a default id for missing terms.
+    if (empty($default_ids)) {
+      $default_ids = array(0);
+    }
+
     if (array_key_exists('name', $term_mapping)) {
       $description = t(
         '<b>"@mcpd_term"</b> is the MCPD term that should be used for this field.',
