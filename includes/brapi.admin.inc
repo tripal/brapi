@@ -659,7 +659,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#multiple' => FALSE,
     );
 
-    if ($call['aggregatable']) {
+    if ($call['aggregable']) {
       $default_values =
         (isset($aggregation_options[$call_path])
             && $aggregation_options[$call_path]) ?
@@ -917,7 +917,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     }
     $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
     $version_options[$call_path] = $form_state['values']['version_' . $call_path_form_name];
-    if ($call['aggregatable']) {
+    if ($call['aggregable']) {
       $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path_form_name]);
     }
   }
