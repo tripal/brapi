@@ -300,33 +300,50 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
 
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_name => $definition) {
-    $default_id = 0;
-    $term = NULL;
+    $default_ids = array();
 
     // Get from settings.
     if (array_key_exists($term_name, $brapi_cv_settings)) {
-      $default_id = $brapi_cv_settings[$term_name];
-      $term = tripal_get_cvterm(array('cvterm_id' => $default_id));
+      $default_ids = $brapi_cv_settings[$term_name];
+      if ($default_ids) {
+        if (!is_array($default_ids)) {
+          $default_ids = array_map('trim', explode(',', $default_ids));
+        }
+      }
+      else {
+        $default_ids = array();
+      }
     }
 
-    // Get term from BrAPI CV.
-    if (!$term) {
-      $term =
-        tripal_get_cvterm(
-          array('name' => $term_name, 'cv_id' => $brapi_cv->cv_id)
-        );
+    // Get term from MCPD CV.
+    if (empty($default_ids)) {
+      $default_ids = brapi_get_cvterm_id($term_mapping);
     }
 
-    if ($term) {
-      $default_id =
-        $term->name
-        . ' (cv:' . $term->cv_id->name . '; id:' . $term->cvterm_id . ')';
+    if (!empty($default_ids)) {
+      $terms = chado_generate_var(
+        'cvterm',
+        array('cvterm_id' => $default_ids),
+        array('return_array' => 1)
+      );
+      // Turn numeric ids into human-readable values.
+      $default_ids = array();
+      foreach ($terms as $term) {
+        $default_ids[] =
+          $term->name
+          . ' (cv:' . $term->cv_id->name . '; id:' . $term->cvterm_id . ')';
+      }
+    }
+
+    // Set a default id for missing terms.
+    if (empty($default_ids)) {
+      $default_ids = array(0);
     }
 
     $form['cv_settings'][$term_name] = array(
       '#type' => 'textfield',
       '#description' => $definition,
-      '#default_value' => $default_id,
+      '#default_value' => implode(', ', $default_ids),
       '#autocomplete_path' => 'brapi/terms/autocomplete',
       '#title' => $term_name,
       '#title_display' => 'before',
@@ -769,14 +786,32 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   // CV settings.
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
-    $user_term = $form_state['values'][$term_label];
-    $cvterm_id = brapi_get_cvterm_id($user_term, FALSE);
-    if ($cvterm_id) {
-      $brapi_cv_settings[$term_label] = $cvterm_id;
+    $user_terms = $form_state['values'][$term_label];
+    $user_term_array = array_filter(array_map(
+      function ($a) {
+        return trim(str_replace("\\,", ',', $a));
+      },
+      preg_split('/(?<!\\\\),/', $user_terms)
+    ));
+    $cvterm_ids = array();
+    foreach ($user_term_array as $user_term) {
+      $cvterm_id = brapi_get_cvterm_id($user_term, FALSE);
+      if ($cvterm_id) {
+        $cvterm_ids[$cvterm_id] = $cvterm_id;
+      }
+      else {
+        drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
+      }
+    }
+
+    if (empty($cvterm_ids)) {
+      $brapi_cv_settings[$term_label] = 0;
+    }
+    elseif (1 == count($cvterm_ids)){
+      $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
     }
     else {
-      $brapi_cv_settings[$term_label] = 0;
-      drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
+      $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
     }
   }
 
@@ -784,8 +819,14 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   foreach (brapi_get_mcpd_settings() as $term_label => $term_mapping) {
     $term_machine_name = preg_replace('/\W+/', '_', $term_label);
     $user_terms = $form_state['values'][$term_machine_name];
+    $user_term_array = array_filter(array_map(
+      function ($a) {
+        return trim(str_replace("\\,", ',', $a));
+      },
+      preg_split('/(?<!\\\\),/', $user_terms)
+    ));
     $cvterm_ids = array();
-    foreach (array_map('trim', explode(',', $user_terms)) as $user_term) {
+    foreach ($user_term_array as $user_term) {
       if ($user_term) {
         $cvterm_id = brapi_get_cvterm_id($user_term);
         if (!$cvterm_id) {
@@ -800,13 +841,14 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       }
     }
 
-    if (!empty($cvterm_ids)) {
-      if (1 == count($cvterm_ids)) {
-        $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
-      }
-      else {
-        $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
-      }
+    if (empty($cvterm_ids)) {
+      $brapi_cv_settings[$term_label] = 0;
+    }
+    elseif (1 == count($cvterm_ids)){
+      $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
+    }
+    else {
+      $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
     }
   }
   // Save CV settings.

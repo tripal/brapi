@@ -354,8 +354,18 @@ function brapi_terms_autocomplete($string) {
 
   if ($string) {
     // Get last term entered after the last coma for completion.
-    $items = array_map('trim', explode(',', $string));
+    $items = array_filter(array_map(
+      function ($a) {
+        return trim(str_replace("\\,", ',', $a));
+      },
+      preg_split('/(?<!\\\\),/', $string)
+    ));
     $last_item = array_pop($items);
+    if (empty($last_item)) {
+      drupal_json_output($matches);
+      return;
+    }
+    
     $prefix = implode(', ', $items);
 
     $sql_query = "
