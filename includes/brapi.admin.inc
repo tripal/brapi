@@ -835,27 +835,29 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $germplasm_attributes = array();
   $germplasm_category_list = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
   $germplasm_categories = array_flip($germplasm_category_list);
-  foreach ($form_state['values']['attribute'] as $attribute) {
-    if ($attribute['name']
-        && ($attribute['cvs'] || $attribute['cvterms'])) {
-      // Replace category name by its index.
-      if (array_key_exists($attribute['category'], $germplasm_categories)) {
-        // Get existing index.
-        $attribute['category'] = $germplasm_categories[$attribute['category']];
+  if (!empty($form_state['values']['attribute'])) {
+    foreach ($form_state['values']['attribute'] as $attribute) {
+      if ($attribute['name']
+          && ($attribute['cvs'] || $attribute['cvterms'])) {
+        // Replace category name by its index.
+        if (array_key_exists($attribute['category'], $germplasm_categories)) {
+          // Get existing index.
+          $attribute['category'] = $germplasm_categories[$attribute['category']];
+        }
+        else {
+          // Category does not exist, add it.
+          $germplasm_category_list[] = $attribute['category'];
+          // Place array index on last inserted key.
+          end($germplasm_category_list);
+          // Save index.
+          $attribute['category'] =
+            $germplasm_categories[$attribute['category']] =
+            key($germplasm_category_list);
+        }
+        $germplasm_attributes[] = $attribute;
       }
-      else {
-        // Category does not exist, add it.
-        $germplasm_category_list[] = $attribute['category'];
-        // Place array index on last inserted key.
-        end($germplasm_category_list);
-        // Save index.
-        $attribute['category'] =
-          $germplasm_categories[$attribute['category']] =
-          key($germplasm_category_list);
-      }
-      $germplasm_attributes[] = $attribute;
+    
     }
-
   }
   variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
   variable_set(BRAPI_GERMPLASM_ATTR_CATEGORIES, $germplasm_category_list);
