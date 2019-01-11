@@ -226,7 +226,7 @@ function brapi_uninstall() {
   // Remove BrAPI CVs.
   brapi_remove_cvs();
   // Notify MCPD CV has not been removed.
-  drupal_set_message($t("BrAPI: MCPD vocabulary has not been removed from Chado. If you don't need it anymore, you can remove it manually using the following SQL query: \"DELETE FROM chado.cv cv WHERE cv.name = '" . BRAPI_CV . "';\""));
+  drupal_set_message($t("BrAPI: MCPD vocabulary has not been removed from Chado. If you don't need it anymore, you can remove it manually using the following SQL query: \"DELETE FROM chado.cv cv WHERE cv.name = '" . BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV . "';\""));
   // Clear BrAPI settings.
   variable_del(BRAPI_AGGREGATION_OPTIONS);
   variable_del(BRAPI_CUSTOM_DATE_FORMAT);
