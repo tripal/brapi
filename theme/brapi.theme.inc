@@ -38,7 +38,7 @@ function brapi_theme_compute_role_stats($permission) {
     $result = db_query($query);
     $user_count = $result->fetchCol()[0];
   }
-  else {
+  elseif (!empty($user_roles)) {
     // Get users count.
     $query = 'SELECT COUNT(DISTINCT(ur.uid))
       FROM {users_roles} ur
@@ -46,6 +46,9 @@ function brapi_theme_compute_role_stats($permission) {
       WHERE r.name IN (:roles);';
     $result = db_query($query, array(':roles' => $user_roles));
     $user_count = $result->fetchCol()[0];
+  }
+  else {
+    $user_count = 0;
   }
 
   // Change display of special roles.
