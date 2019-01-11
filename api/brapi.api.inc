@@ -3144,7 +3144,7 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
 
   );
 
-  if (user_access('administer')) {
+  if (user_access(BRAPI_ADMIN_PERMISSION)) {
     $call_fieldset['global']['debug'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enable debug mode'),
