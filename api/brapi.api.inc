@@ -434,7 +434,7 @@ function brapi_filter_autocomplete($data_type, $field, $string) {
       );
       $cvterm_ids = array();
       foreach ($records as $record) {
-        $cvterm_ids[] = $record->$field_fetcher['column'];
+        $cvterm_ids[] = $record->{$field_fetcher['column']};
       }
       $cvterm_records = chado_select_record(
          'cvterm',
@@ -1302,13 +1302,13 @@ function brapi_get_field(
     case 'array':
       // Get from database using mapping config.
       if (isset($field_fetcher['object_key'])) {
-        $identifier = $object->$field_fetcher['object_key'];
+        $identifier = $object->{$field_fetcher['object_key']};
         if (is_object($identifier)) {
-          $identifier = $identifier->$field_fetcher['foreign_key'];
+          $identifier = $identifier->{$field_fetcher['foreign_key']};
         }
       }
       else {
-        $identifier = $object->$data_mapping[$data_type]['identifier'];
+        $identifier = $object->{$data_mapping[$data_type]['identifier']};
       }
 
       $selector = brapi_get_field_selector($data_type, $field_name, $identifier);
@@ -1341,7 +1341,7 @@ function brapi_get_field(
           $records = array($records);
         }
         foreach ($records as $record) {
-          $current_value = $record->$field_fetcher['column'];
+          $current_value = $record->{$field_fetcher['column']};
           // Check type and return the appropriate conversion.
           try {
             $current_value = brapi_decode_value($current_value, $field_fetcher['field_type']);
@@ -1500,7 +1500,7 @@ function brapi_set_field(
     case "string":
       // Set through object.
       $object->$field_fetcher = $field_value;
-      // +FIXME: $object->save(); ?
+      //@todo: $object->save(); ?
       break;
 
     case "array":
@@ -1520,7 +1520,7 @@ function brapi_set_field(
           // Remove previous values.
           // We capture output buffer for Tripal error messages.
           ob_start();
-          $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
+          $selector = brapi_get_field_selector($data_type, $field_name, $object->{$data_mapping[$data_type]['identifier']});
           $deleted_record = chado_delete_record(
             $field_fetcher['table'],
             $selector
@@ -1543,7 +1543,7 @@ function brapi_set_field(
           // @todo Check value type. Do some conversion if needed and possible.
           // We capture output buffer for Tripal error messages.
           ob_start();
-          $selector = brapi_get_field_selector($data_type, $field_name, $object->$data_mapping[$data_type]['identifier']);
+          $selector = brapi_get_field_selector($data_type, $field_name, $object->{$data_mapping[$data_type]['identifier']});
           try {
             $single_value = brapi_encode_value($single_value, $data_mapping[$data_type]['fields'][$field_name]['field_type']);
           }
@@ -1596,10 +1596,10 @@ function brapi_set_field(
           $foreign_key = $data_mapping[$data_type]['identifier'];
         }
         if (isset($field_fetcher['object_key'])) {
-          $identifier = $object->$field_fetcher['object_key'];
+          $identifier = $object->{$field_fetcher['object_key']};
         }
         else {
-          $identifier = $object->$data_mapping[$data_type]['identifier'];
+          $identifier = $object->{$data_mapping[$data_type]['identifier']};
         }
         // Check value type and do some conversion if needed.
         try {
