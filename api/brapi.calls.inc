@@ -812,7 +812,7 @@ function brapi_v1_authentication_json() {
  * - call (string)
  *     The name of a call.
  */
-function brapi_v1_call_10_json($selected_call_name) {
+function brapi_v1_call_10_json($selected_call_name = NULL) {
 
   // Init status and debug data.
   $call_data = array();
@@ -908,7 +908,7 @@ function brapi_v1_call_10_json($selected_call_name) {
  * - call (string)
  *     The name of a call.
  */
-function brapi_v1_call_12_json($selected_call_name) {
+function brapi_v1_call_12_json($selected_call_name = NULL) {
 
   // Init status and debug data.
   $call_data = array();
@@ -1074,7 +1074,7 @@ function brapi_v1_germplasm_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_json($germplasm_id) {
+function brapi_v1_germplasm_json($germplasm_id = NULL) {
 
   $actions = array(
     'create' => 'brapi_v1_create_germplasm_json',
@@ -1631,7 +1631,7 @@ function brapi_v1_delete_germplasm_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_pedigree_10_json($germplasm_id) {
+function brapi_v1_germplasm_pedigree_10_json($germplasm_id = NULL) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_pedigree_10_json',
@@ -1649,7 +1649,7 @@ function brapi_v1_germplasm_pedigree_10_json($germplasm_id) {
  *
  * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
  */
-function brapi_v1_germplasm_pedigree_11_json($germplasm_id) {
+function brapi_v1_germplasm_pedigree_11_json($germplasm_id = NULL) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_pedigree_11_json',
@@ -1992,7 +1992,7 @@ function brapi_v1_categories_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_attributes_json($germplasm_id) {
+function brapi_v1_germplasm_attributes_json($germplasm_id = NULL) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_attributes_json',
@@ -2172,7 +2172,7 @@ function brapi_v1_crops_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_marker_json($marker_id) {
+function brapi_v1_marker_json($marker_id = NULL) {
   $actions = array(
     'read'   => 'brapi_v1_read_marker_json',
     'list'   => 'brapi_v1_marker_search_json',
@@ -2295,7 +2295,7 @@ function brapi_v1_marker_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_location_json($location_id) {
+function brapi_v1_location_json($location_id = NULL) {
   $actions = array(
     'read' => 'brapi_v1_read_location_json',
     'list' => 'brapi_v1_location_search_json',
@@ -2415,7 +2415,7 @@ function brapi_v1_location_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_program_json($program_id) {
+function brapi_v1_program_json($program_id = NULL) {
   $actions = array(
     'read' => 'brapi_v1_read_program_json',
     'list' => 'brapi_v1_program_search_json',
@@ -2542,7 +2542,7 @@ function brapi_v1_sample_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_sample_json($sample_id) {
+function brapi_v1_sample_json($sample_id = NULL) {
 
   $actions = array(
     'create' => 'brapi_v1_create_sample_json',
@@ -2956,7 +2956,7 @@ function brapi_v1_delete_sample_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_variable_json($variable_id) {
+function brapi_v1_variable_json($variable_id = NULL) {
   $actions = array(
     'read' => 'brapi_v1_read_variable_json',
     'list' => 'brapi_v1_variable_search_json',
