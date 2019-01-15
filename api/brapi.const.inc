@@ -222,7 +222,7 @@ function brapi_get_mcpd_mapping() {
  *       which can be used for filtering;
  *   - 'features' (array): an array of feature name => value/description
  *     supported by the call;
- *   - 'aggregable' (bool): if true, the call can be aggregated with other
+ *   - 'aggregatable' (bool): if true, the call can be aggregated with other
  *     BrAPI sites providing the same call.
  *
  * @ingroup brapi_const
@@ -243,7 +243,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_about_json',
         ),
-        'aggregable' => FALSE,
+        'aggregatable' => FALSE,
       ),
       'allelematrices'     => array(
         'title'          => 'Allele Matrices',
@@ -259,7 +259,7 @@ function brapi_get_calls() {
           '1.0' => 'brapi_v1_external_call_json',
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'allelematrices-search'      => array(
         'title'          => 'MarkerProfile Allele Matrix',
@@ -275,7 +275,7 @@ function brapi_get_calls() {
           '1.0' => 'brapi_v1_external_call_json',
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'allelematrix'     => array(
         'title'          => 'Allele Matrices',
@@ -290,7 +290,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.2' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'allelematrix-search'      => array(
         'title'          => 'MarkerProfile Allele Matrix',
@@ -305,7 +305,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.2' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'attributes' => array(
         'title'          => 'Germplasm Attribute List',
@@ -320,7 +320,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_attributes_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'attributes/categories' => array(
         'title'          => 'Germplasm Attribute Category List',
@@ -335,7 +335,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_categories_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'calls'      => array(
         'title'          => 'Call Search',
@@ -359,7 +359,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => FALSE,
+        'aggregatable' => FALSE,
       ),
       'crops' => array(
         'title'          => 'Crops',
@@ -375,7 +375,7 @@ function brapi_get_calls() {
           '1.0' => 'brapi_v1_crops_json',
           '1.1' => 'brapi_v1_crops_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm' => array(
         'title'          => 'Germplasm',
@@ -391,7 +391,7 @@ function brapi_get_calls() {
           '1.1' => 'brapi_v1_germplasm_json',
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm/{germplasmDbId}' => array(
         'title'          => 'Germplasm Details',
@@ -418,7 +418,7 @@ function brapi_get_calls() {
           ),
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm/{germplasmDbId}/attributes' => array(
         'title'          => 'Germplasm Attributes',
@@ -440,7 +440,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm/{germplasmDbId}/markerprofiles' => array(
         'title'          => 'Germplasm Markerprofiles',
@@ -462,7 +462,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm/{germplasmDbId}/pedigree' => array(
         'title'          => 'Germplasm Pedigree',
@@ -485,7 +485,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'germplasm-search' => array(
         'title'          => 'Germplasm Search',
@@ -573,7 +573,7 @@ function brapi_get_calls() {
           ),
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'locations' => array(
         'title'          => 'Locations',
@@ -588,7 +588,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_location_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'locations/{locationDbId}' => array(
         'title'          => 'Locations Details',
@@ -610,7 +610,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_location_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'maps'      => array(
         'title'          => 'Genome Map',
@@ -625,7 +625,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'maps/{mapDbId}' => array(
         'title'          => 'Genome Map Details',
@@ -640,7 +640,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'maps/{mapDbId}/positions' => array(
         'title'          => 'Genome map data',
@@ -655,7 +655,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'maps/{mapDbId}/positions/{linkageGroupName}' => array(
         'title'          => 'Genome Map Data by range on linkageGroup',
@@ -670,7 +670,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'markerprofiles'      => array(
         'title'          => 'Markerprofile Search',
@@ -685,7 +685,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'markerprofiles/{markerprofileDbId}' => array(
         'title'          => 'Marker profiles',
@@ -700,7 +700,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'markers' => array(
         'title'          => 'Marker List',
@@ -715,7 +715,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_marker_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'markers/{markerDbId}' => array(
         'title'          => 'Marker Details',
@@ -737,7 +737,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'markers-search'      => array(
         'title'          => 'Markers Search',
@@ -752,7 +752,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_marker_search_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'observationlevels' => array(
         'title'          => 'Observation Level List',
@@ -767,7 +767,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'ontologies' => array(
         'title'          => 'Variable ontology list',
@@ -782,7 +782,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'phenotypes-search'      => array(
         'title'          => 'Phenotype Search',
@@ -797,7 +797,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'phenotypes'      => array(
         'title'          => 'Phenotype List',
@@ -812,7 +812,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'phenotypes/{phenotypeDbId}' => array(
         'title'          => 'Phenotype Details',
@@ -835,7 +835,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'programs'      => array(
         'title'          => 'Program List',
@@ -850,7 +850,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_program_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'programs/{programDbId}' => array(
         'title'          => 'Program Details',
@@ -872,7 +872,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'programs-search'      => array(
         'title'          => 'Program Search',
@@ -887,7 +887,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_program_search_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'samples' => array(
         'title'          => 'Sample List',
@@ -902,7 +902,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_sample_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'samples/{sampleDbId}' => array(
         'title'          => 'Sample Details',
@@ -927,7 +927,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'samples-search' => array(
         'title'          => 'Sample Search',
@@ -942,7 +942,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_sample_search_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'seasons'      => array(
         'title'          => 'Season List',
@@ -957,7 +957,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies'      => array(
         'title'          => 'Study List',
@@ -972,7 +972,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}'      => array(
         'title'          => 'Study Details',
@@ -995,7 +995,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/germplasm'      => array(
         'title'          => 'Study Germplasm Details',
@@ -1018,7 +1018,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/layout'      => array(
         'title'          => 'Plot Layout Details',
@@ -1041,7 +1041,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/observations'      => array(
         'title'          => 'Observations Details',
@@ -1064,7 +1064,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/observationunits'      => array(
         'title'          => 'Observation Units Details',
@@ -1087,7 +1087,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/observationvariables'      => array(
         'title'          => 'Study Observation Variables',
@@ -1110,7 +1110,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies/{studyDbId}/table'      => array(
         'title'          => 'Study Observation Units as a Table',
@@ -1133,7 +1133,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studies-search'      => array(
         'title'          => 'Study search',
@@ -1148,7 +1148,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'studytypes'      => array(
         'title'          => 'Study Type List',
@@ -1163,7 +1163,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'token'      => array(
         'title'          => 'Authentication',
@@ -1180,7 +1180,7 @@ function brapi_get_calls() {
           '1.0' => 'brapi_v1_authentication_json',
           '1.1' => 'brapi_v1_authentication_json',
         ),
-        'aggregable' => FALSE,
+        'aggregatable' => FALSE,
       ),
       'traits'      => array(
         'title'          => 'Trait List',
@@ -1195,7 +1195,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'traits/{traitDbId}' => array(
         'title'          => 'Trait Details',
@@ -1218,7 +1218,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'trials'      => array(
         'title'          => 'Trial List',
@@ -1233,7 +1233,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'trials/{trialDbId}' => array(
         'title'          => 'Trial Details',
@@ -1256,7 +1256,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'variables'      => array(
         'title'          => 'Variable List',
@@ -1271,7 +1271,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_variable_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'variables/{observationVariableDbId}' => array(
         'title'          => 'Variable Details',
@@ -1294,7 +1294,7 @@ function brapi_get_calls() {
             'required' => FALSE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'variables/datatypes' => array(
         'title'          => 'Variable Data Types',
@@ -1310,7 +1310,7 @@ function brapi_get_calls() {
           '1.0' => 'brapi_v1_variable_datatypes_json',
           '1.1' => 'brapi_v1_variable_datatypes_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'variables-search' => array(
         'title'          => 'Variable Search',
@@ -1325,7 +1325,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_variable_search_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'vendors/plates/{vendorPlateDbId}' => array(
         'title'          => 'Plate Details',
@@ -1348,7 +1348,7 @@ function brapi_get_calls() {
             'required' => TRUE,
           ),
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'vendors/plates-search' => array(
         'title'          => 'Plate Search',
@@ -1363,7 +1363,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
       'vendors/specifications' => array(
         'title'          => 'Vendor Specifications',
@@ -1378,7 +1378,7 @@ function brapi_get_calls() {
         'callback versions' => array(
           '1.1' => 'brapi_v1_external_call_json',
         ),
-        'aggregable' => TRUE,
+        'aggregatable' => TRUE,
       ),
     );
 
@@ -2788,6 +2788,12 @@ function brapi_get_data_mapping() {
           break;
 
         case 'speciesOrganism':
+          $germplasm_fields['species']['alias_for'] = 'speciesOrganism';
+          $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityProp';
+          $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaProp';
+          $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaAuthorityProp';
+          break;
+          
         default:
           $germplasm_fields['species']['alias_for'] = 'speciesFunc';
           $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityFunc';

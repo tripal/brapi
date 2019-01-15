@@ -159,7 +159,8 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   // Species storage.
   $species_options = array(
     'speciesProp' => t('Stored in stockprop table'),
-    'speciesOrganism' => t('Stored in organism + phylonode tables'),
+    'speciesOrganism' => t('Stored in organism table'),
+    'speciesFunc' => t('Stored in organism + phylonode tables'),
   );
   $species_storage = isset($storage_options['species']) ?
     $storage_options['species']
@@ -300,50 +301,33 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
 
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_name => $definition) {
-    $default_ids = array();
+    $default_id = 0;
+    $term = NULL;
 
     // Get from settings.
     if (array_key_exists($term_name, $brapi_cv_settings)) {
-      $default_ids = $brapi_cv_settings[$term_name];
-      if ($default_ids) {
-        if (!is_array($default_ids)) {
-          $default_ids = array_map('trim', explode(',', $default_ids));
-        }
-      }
-      else {
-        $default_ids = array();
-      }
+      $default_id = $brapi_cv_settings[$term_name];
+      $term = tripal_get_cvterm(array('cvterm_id' => $default_id));
     }
 
-    // Get term from MCPD CV.
-    if (empty($default_ids)) {
-      $default_ids = brapi_get_cvterm_id($term_mapping);
+    // Get term from BrAPI CV.
+    if (!$term) {
+      $term =
+        tripal_get_cvterm(
+          array('name' => $term_name, 'cv_id' => $brapi_cv->cv_id)
+        );
     }
 
-    if (!empty($default_ids)) {
-      $terms = chado_generate_var(
-        'cvterm',
-        array('cvterm_id' => $default_ids),
-        array('return_array' => 1)
-      );
-      // Turn numeric ids into human-readable values.
-      $default_ids = array();
-      foreach ($terms as $term) {
-        $default_ids[] =
-          $term->name
-          . ' (cv:' . $term->cv_id->name . '; id:' . $term->cvterm_id . ')';
-      }
-    }
-
-    // Set a default id for missing terms.
-    if (empty($default_ids)) {
-      $default_ids = array(0);
+    if ($term) {
+      $default_id =
+        $term->name
+        . ' (cv:' . $term->cv_id->name . '; id:' . $term->cvterm_id . ')';
     }
 
     $form['cv_settings'][$term_name] = array(
       '#type' => 'textfield',
       '#description' => $definition,
-      '#default_value' => implode(', ', $default_ids),
+      '#default_value' => $default_id,
       '#autocomplete_path' => 'brapi/terms/autocomplete',
       '#title' => $term_name,
       '#title_display' => 'before',
@@ -409,11 +393,6 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
           $term->name
           . ' (cv:' . $term->cv_id->name . '; id:' . $term->cvterm_id . ')';
       }
-    }
-
-    // Set a default id for missing terms.
-    if (empty($default_ids)) {
-      $default_ids = array(0);
     }
 
     if (array_key_exists('name', $term_mapping)) {
@@ -659,7 +638,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#multiple' => FALSE,
     );
 
-    if ($call['aggregable']) {
+    if ($call['aggregatable']) {
       $default_values =
         (isset($aggregation_options[$call_path])
             && $aggregation_options[$call_path]) ?
@@ -786,32 +765,14 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   // CV settings.
   $brapi_cv_settings = brapi_get_cv_settings();
   foreach (brapi_get_cv() as $term_label => $definition) {
-    $user_terms = $form_state['values'][$term_label];
-    $user_term_array = array_filter(array_map(
-      function ($a) {
-        return trim(str_replace("\\,", ',', $a));
-      },
-      preg_split('/(?<!\\\\),/', $user_terms)
-    ));
-    $cvterm_ids = array();
-    foreach ($user_term_array as $user_term) {
-      $cvterm_id = brapi_get_cvterm_id($user_term, FALSE);
-      if ($cvterm_id) {
-        $cvterm_ids[$cvterm_id] = $cvterm_id;
-      }
-      else {
-        drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
-      }
-    }
-
-    if (empty($cvterm_ids)) {
-      $brapi_cv_settings[$term_label] = 0;
-    }
-    elseif (1 == count($cvterm_ids)){
-      $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
+    $user_term = $form_state['values'][$term_label];
+    $cvterm_id = brapi_get_cvterm_id($user_term, FALSE);
+    if ($cvterm_id) {
+      $brapi_cv_settings[$term_label] = $cvterm_id;
     }
     else {
-      $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
+      $brapi_cv_settings[$term_label] = 0;
+      drupal_set_message(t('Term not found: "@term_label"', array('@term_label' => $term_label)), 'warning');
     }
   }
 
@@ -819,14 +780,8 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   foreach (brapi_get_mcpd_settings() as $term_label => $term_mapping) {
     $term_machine_name = preg_replace('/\W+/', '_', $term_label);
     $user_terms = $form_state['values'][$term_machine_name];
-    $user_term_array = array_filter(array_map(
-      function ($a) {
-        return trim(str_replace("\\,", ',', $a));
-      },
-      preg_split('/(?<!\\\\),/', $user_terms)
-    ));
     $cvterm_ids = array();
-    foreach ($user_term_array as $user_term) {
+    foreach (array_map('trim', explode(',', $user_terms)) as $user_term) {
       if ($user_term) {
         $cvterm_id = brapi_get_cvterm_id($user_term);
         if (!$cvterm_id) {
@@ -841,14 +796,13 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       }
     }
 
-    if (empty($cvterm_ids)) {
-      $brapi_cv_settings[$term_label] = 0;
-    }
-    elseif (1 == count($cvterm_ids)){
-      $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
-    }
-    else {
-      $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
+    if (!empty($cvterm_ids)) {
+      if (1 == count($cvterm_ids)) {
+        $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
+      }
+      else {
+        $brapi_cv_settings[$term_label] = array_values($cvterm_ids);
+      }
     }
   }
   // Save CV settings.
@@ -877,29 +831,27 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $germplasm_attributes = array();
   $germplasm_category_list = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
   $germplasm_categories = array_flip($germplasm_category_list);
-  if (!empty($form_state['values']['attribute'])) {
-    foreach ($form_state['values']['attribute'] as $attribute) {
-      if ($attribute['name']
-          && ($attribute['cvs'] || $attribute['cvterms'])) {
-        // Replace category name by its index.
-        if (array_key_exists($attribute['category'], $germplasm_categories)) {
-          // Get existing index.
-          $attribute['category'] = $germplasm_categories[$attribute['category']];
-        }
-        else {
-          // Category does not exist, add it.
-          $germplasm_category_list[] = $attribute['category'];
-          // Place array index on last inserted key.
-          end($germplasm_category_list);
-          // Save index.
-          $attribute['category'] =
-            $germplasm_categories[$attribute['category']] =
-            key($germplasm_category_list);
-        }
-        $germplasm_attributes[] = $attribute;
+  foreach ($form_state['values']['attribute'] as $attribute) {
+    if ($attribute['name']
+        && ($attribute['cvs'] || $attribute['cvterms'])) {
+      // Replace category name by its index.
+      if (array_key_exists($attribute['category'], $germplasm_categories)) {
+        // Get existing index.
+        $attribute['category'] = $germplasm_categories[$attribute['category']];
       }
-    
+      else {
+        // Category does not exist, add it.
+        $germplasm_category_list[] = $attribute['category'];
+        // Place array index on last inserted key.
+        end($germplasm_category_list);
+        // Save index.
+        $attribute['category'] =
+          $germplasm_categories[$attribute['category']] =
+          key($germplasm_category_list);
+      }
+      $germplasm_attributes[] = $attribute;
     }
+
   }
   variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
   variable_set(BRAPI_GERMPLASM_ATTR_CATEGORIES, $germplasm_category_list);
@@ -917,7 +869,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     }
     $call_path_form_name = preg_replace('/\W+/', '_', $call_path);
     $version_options[$call_path] = $form_state['values']['version_' . $call_path_form_name];
-    if ($call['aggregable']) {
+    if ($call['aggregatable']) {
       $brapi_aggregation_options[$call_path] = array_keys($form_state['values']['aggr_' . $call_path_form_name]);
     }
   }
