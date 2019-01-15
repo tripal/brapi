@@ -8,4 +8,5 @@ This guide is meant to help developers extend Tripal BrAPI and/or use BrAPI web 
    :maxdepth: 2
    :caption: Contents:
 
+   developers_guide/process 
    developers_guide/hooks
