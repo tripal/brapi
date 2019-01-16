@@ -2788,7 +2788,14 @@ function brapi_get_data_mapping() {
           break;
 
         case 'speciesOrganism':
+          $germplasm_fields['species']['alias_for'] = 'speciesOrganism';
+          $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityProp';
+          $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaProp';
+          $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaAuthorityProp';
+          break;
+
         default:
+          // Through organism and phylonode tables.
           $germplasm_fields['species']['alias_for'] = 'speciesFunc';
           $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityFunc';
           $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaFunc';
