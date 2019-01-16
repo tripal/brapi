@@ -104,6 +104,11 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
+# Override the base theme.
+# We add the stylesheet this way so that it's loaded after the default.css
+# See https://docs.readthedocs.io/en/latest/guides/adding-custom-css.html
+def setup(app):
+    app.add_stylesheet('theme_overrides.css');
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
