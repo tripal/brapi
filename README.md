@@ -92,7 +92,10 @@ fields wrapped by an HTML element having the CSS class
 DOCUMENTATION
 ---------------
 
-There is extensive documentation for this module hosted on ReadtheDocs at https://brapi.readthedocs.io/en/latest/. This includes documentation for installing, using and extending this module.
+There is extensive documentation for this module hosted on ReadtheDocs at
+https://brapi.readthedocs.io/en/latest/. This includes documentation for
+installing, using and extending this module.
+
 
 MAINTAINERS
 -----------

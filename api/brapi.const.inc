@@ -1484,7 +1484,7 @@ function brapi_get_data_mapping() {
       }
       return $data;
     };
-    
+
     $brapi_data_mapping = array(
       'germplasm'      => array(
         'table' => 'stock',

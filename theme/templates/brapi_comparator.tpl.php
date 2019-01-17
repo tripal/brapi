@@ -6,7 +6,6 @@
  *
  * @ingroup brapi
  */
-
 ?>
 
 <h3>Breeding API Comparator Interface</h3>

@@ -365,7 +365,7 @@ function brapi_terms_autocomplete($string) {
       drupal_json_output($matches);
       return;
     }
-    
+
     $prefix = implode(', ', $items);
 
     $sql_query = "
@@ -1500,7 +1500,7 @@ function brapi_set_field(
     case "string":
       // Set through object.
       $object->$field_fetcher = $field_value;
-      //@todo: $object->save(); ?
+      // @todo: $object->save(); ?
       break;
 
     case "array":
@@ -2010,7 +2010,7 @@ function brapi_get_user_json_input() {
         ));
       }
     }
-    
+
     watchdog(
       'brapi',
       "Raw data received (POST/PUT):\n|@raw|\n\nJSON data parsed:\n@json",
@@ -3174,8 +3174,8 @@ function brapi_query_form($form, &$form_state, $call_name, $call_info) {
 /**
  * Returns information about an organism.
  *
- * @param $organism_id (integer)
- *   organism_id of the organism of interest.
+ * @param int $organism_id
+ *   Value of organism.organism_id of the organism of interest.
  *
  * @return array
  *   An array with the following keys:
@@ -3222,8 +3222,7 @@ function brapi_get_organism_info($organism_id) {
       )
       WHERE
         o.organism_id = :organism_id
-      ;'
-    ;
+      ;';
     $filter_values = array(
       ':organism_id' => $organism_id,
       ':species' => $cv_settings['species'],

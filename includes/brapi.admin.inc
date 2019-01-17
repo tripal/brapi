@@ -541,9 +541,10 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#type' => 'textfield',
       '#title' => t('Category name'),
       '#title_display' => 'before',
-      '#default_value' => $category_list_name ?
-        $germplasm_category_list[$category_list_name]
-        : '',
+      '#default_value' =>
+      $category_list_name ?
+      $germplasm_category_list[$category_list_name]
+      : '',
       '#required' => FALSE,
       '#size' => 80,
       '#maxlength' => 1024,
@@ -808,7 +809,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     if (empty($cvterm_ids)) {
       $brapi_cv_settings[$term_label] = 0;
     }
-    elseif (1 == count($cvterm_ids)){
+    elseif (1 == count($cvterm_ids)) {
       $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
     }
     else {
@@ -845,7 +846,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
     if (empty($cvterm_ids)) {
       $brapi_cv_settings[$term_label] = 0;
     }
-    elseif (1 == count($cvterm_ids)){
+    elseif (1 == count($cvterm_ids)) {
       $brapi_cv_settings[$term_label] = array_values($cvterm_ids)[0];
     }
     else {
@@ -899,7 +900,7 @@ function brapi_admin_form_submit($form_id, &$form_state) {
         }
         $germplasm_attributes[] = $attribute;
       }
-    
+
     }
   }
   variable_set(BRAPI_GERMPLASM_ATTRIBUTES, $germplasm_attributes);
@@ -961,7 +962,8 @@ function brapi_reset_mcpd_form_confirm($form_id, &$form_state) {
  */
 function brapi_reset_mcpd_form_confirm_submit($form_id, &$form_state) {
   if (isset($form_state['values']['confirm'])) {
-    module_load_install('brapi'); // For using brapi_load_obo().
+    // For using brapi_load_obo().
+    module_load_install('brapi');
     $mcpd_path = drupal_get_path('module', 'brapi') . '/cv/mcpd_v2.1_151215.obo';
     $loaded = brapi_load_obo('Multi-Crop Passport Descriptors Ontology', $mcpd_path);
     if ($loaded) {

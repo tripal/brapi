@@ -3063,8 +3063,6 @@ function brapi_v1_variable_datatypes_json() {
   );
 }
 
-            
-            
 /**
  * Returns a JSON array containing the list of variable.
  *
