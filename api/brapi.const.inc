@@ -2560,7 +2560,7 @@ function brapi_get_data_mapping() {
           ),
           'observationVariableDbId' => array(
             'alias_for' => 'variableDbId',
-          )
+          ),
 
           // Table joins.
           // Function fields.
