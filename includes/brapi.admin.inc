@@ -74,6 +74,29 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#collapsible' => TRUE,
     '#collapsed'   => TRUE,
   );
+  // BrAPI DbId.
+  $dbid_options = array(
+    'uniquename' => t('Use Chado uniquename column'),
+    'chado_id' => t('Use Chado table "_id" column'),
+  );
+  $dbid_storage = isset($storage_options['dbid']) ?
+    $storage_options['dbid']
+    : '';
+  if (!$dbid_storage
+      || (($dbid_storage != 'uniquename')
+          && ($dbid_storage != 'chado_id'))) {
+    $dbid_storage = 'uniquename';
+  }
+  $form['storage_options']['dbid'] = array(
+    '#type' => 'select',
+    '#description' => t('Select the column to use for BrAPI *DbId fields (when associated to a Chado table).'),
+    '#options' => $dbid_options,
+    '#default_value' => $dbid_storage,
+    '#title' => t('BrAPI *DbId storage'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
+  );
   // Germplasm PUI.
   $germplasm_pui_options = array(
     'germplasmPUI' => t('Stored in stockprop table'),
@@ -725,6 +748,10 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
   if (!is_array($storage_options)) {
     $storage_options = array();
+  }
+  // BrAPI *DbId storage.
+  if ($form_state['values']['dbid']) {
+    $storage_options['dbid'] = $form_state['values']['dbid'];
   }
   // Germplasm PUI storage.
   if ($form_state['values']['germplasm_pui']) {

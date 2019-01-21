@@ -1734,6 +1734,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
 
   $call_settings = brapi_get_calls()[$call];
   $data_settings = brapi_get_data_mapping()[$data_type];
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
 
   // Check method.
   if (!isset($call_settings['methods'][$_SERVER['REQUEST_METHOD']])) {
@@ -1767,8 +1768,13 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
 
   // Get corresponding data object if one.
   if (!empty($id)) {
+    $use_id = isset($storage_options['dbid'])
+      && ('chado_id' == $storage_options['dbid']);
+    $id_field = $use_id ?
+      $data_settings['identifier']
+      : $data_settings['accession'];
     $selector = array(
-      $data_settings['accession'] => $id,
+      $id_field => $id,
     );
     $object = chado_generate_var($data_settings['table'], $selector);
     if (is_array($object)) {

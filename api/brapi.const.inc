@@ -230,6 +230,14 @@ function brapi_get_mcpd_mapping() {
 function brapi_get_calls() {
   static $brapi_calls;
   if (!isset($brapi_calls)) {
+    // Get storage options for *DbId to update descriptions.
+    $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
+    $dbid_column = '.uniquename';
+    if (isset($storage_options['dbid'])
+        && ($storage_options['dbid'] == 'chado_id')) {
+      $dbid_column = '_id';
+    }
+
     $brapi_calls = array(
       ''               => array(
         'title'          => 'About',
@@ -416,7 +424,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado stock.uniquename value',
+            'description' => "correspond to a Chado stock$dbid_column value",
             'required' => FALSE,
           ),
         ),
@@ -439,7 +447,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado stock.uniquename value',
+            'description' => "correspond to a Chado stock$dbid_column value",
             'required' => TRUE,
           ),
         ),
@@ -461,7 +469,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado stock.uniquename value',
+            'description' => "correspond to a Chado stock$dbid_column value",
             'required' => TRUE,
           ),
         ),
@@ -484,7 +492,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'germplasmDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado stock.uniquename value',
+            'description' => "correspond to a Chado stock$dbid_column value",
             'required' => TRUE,
           ),
         ),
@@ -736,7 +744,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'markerDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado feature.uniquename value for feature type "genetic_marker"',
+            'description' => "correspond to a Chado feature$dbid_column value for feature type \"genetic_marker\"",
             'required' => FALSE,
           ),
         ),
@@ -926,7 +934,7 @@ function brapi_get_calls() {
           3 => array(
             'name' => 'sampleDbId',
             'type' => 'string',
-            'description' => 'correspond to a Chado stock.uniquename value',
+            'description' => "correspond to a Chado stock$dbid_column value",
             'required' => FALSE,
           ),
         ),
@@ -2543,11 +2551,16 @@ function brapi_get_data_mapping() {
         'fields' => array(
           // Table fields.
           'name' => 'name',
-          'observationVariableDbId' => 'cvterm_id',
           'objective' => 'definition',
+          'variableDbId' => 'cvterm_id',
 
           // Aliases.
-          'abbreviation' => 'name',
+          'abbreviation' => array(
+            'alias_for' => 'name',
+          ),
+          'observationVariableDbId' => array(
+            'alias_for' => 'variableDbId',
+          )
 
           // Table joins.
           // Function fields.
@@ -2832,6 +2845,15 @@ function brapi_get_data_mapping() {
     if ($use_specified_settings) {
       $germplasm_fields['instituteName']['alias_for'] =
         $storage_options['institute_name'];
+    }
+
+    // BrAPI *DbId.
+    if (isset($storage_options['dbid'])
+        && ('chado_id' == $storage_options['dbid'])) {
+      foreach (array_keys($brapi_data_mapping) as $data_type) {
+        $brapi_data_mapping[$data_type]['fields'][$data_type . 'DbId'] =
+          $brapi_data_mapping[$data_type]['identifier'];
+      }
     }
 
     // Allow other modules to alter settings.

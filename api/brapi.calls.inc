@@ -1093,8 +1093,8 @@ function brapi_v1_germplasm_10_json($germplasm_id = NULL) {
  *     - species*: the Chado organism species;
  *     - genus*: the Chado organism genus;
  *     - defaultDisplayName*: the Chado stock name;
- *     - germplasmDbId*: the Chado stock uniquename. can also be specified
- *       through the $uniquename parameter which has higher priority;
+ *     - germplasmDbId*: the Chado stock uniquename/stock_id can also be
+ *       specified through the $uniquename parameter which has higher priority;
  *     - abbreviation**: the Chado organism abbreviation;
  *     - description**: the Chado stock description;
  *     - type_id**: a Chado cvterm_id used for stock types.
@@ -1105,6 +1105,8 @@ function brapi_v1_germplasm_10_json($germplasm_id = NULL) {
  *   a JSON structure containing the stock details.
  */
 function brapi_v1_create_germplasm_10_json($user_data, $uniquename = NULL) {
+
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
 
   // Make sure we got all the requested data.
   $required_fields = array(
@@ -1209,6 +1211,12 @@ function brapi_v1_create_germplasm_10_json($user_data, $uniquename = NULL) {
     'type_id' => $type_id,
     'is_obsolete' => 0,
   );
+  // Check how BrAPI DbId are handled.
+  if (isset($storage_options['dbid'])
+      && ('chado_id' == $storage_options['dbid'])) {
+    $values['stock_id'] = $uniquename;
+    $values['uniquename'] = 'germplasm_' . $uniquename;
+  }
   // We capture output buffer for Tripal error messages.
   ob_start();
   $stock = chado_insert_record('stock', $values);
@@ -2574,6 +2582,8 @@ function brapi_v1_samples_11_json($sample_id = NULL) {
  */
 function brapi_v1_create_samples_11_json($user_data, $uniquename = NULL) {
 
+  $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
+
   // Make sure we got all the requested data.
   $required_fields = array(
     'commonCropName', 'species', 'genus', 'defaultDisplayName', 'sampleDbId',
@@ -2677,6 +2687,12 @@ function brapi_v1_create_samples_11_json($user_data, $uniquename = NULL) {
     'type_id' => $type_id,
     'is_obsolete' => 0,
   );
+  // Check how BrAPI DbId are handled.
+  if (isset($storage_options['dbid'])
+      && ('chado_id' == $storage_options['dbid'])) {
+    $values['stock_id'] = $uniquename;
+    $values['uniquename'] = 'sample_' . $uniquename;
+  }
   // We capture output buffer for Tripal error messages.
   ob_start();
   $stock = chado_insert_record('stock', $values);
