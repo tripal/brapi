@@ -35,7 +35,7 @@ define('BRAPI_MCPD_VERSION', '2.1');
 define('BRAPI_MENU_CALL_MAPPING', "brapi_menu_call_mapping");
 define('BRAPI_MULTICROP_PASSPORT_ONTOLOGY_CV', 'multicrop passport ontology');
 define('BRAPI_SERVICE_PREFIX_V1', 'brapi/v1');
-define('BRAPI_SERVICE_VERSION', '1.1');
+define('BRAPI_SERVICE_VERSION', '1.2');
 define('BRAPI_STORAGE_OPTIONS', 'brapi_storage_options');
 define('BRAPI_UPDATE_PERMISSION', 'update through breeding api');
 define('BRAPI_USE_PERMISSION', 'use breeding api');
@@ -238,10 +238,13 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET' => 'access content',
         ),
-        'api versions' => array('1.2'),
+        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_about_json',
+          '1.0' => 'brapi_v1_root_10_json',
+          '1.1' => 'brapi_v1_root_10_json',
+          '1.2' => 'brapi_v1_root_10_json',
+          '1.3' => 'brapi_v1_root_10_json',
         ),
         'aggregable' => FALSE,
       ),
@@ -318,7 +321,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_attributes_json',
+          '1.1' => 'brapi_v1_attributes_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -333,7 +336,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_categories_json',
+          '1.1' => 'brapi_v1_categories_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -372,8 +375,8 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_crops_json',
-          '1.1' => 'brapi_v1_crops_json',
+          '1.0' => 'brapi_v1_crops_10_json',
+          '1.1' => 'brapi_v1_crops_10_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -388,7 +391,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_json',
+          '1.1' => 'brapi_v1_germplasm_10_json',
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregable' => TRUE,
@@ -406,8 +409,8 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_germplasm_json',
-          '1.1' => 'brapi_v1_germplasm_json',
+          '1.0' => 'brapi_v1_germplasm_10_json',
+          '1.1' => 'brapi_v1_germplasm_10_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -430,7 +433,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_attributes_json',
+          '1.1' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -474,8 +477,8 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_germplasm_pedigree_10_json',
-          '1.1' => 'brapi_v1_germplasm_pedigree_11_json',
+          '1.0' => 'brapi_v1_germplasm_germplasmdbid_pedigree_10_json',
+          '1.1' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -498,7 +501,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_search_json',
+          '1.1' => 'brapi_v1_germplasm_search_10_json',
         ),
         'parameters' => array(
           '1.0' => array(
@@ -586,7 +589,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_location_json',
+          '1.1' => 'brapi_v1_locations_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -608,7 +611,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_location_json',
+          '1.1' => 'brapi_v1_locations_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -713,7 +716,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_marker_json',
+          '1.1' => 'brapi_v1_markers_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -727,7 +730,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_marker_json',
+          '1.1' => 'brapi_v1_markers_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -750,7 +753,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_marker_search_json',
+          '1.1' => 'brapi_v1_markers_search_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -848,7 +851,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_program_json',
+          '1.1' => 'brapi_v1_programs_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -862,7 +865,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_program_json',
+          '1.1' => 'brapi_v1_programs_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -885,7 +888,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_program_search_json',
+          '1.1' => 'brapi_v1_programs_search_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -900,7 +903,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_sample_json',
+          '1.1' => 'brapi_v1_samples_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -917,7 +920,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_sample_json',
+          '1.1' => 'brapi_v1_samples_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -940,7 +943,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_sample_search_json',
+          '1.1' => 'brapi_v1_samples_search_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -1269,7 +1272,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_variable_json',
+          '1.1' => 'brapi_v1_variables_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -1284,7 +1287,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_variable_json',
+          '1.1' => 'brapi_v1_variables_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -1307,8 +1310,8 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_variable_datatypes_json',
-          '1.1' => 'brapi_v1_variable_datatypes_json',
+          '1.0' => 'brapi_v1_variables_datatypes_11_json',
+          '1.1' => 'brapi_v1_variables_datatypes_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -1323,7 +1326,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_variable_search_json',
+          '1.1' => 'brapi_v1_variables_search_11_json',
         ),
         'aggregable' => TRUE,
       ),

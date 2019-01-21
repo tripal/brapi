@@ -74,20 +74,13 @@ function brapi_call_wrapper($call_name) {
   // Remove leading and trailing underscores.
   $alter_name = preg_replace('/^_+/', '', $alter_name);
   $alter_name = preg_replace('/_+$/', '', $alter_name);
-  // Uncomment the line below to find out names to use.
-  // @code
-  // drupal_set_message(
-  //   t(
-  //     'BrAPI alter call name: "@alter_name"',
-  //     array('@alter_name' => $alter_name)
-  //   ),
-  //   'debug'
-  // );
-  // @encode
   try {
-    $debug_data[] = "Call name: $call_name";
-    $debug_data[] = "Handling function: $call_func";
+    $debug = array();
+    $debug[] = "Call name: $call_name";
+    $debug[] = "Handling function: $call_func";
+    $debug[] = "Alter hook: hook_brapi_$alter_name(_brapi_error|_error)_alter";
     list($data, $metadata, $debug_data) = call_user_func_array($call_func, $args);
+    $debug_data = array_merge($debug, $debug_data);
     // Allow other modules to alter output.
     $context = array(
       'metadata' => &$metadata,
@@ -566,11 +559,11 @@ function brapi_v1_object_search_json($object_type, $parameters) {
  *
  * @ingroup brapi
  */
-function brapi_v1_about_json() {
+function brapi_v1_root_10_json() {
   global $base_url;
   return array(
     array(
-      'version' => '1.0',
+      'version' => BRAPI_SERVICE_VERSION,
       'provider' => variable_get('site_name', t('Unknown')),
       'description' => variable_get('site_slogan', ''),
       'contact' => array(
@@ -1043,13 +1036,13 @@ function brapi_v1_call_12_json($selected_call_name = NULL) {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_search_json() {
+function brapi_v1_germplasm_search_10_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
     'selectors' => array(
       'type_id' => $cv_settings['Germplasm'],
     ),
-    'get_object_details' => 'brapi_get_germplasm_details',
+    'get_object_details' => 'brapi_get_germplasm_details_10',
   );
   return brapi_v1_object_search_json('germplasm', $parameters);
 }
@@ -1074,14 +1067,14 @@ function brapi_v1_germplasm_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_json($germplasm_id = NULL) {
+function brapi_v1_germplasm_10_json($germplasm_id = NULL) {
 
   $actions = array(
-    'create' => 'brapi_v1_create_germplasm_json',
-    'read'   => 'brapi_v1_read_germplasm_json',
-    'update' => 'brapi_v1_update_germplasm_json',
-    'delete' => 'brapi_v1_delete_germplasm_json',
-    'list'   => 'brapi_v1_germplasm_search_json',
+    'create' => 'brapi_v1_create_germplasm_10_json',
+    'read'   => 'brapi_v1_read_germplasm_10_json',
+    'update' => 'brapi_v1_update_germplasm_10_json',
+    'delete' => 'brapi_v1_delete_germplasm_10_json',
+    'list'   => 'brapi_v1_germplasm_search_10_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1111,7 +1104,7 @@ function brapi_v1_germplasm_json($germplasm_id = NULL) {
  * @return array
  *   a JSON structure containing the stock details.
  */
-function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
+function brapi_v1_create_germplasm_10_json($user_data, $uniquename = NULL) {
 
   // Make sure we got all the requested data.
   $required_fields = array(
@@ -1253,7 +1246,7 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
     }
   }
 
-  return brapi_v1_read_germplasm_json($stock);
+  return brapi_v1_read_germplasm_10_json($stock);
 }
 
 /**
@@ -1265,10 +1258,10 @@ function brapi_v1_create_germplasm_json($user_data, $uniquename = NULL) {
  * @return array
  *   a JSON array containing the stock details.
  */
-function brapi_v1_read_germplasm_json($stock) {
+function brapi_v1_read_germplasm_10_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
-  $germplasm_data = brapi_get_germplasm_details($stock);
+  $germplasm_data = brapi_get_germplasm_details_10($stock);
   $data = array('result' => $germplasm_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -1288,7 +1281,7 @@ function brapi_v1_read_germplasm_json($stock) {
  * @return array
  *   the stock details in an associative array.
  */
-function brapi_get_germplasm_details($stock) {
+function brapi_get_germplasm_details_10($stock) {
   $germplasm_data = array();
 
   $fields = array(
@@ -1320,7 +1313,7 @@ function brapi_get_germplasm_details($stock) {
  * @return array
  *   a JSON structure containing the stock details.
  */
-function brapi_v1_update_germplasm_json($user_data, $stock) {
+function brapi_v1_update_germplasm_10_json($user_data, $stock) {
 
   $cv_settings = brapi_get_cv_settings();
   $stock_match = array('stock_id' => $stock->stock_id);
@@ -1423,7 +1416,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
     }
   }
 
-  return brapi_v1_read_germplasm_json($stock);
+  return brapi_v1_read_germplasm_10_json($stock);
 }
 
 /**
@@ -1435,7 +1428,7 @@ function brapi_v1_update_germplasm_json($user_data, $stock) {
  * @return array
  *   a JSON structure with and empty data array.
  */
-function brapi_v1_delete_germplasm_json($stock) {
+function brapi_v1_delete_germplasm_10_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
 
@@ -1631,10 +1624,10 @@ function brapi_v1_delete_germplasm_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_pedigree_10_json($germplasm_id = NULL) {
+function brapi_v1_germplasm_germplasmdbid_pedigree_10_json($germplasm_id = NULL) {
 
   $actions = array(
-    'read'   => 'brapi_v1_read_germplasm_pedigree_10_json',
+    'read'   => 'brapi_v1_read_germplasm_germplasmdbid_pedigree_10_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1649,10 +1642,10 @@ function brapi_v1_germplasm_pedigree_10_json($germplasm_id = NULL) {
  *
  * @see http://wheat.pw.usda.gov/ggpages/gopher/administration/Template%20for%20Germplasm%20records.html
  */
-function brapi_v1_germplasm_pedigree_11_json($germplasm_id = NULL) {
+function brapi_v1_germplasm_germplasmdbid_pedigree_11_json($germplasm_id = NULL) {
 
   $actions = array(
-    'read'   => 'brapi_v1_read_germplasm_pedigree_11_json',
+    'read'   => 'brapi_v1_read_germplasm_germplasmdbid_pedigree_11_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -1667,7 +1660,7 @@ function brapi_v1_germplasm_pedigree_11_json($germplasm_id = NULL) {
  * @return array
  *   a JSON array containing the stock details.
  */
-function brapi_v1_read_germplasm_pedigree_10_json($stock) {
+function brapi_v1_read_germplasm_germplasmdbid_pedigree_10_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = array();
@@ -1703,7 +1696,7 @@ function brapi_v1_read_germplasm_pedigree_10_json($stock) {
  * @return array
  *   a JSON array containing the stock details.
  */
-function brapi_v1_read_germplasm_pedigree_11_json($stock) {
+function brapi_v1_read_germplasm_germplasmdbid_pedigree_11_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $germplasm_data = array();
@@ -1789,7 +1782,7 @@ function brapi_v1_get_attribute_filter($attribute_settings) {
  * @return array
  *   a JSON array containing the germplasm attribute categories.
  */
-function brapi_v1_attributes_json() {
+function brapi_v1_attributes_11_json() {
   $germplasm_attributes = variable_get(BRAPI_GERMPLASM_ATTRIBUTES, array());
   $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
@@ -1949,7 +1942,7 @@ function brapi_v1_attributes_json() {
  * @return array
  *   a JSON array containing the germplasm attribute categories.
  */
-function brapi_v1_categories_json() {
+function brapi_v1_categories_11_json() {
   $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
   $metadata = brapi_prepare_metadata(1);
@@ -1992,10 +1985,10 @@ function brapi_v1_categories_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_attributes_json($germplasm_id = NULL) {
+function brapi_v1_germplasm_germplasmdbid_attributes_10_json($germplasm_id = NULL) {
 
   $actions = array(
-    'read'   => 'brapi_v1_read_germplasm_attributes_json',
+    'read'   => 'brapi_v1_read_germplasm_germplasmdbid_attributes_10_json',
   );
 
   return brapi_process_crud('germplasm/{germplasmDbId}', $actions, 'germplasm', $germplasm_id);
@@ -2010,7 +2003,7 @@ function brapi_v1_germplasm_attributes_json($germplasm_id = NULL) {
  * @return array
  *   a JSON array containing the stock attributes (stock_cvterm+stockprop).
  */
-function brapi_v1_read_germplasm_attributes_json($stock) {
+function brapi_v1_read_germplasm_germplasmdbid_attributes_10_json($stock) {
   $germplasm_attributes = variable_get(BRAPI_GERMPLASM_ATTRIBUTES, array());
   $germplasm_categories = variable_get(BRAPI_GERMPLASM_ATTR_CATEGORIES, array());
 
@@ -2120,7 +2113,7 @@ function brapi_v1_read_germplasm_attributes_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_crops_json() {
+function brapi_v1_crops_10_json() {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $crop_list = array();
@@ -2172,10 +2165,10 @@ function brapi_v1_crops_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_marker_json($marker_id = NULL) {
+function brapi_v1_markers_11_json($marker_id = NULL) {
   $actions = array(
-    'read'   => 'brapi_v1_read_marker_json',
-    'list'   => 'brapi_v1_marker_search_json',
+    'read'   => 'brapi_v1_read_markers_11_json',
+    'list'   => 'brapi_v1_markers_search_11_json',
   );
 
   return brapi_process_crud('markers/{markerDbId}', $actions, 'marker', $marker_id);
@@ -2190,7 +2183,7 @@ function brapi_v1_marker_json($marker_id = NULL) {
  * @return array
  *   the marker details in an associative array.
  */
-function brapi_get_marker_details($feature) {
+function brapi_get_markers_details_10($feature) {
   $marker_data = array();
 
   $fields = array(
@@ -2221,7 +2214,7 @@ function brapi_get_marker_details($feature) {
  * @return array
  *   a JSON array containing the feature details.
  */
-function brapi_v1_read_marker_json($feature) {
+function brapi_v1_read_markers_11_json($feature) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $marker_data = array();
@@ -2235,7 +2228,7 @@ function brapi_v1_read_marker_json($feature) {
     throw new BrapiException(404, t("Not a marker!"));
   }
 
-  $marker_data = brapi_get_marker_details($feature);
+  $marker_data = brapi_get_markers_details_10($feature);
   $data = array('result' => array('data' => $marker_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -2263,13 +2256,13 @@ function brapi_v1_read_marker_json($feature) {
  *
  * @ingroup brapi
  */
-function brapi_v1_marker_search_json() {
+function brapi_v1_markers_search_11_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
     'selectors' => array(
       'type_id' => $cv_settings['MarkerType'],
     ),
-    'get_object_details' => 'brapi_get_marker_details',
+    'get_object_details' => 'brapi_get_markers_details_10',
   );
 
   return brapi_v1_object_search_json('marker', $parameters);
@@ -2295,10 +2288,10 @@ function brapi_v1_marker_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_location_json($location_id = NULL) {
+function brapi_v1_locations_11_json($location_id = NULL) {
   $actions = array(
-    'read' => 'brapi_v1_read_location_json',
-    'list' => 'brapi_v1_location_search_json',
+    'read' => 'brapi_v1_read_locations_11_json',
+    'list' => 'brapi_v1_locations_search_11_json',
   );
 
   return brapi_process_crud('locations/{locationDbId}', $actions, 'location', $location_id);
@@ -2313,7 +2306,7 @@ function brapi_v1_location_json($location_id = NULL) {
  * @return array
  *   the location details in an associative array.
  */
-function brapi_get_location_details($geolocation) {
+function brapi_get_locations_details_11($geolocation) {
   $geolocation_data = array();
 
   $fields = array(
@@ -2366,12 +2359,12 @@ function brapi_get_location_details($geolocation) {
  * @return array
  *   a JSON array containing the geolocation details.
  */
-function brapi_v1_read_location_json($geolocation) {
+function brapi_v1_read_locations_11_json($geolocation) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $geolocation_data = array();
 
-  $geolocation_data = brapi_get_location_details($geolocation);
+  $geolocation_data = brapi_get_locations_details_11($geolocation);
   $data = array('result' => array($geolocation_data));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -2388,9 +2381,9 @@ function brapi_v1_read_location_json($geolocation) {
  * @return array
  *   a JSON array containing the geolocations.
  */
-function brapi_v1_location_search_json() {
+function brapi_v1_locations_search_11_json() {
   $parameters = array(
-    'get_object_details' => 'brapi_get_location_details',
+    'get_object_details' => 'brapi_get_locations_details_11',
   );
   return brapi_v1_object_search_json('location', $parameters);
 }
@@ -2415,10 +2408,10 @@ function brapi_v1_location_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_program_json($program_id = NULL) {
+function brapi_v1_programs_11_json($program_id = NULL) {
   $actions = array(
-    'read' => 'brapi_v1_read_program_json',
-    'list' => 'brapi_v1_program_search_json',
+    'read' => 'brapi_v1_read_programs_11_json',
+    'list' => 'brapi_v1_programs_search_11_json',
   );
 
   return brapi_process_crud('programs/{programDbId}', $actions, 'program', $program_id);
@@ -2433,7 +2426,7 @@ function brapi_v1_program_json($program_id = NULL) {
  * @return array
  *   the program details in an associative array.
  */
-function brapi_get_program_details($project) {
+function brapi_get_programs_details_11($project) {
   $project_data = array();
 
   $fields = array(
@@ -2467,12 +2460,12 @@ function brapi_get_program_details($project) {
  * @return array
  *   a JSON array containing the program details.
  */
-function brapi_v1_read_program_json($project) {
+function brapi_v1_read_programs_11_json($project) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $project_data = array();
 
-  $project_data = brapi_get_program_details($project);
+  $project_data = brapi_get_programs_details_11($project);
   $data = array('result' => array('data' => array($project_data)));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -2489,9 +2482,9 @@ function brapi_v1_read_program_json($project) {
  * @return array
  *   a JSON array containing the programs.
  */
-function brapi_v1_program_search_json() {
+function brapi_v1_programs_search_11_json() {
   $parameters = array(
-    'get_object_details' => 'brapi_get_program_details',
+    'get_object_details' => 'brapi_get_programs_details_11',
   );
   return brapi_v1_object_search_json('program', $parameters);
 }
@@ -2511,13 +2504,13 @@ function brapi_v1_program_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_sample_search_json() {
+function brapi_v1_samples_search_11_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
     'selectors' => array(
       'type_id' => $cv_settings['Sample'],
     ),
-    'get_object_details' => 'brapi_get_sample_details',
+    'get_object_details' => 'brapi_get_samples_details_11',
   );
   return brapi_v1_object_search_json('sample', $parameters);
 }
@@ -2542,14 +2535,14 @@ function brapi_v1_sample_search_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_sample_json($sample_id = NULL) {
+function brapi_v1_samples_11_json($sample_id = NULL) {
 
   $actions = array(
-    'create' => 'brapi_v1_create_sample_json',
-    'read'   => 'brapi_v1_read_sample_json',
-    'update' => 'brapi_v1_update_sample_json',
-    'delete' => 'brapi_v1_delete_sample_json',
-    'list'   => 'brapi_v1_sample_search_json',
+    'create' => 'brapi_v1_create_samples_11_json',
+    'read'   => 'brapi_v1_read_samples_11_json',
+    'update' => 'brapi_v1_update_samples_11_json',
+    'delete' => 'brapi_v1_delete_samples_11_json',
+    'list'   => 'brapi_v1_samples_search_11_json',
   );
 
   return brapi_process_crud('samples/{sampleDbId}', $actions, 'sample', $sample_id);
@@ -2579,7 +2572,7 @@ function brapi_v1_sample_json($sample_id = NULL) {
  * @return array
  *   a JSON structure containing the stock details.
  */
-function brapi_v1_create_sample_json($user_data, $uniquename = NULL) {
+function brapi_v1_create_samples_11_json($user_data, $uniquename = NULL) {
 
   // Make sure we got all the requested data.
   $required_fields = array(
@@ -2721,7 +2714,7 @@ function brapi_v1_create_sample_json($user_data, $uniquename = NULL) {
     }
   }
 
-  return brapi_v1_read_sample_json($stock);
+  return brapi_v1_read_samples_11_json($stock);
 }
 
 /**
@@ -2733,10 +2726,10 @@ function brapi_v1_create_sample_json($user_data, $uniquename = NULL) {
  * @return array
  *   a JSON array containing the stock details.
  */
-function brapi_v1_read_sample_json($stock) {
+function brapi_v1_read_samples_11_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
-  $sample_data = brapi_get_sample_details($stock);
+  $sample_data = brapi_get_samples_details_11($stock);
   $data = array('result' => $sample_data);
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -2756,7 +2749,7 @@ function brapi_v1_read_sample_json($stock) {
  * @return array
  *   the stock details in an associative array.
  */
-function brapi_get_sample_details($stock) {
+function brapi_get_samples_details_11($stock) {
   $sample_data = array();
 
   $fields = array(
@@ -2796,7 +2789,7 @@ function brapi_get_sample_details($stock) {
  * @return array
  *   a JSON structure containing the stock details.
  */
-function brapi_v1_update_sample_json($user_data, $stock) {
+function brapi_v1_update_samples_11_json($user_data, $stock) {
 
   $cv_settings = brapi_get_cv_settings();
   $stock_match = array('stock_id' => $stock->stock_id);
@@ -2899,7 +2892,7 @@ function brapi_v1_update_sample_json($user_data, $stock) {
     }
   }
 
-  return brapi_v1_read_sample_json($stock);
+  return brapi_v1_read_samples_11_json($stock);
 }
 
 /**
@@ -2911,7 +2904,7 @@ function brapi_v1_update_sample_json($user_data, $stock) {
  * @return array
  *   a JSON structure with and empty data array.
  */
-function brapi_v1_delete_sample_json($stock) {
+function brapi_v1_delete_samples_11_json($stock) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
 
@@ -2956,10 +2949,10 @@ function brapi_v1_delete_sample_json($stock) {
  *
  * @ingroup brapi
  */
-function brapi_v1_variable_json($variable_id = NULL) {
+function brapi_v1_variables_11_json($variable_id = NULL) {
   $actions = array(
-    'read' => 'brapi_v1_read_variable_json',
-    'list' => 'brapi_v1_variable_search_json',
+    'read' => 'brapi_v1_read_variables_11_json',
+    'list' => 'brapi_v1_variables_search_11_json',
   );
 
   return brapi_process_crud('variables/{observationVariableDbId}', $actions, 'variable', $variable_id);
@@ -2974,7 +2967,7 @@ function brapi_v1_variable_json($variable_id = NULL) {
  * @return array
  *   the variable details in an associative array.
  */
-function brapi_get_variable_details($cvterm) {
+function brapi_get_variables_details_11($cvterm) {
   $cvterm_data = array();
 
   $fields = array(
@@ -3004,12 +2997,12 @@ function brapi_get_variable_details($cvterm) {
  * @return array
  *   a JSON array containing the variable details.
  */
-function brapi_v1_read_variable_json($project) {
+function brapi_v1_read_variables_11_json($project) {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $project_data = array();
 
-  $project_data = brapi_get_variable_details($project);
+  $project_data = brapi_get_variables_details_11($project);
   $data = array('result' => array('data' => array($project_data)));
   brapi_aggregate_call($data, $metadata, $debug_data);
 
@@ -3040,7 +3033,7 @@ function brapi_v1_read_variable_json($project) {
  *
  * @ingroup brapi
  */
-function brapi_v1_variable_datatypes_json() {
+function brapi_v1_variables_datatypes_11_json() {
   $metadata = brapi_prepare_metadata(1);
   $debug_data = array();
   $datatypes = array(
@@ -3069,9 +3062,9 @@ function brapi_v1_variable_datatypes_json() {
  * @return array
  *   a JSON array containing the variables.
  */
-function brapi_v1_variable_search_json() {
+function brapi_v1_variables_search_11_json() {
   $parameters = array(
-    'get_object_details' => 'brapi_get_variable_details',
+    'get_object_details' => 'brapi_get_variables_details_11',
   );
   return brapi_v1_object_search_json('variable', $parameters);
 }
