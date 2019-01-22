@@ -68,13 +68,12 @@ class BrapiException extends Exception {
       );
     }
     else {
-      $return = brapi_raise_error_json(
+      return brapi_raise_error_json(
         $this->httpErrorCode,
         $this->getMessage(),
         $this->data,
         $this->debugData
       );
-      return $return;
     }
   }
 
@@ -2337,7 +2336,7 @@ function brapi_prepare_metadata($item_count = 1) {
 }
 
 /**
- * Outputs the JSON data corresponding to a BRAPI call.
+ * Prepares the JSON data corresponding to a BRAPI call.
  *
  * Helper function that formats the given call response into a standardized
  * hash with all requested elements.
@@ -2346,9 +2345,6 @@ function brapi_prepare_metadata($item_count = 1) {
  * - debug (bool)
  *   include debug information in output if some have been provided (see
  *   $debug_data parameter);
- * - pretty (bool)
- *   if set to a true value, output a nice indented human-readable JSON
- *   structure.
  *
  * @param array $data
  *   Response data hash.
@@ -2366,11 +2362,11 @@ function brapi_prepare_metadata($item_count = 1) {
  *   output.
  *
  * @return string
- *   a JSON string.
+ *   a PHP structure that will correspond to a JSON output.
  *
  * @ingroup brapi_api
  */
-function brapi_output_json(
+function brapi_json_prepare(
     $data = array(),
     $metadata = NULL,
     $debug_data = array()
@@ -2399,15 +2395,42 @@ function brapi_output_json(
     $output_data['debug'] = implode("\n", $debug_data);
   }
 
+  return $output_data;
+}
+
+/**
+ * Outputs the JSON data corresponding to a BRAPI call.
+ *
+ * Helper function that outputs the given PHP structure as a JSON element
+ * through the HTTP(S) protocol.
+ *
+ * Supported GET parameters:
+ * - pretty (bool)
+ *   if set to a true value, output a nice indented human-readable JSON
+ *   structure.
+ *
+ * @param $output_data
+ *   The PHP structure that represent the JSON data to serve.
+ *
+ * @return string
+ *   a JSON string.
+ *
+ * @ingroup brapi_api
+ */
+function brapi_json_output($output_data) {
+  $args = drupal_get_query_parameters();
+
   if (!isset($args['pretty']) || $args['pretty']) {
-    echo json_encode(
+    $output_data = json_encode(
       $output_data,
       JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
     );
-    return drupal_json_output();
+    drupal_json_output();
+    echo $output_data;
+    return;
   }
 
-  return drupal_json_output($output_data);
+  drupal_json_output($output_data);
 }
 
 /**
@@ -2434,6 +2457,7 @@ function brapi_output_json(
  */
 function brapi_raise_error_json($http_error_code, $message, $data = array(), $debug_data = array()) {
   drupal_add_http_header('Status', $http_error_code);
+
   $metadata = array(
     'status' => array(
       array(
@@ -2442,7 +2466,7 @@ function brapi_raise_error_json($http_error_code, $message, $data = array(), $de
       ),
     ),
   );
-  return brapi_output_json($data, $metadata, $debug_data);
+  return brapi_json_prepare($data, $metadata, $debug_data);
 }
 
 /**
@@ -2477,7 +2501,7 @@ function brapi_raise_raw_error_json($http_error_code, $data = array(), $debug_da
     $data = array_merge($data, array('debug' => $debug_data));
   }
 
-  return drupal_json_output($data);
+  return $data;
 }
 
 /**

@@ -26,7 +26,7 @@ Here, we assume current user has ``BRAPI_USE_PERMISSION`` and used GET HTTP meth
 3. Then ``brapi_call_wrapper()`` will allow external modules to override returned data before being served to the client if they implement ``hook_brapi_CALL_FUNC_NAME_alter(&$data, &$context)``.
 Here, any implementation of ``hook_brapi_germplasm_germplasmDbId_alter(&$data, &$context)`` will be called. Note, it is also possible to alter call result in case of errors.
 
-4. Finally, ``brapi_output_json()`` (in ``api/brapi.api.inc``) will be called to format data into a JSON string that will be served by Drupal to the client.
+4. Finally, ``brapi_json_prepare()`` and ``brapi_json_output()`` (in ``api/brapi.api.inc``) will be called to format data into a JSON string that will be served by Drupal to the client.
 
 How ``brapi_v1_germplasm_json()`` works
 -----------------------------------------

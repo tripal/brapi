@@ -317,7 +317,10 @@ function brapi_page_alter(&$page) {
     $status = drupal_get_http_header('Status');
     // Only catch 4xx and 5xx HTTP status.
     if (preg_match('/^([45]\d\d)\s*(.*)/', $status, $matches)) {
-      $page = brapi_raise_error_json($matches[1], $matches[2]);
+      $page = '';
+      brapi_json_output(
+        brapi_raise_error_json($matches[1], $matches[2])
+      );
     }
   }
 }
