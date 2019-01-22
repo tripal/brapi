@@ -2851,8 +2851,10 @@ function brapi_get_data_mapping() {
     if (isset($storage_options['dbid'])
         && ('chado_id' == $storage_options['dbid'])) {
       foreach (array_keys($brapi_data_mapping) as $data_type) {
-        $brapi_data_mapping[$data_type]['fields'][$data_type . 'DbId'] =
-          $brapi_data_mapping[$data_type]['identifier'];
+        if (!empty($brapi_data_mapping[$data_type])) {
+          $brapi_data_mapping[$data_type]['fields'][$data_type . 'DbId'] =
+            $brapi_data_mapping[$data_type]['identifier'];
+        }
       }
     }
 
