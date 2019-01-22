@@ -81,6 +81,118 @@ class BrapiException extends Exception {
 }
 
 /**
+ * Example implementation of hook_brapi_calls_alter.
+ *
+ * This example shows how to alter Breeding API call settings. It adds a new
+ * version support (1.42) to the 'markers' call and sets the function that will
+ * handle that version to function brapi_v1_markers_142_json($marker_id = NULL)
+ * that must be defined elsewhere.
+ *
+ * @param array $brapi_calls
+ *   An associative array where keys are BrAPI call names and values are
+ *   call definitions.
+ *
+ * @see brapi_get_calls()
+ *
+ * @ingroup brapi_api
+ */
+function hook_brapi_calls_alter(&$brapi_calls) {
+  $brapi_calls['markers']['api versions'][] = '1.42';
+  $brapi_calls['markers']['callback versions']['1.42'] =
+    'brapi_v1_markers_142_json';
+}
+
+/**
+ * Example implementation of hook_brapi_data_mapping_alter.
+ *
+ * This example shows how to alter Breeding API data mapping. It adds 2 new
+ * fields to the germplasm type ('internalName' and 'speciesNewFunc'), it
+ * redefines the existing field 'seedSource' and replaces the 'species' field
+ * by the new field 'speciesNewFunc'.
+ *
+ * @param array $brapi_data_mapping
+ *   An associative array where keys are BrAPI entity types and values are
+ *   data/field mapping definitions.
+ *
+ * @see brapi_get_data_mapping()
+ *
+ * @ingroup brapi_api
+ */
+function hook_brapi_data_mapping_alter(&$brapi_data_mapping) {
+  $cv_settings = brapi_get_cv_settings();
+
+  // Defines a new germplasm field called 'internalName' as the value of
+  // stock.uniquename column.
+  $brapi_data_mapping['germplasm']['internalName'] = 'uniquename';
+
+  // Redefines the seedSource as a stock_cvterm which cvterm_id is part of the
+  // allowed cvterm_id for seedSource as defined by the CV settings.
+  $brapi_data_mapping['germplasm']['seedSource'] = array(
+    'table' => 'stock_cvterm',
+    'column' => 'cvterm_id',
+    'selector' => array(
+      'cvterm_id' => $cv_settings['SeedSource'],
+      'is_not' => FALSE,
+    ),
+    'field_type' => 'cvterm',
+    // We expect only one seed source.
+    'return_array' => FALSE,
+  );
+
+  // Defines a new species field 'speciesNewFunc' as a function.
+  $brapi_data_mapping['germplasm']['speciesNewFunc'] =
+    function ($data_type, $stock, $field_name, $op, $values = NULL) use ($cv_settings) {
+      $return = NULL;
+      switch ($op) {
+        case NULL:
+          // This function supports 'read' and 'filter' operations.
+          $return = array('read' => TRUE, 'filter' => TRUE);
+          break;
+
+        case 'read':
+          // Just make sure our $stock is a germplasm.
+          if (!empty($cv_settings['Germplasm'])
+              && in_array($stock->type_id, (array) $cv_settings['Germplasm'])) {
+            // Return its species name.
+            $return = $stock->organism_id->species;
+          }
+          break;
+
+        case 'filter':
+          $return = array();
+          // Get possible values as an array.
+          // Values may be provided either as coma separated valuies in a string
+          // or as an ready-to-use PHP array.
+          if (is_array($values)) {
+            $values = implode(',', $values);
+          }
+          $values = explode(',', $values);
+          // For 'filter', $stock contains an array of stocks.
+          foreach ($stock as $stock_to_check) {
+            // Here goes some code to check if the stock species value is part
+            // of the filter values (using 'OR' logic).
+            if (!empty($stock_to_check->organism_id)
+                && in_array($stock_to_check->organism_id->species, $values)) {
+              $return[] = $stock_to_check;
+            }
+          }
+          break;
+
+        case 'create':
+          // Not supported here but $values would contain the new field values.
+        case 'update':
+          // Not supported here but $values would contain the new field values.
+        case 'delete':
+        default:
+          throw new BrapiException(501, t("Currently not supported!"));
+      }
+      return $return;
+    };
+  // Forces the use of this new function for the current species field.
+  $brapi_data_mapping['germplasm']['species']['alias_for'] = 'speciesNewFunc';
+}
+
+/**
  * Checks if an array contains the given values.
  *
  * @param mixed $mixed
@@ -152,7 +264,7 @@ function brapi_get_mcpd_settings($reset = FALSE) {
 /**
  * Example implementation of hook_brapi_cv_settings_alter.
  *
- * This example shows how to alter Breeding API CV term settings. It change the
+ * This example shows how to alter Breeding API CV term settings. It changes the
  * CV term ID of a MCPD term named 'accessionNumber'.
  *
  * @param array $cv_settings
