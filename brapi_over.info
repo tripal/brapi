@@ -1,0 +1,6 @@
+name = Example Breeding API overrides
+description = Provides an example module that overrides some BrAPI features.
+core = 7.x
+package = Tripal Extensions
+
+dependencies[] = brapi

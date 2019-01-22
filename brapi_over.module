@@ -1,0 +1,361 @@
+<?php
+
+/**
+ * @file
+ * Example module for BrAPI overrides.
+ *
+ * This examples demonstarte 3 things:
+ * - How to replace default marker settings from BrAPI module by new settings.
+ *   Those new settings use a new custom table called 'marker' that have the
+ *   following definition (for instance):
+ *   CREATE TABLE chado.marker (
+ *     marker_id BIGSERIAL NOT NULL,
+ *     PRIMARY KEY (marker_id),
+ *     type_id BIGINT NOT NULL,
+ *     name VARCHAR(255),
+ *     uniquename TEXT NOT NULL,
+ *     refalt TEXT[],
+ *     CONSTRAINT marker_c1 UNIQUE(uniquename, type_id),
+ *     FOREIGN KEY (type_id) REFERENCES chado.cvterm(cvterm_id)
+ *       ON DELETE CASCADE INITIALLY DEFERRED
+ *   );
+ *   and the 2 following linking tables:
+ *   CREATE TABLE chado.marker_analysis (
+ *     marker_analysis_id BIGSERIAL NOT NULL,
+ *     PRIMARY KEY (marker_analysis_id),
+ *     analysis_id BIGINT NOT NULL,
+ *     marker_id BIGINT NOT NULL,
+ *     CONSTRAINT marker_analysis_c1 UNIQUE(analysis_id, marker_id),
+ *     FOREIGN KEY (analysis_id) REFERENCES chado.analysis(analysis_id)
+ *       ON DELETE CASCADE INITIALLY DEFERRED,
+ *     FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
+ *       ON DELETE CASCADE INITIALLY DEFERRED
+ *   );
+ *   CREATE TABLE chado.marker_synonym (
+ *     marker_synonym_id BIGSERIAL NOT NULL,
+ *     PRIMARY KEY (marker_synonym_id),
+ *     synonym_id BIGINT NOT NULL,
+ *     marker_id BIGINT NOT NULL,
+ *     CONSTRAINT marker_synonym_c1 UNIQUE(synonym_id, marker_id),
+ *     FOREIGN KEY (synonym_id) REFERENCES chado.synonym(synonym_id)
+ *       ON DELETE CASCADE INITIALLY DEFERRED,
+ *     FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
+ *       ON DELETE CASCADE INITIALLY DEFERRED
+ *   );
+ * - How to restrict access on private germplasm (and samples) for instance.
+ *   Only stock with a uniquename starting with '01...' will be returned, others
+ *   will be hidden.
+ * - How to alter a call and also alter.
+ * - How to alter a BrAPI call error in order to return something instead of an
+ *   error.
+ */
+
+/**
+ * Implements hook_brapi_calls_alter().
+ *
+ * Adds the new marker type support only for BrAPI marker call configured into
+ * version 1.3 (on BrAPI call setting page).
+ */
+function brapi_over_brapi_calls_alter(&$brapi_calls) {
+  $brapi_calls['markers']['api versions'][] = '1.3';
+  $brapi_calls['markers']['callback versions']['1.3'] =
+    'brapi_over_v1_markers_13_json';
+}
+
+/**
+ * Implements hook_brapi_data_mapping_alter().
+ *
+ * Defines new mapping for marker.
+ */
+function brapi_over_brapi_data_mapping_alter(&$brapi_data_mapping) {
+  $cv_settings = brapi_get_cv_settings();
+
+  // Redefines marker mapping and uses a custom table 'marker'.
+  $brapi_data_mapping['marker'] = array(
+    'table' => 'marker',
+    'identifier' => 'marker_id',
+    'accession' => 'uniquename',
+    'fields' => array(
+      // Table fields.
+      'defaultDisplayName' => 'name',
+      'markerDbId' => 'uniquename',
+      'refAlt' => 'refalt',
+
+      // Aliases.
+      // Table joins.
+      'type' => array(
+        'table' => 'cvterm',
+        'foreign_key' => 'cvterm_id',
+        'object_key' => 'type_id',
+        'column' => 'name',
+        'selector' => array(),
+        'field_type' => 'string',
+      ),
+
+      // Function fields.
+      'analysisMethods' => function ($data_type, $marker, $field_name, $op, $values = NULL) {
+        $analysis = NULL;
+        switch ($op) {
+          case NULL:
+            $analysis = array(
+              'read' => TRUE,
+              'filter' => TRUE,
+            );
+            break;
+
+          case 'read':
+            $marker = chado_expand_var($marker, 'table', 'marker_analysis');
+            if (!empty($marker->marker_analysis)) {
+              $analysis = array_map(
+                function ($marker_analysis) {
+                  return $marker_analysis->analysis_id->name;
+                },
+                (array) $marker->marker_analysis
+              );
+            }
+            break;
+
+          case 'filter':
+            $analysis = array();
+
+            // Get possible values as an array.
+            if (is_array($values)) {
+              $values = implode(',', $values);
+            }
+            $values = explode(',', $values);
+            // Check each object.
+            foreach ($marker as $marker_to_check) {
+              $analysis_methods = brapi_get_field(
+                $data_type,
+                $marker_to_check,
+                'analysisMethods'
+              );
+              if (array_intersect($analysis_methods, $values)) {
+                $analysis[] = $marker_to_check;
+              }
+            }
+            break;
+
+          default:
+        }
+
+        return $analysis;
+      },
+      'synonyms' => function ($data_type, $marker, $field_name, $op, $values = NULL) {
+        $synonyms = NULL;
+        switch ($op) {
+          case NULL:
+            $synonyms = array(
+              'read' => TRUE,
+              'filter' => TRUE,
+            );
+            break;
+
+          case 'read':
+            $marker = chado_expand_var($marker, 'table', 'marker_synonym');
+            if (!empty($marker->marker_synonym)) {
+              $synonyms = array_map(
+                function ($marker_synonym) {
+                  return $marker_synonym->synonym_id->name;
+                },
+                (array) $marker->marker_synonym
+              );
+            }
+            break;
+
+          case 'filter':
+            $synonyms = array();
+
+            // Get possible values as an array.
+            if (is_array($values)) {
+              $values = implode(',', $values);
+            }
+            $values = explode(',', $values);
+            // Check each object.
+            foreach ($marker as $marker_to_check) {
+              $marker_synonyms = brapi_get_field(
+                $data_type,
+                $marker_to_check,
+                'synonyms'
+              );
+              if (array_intersect($marker_synonyms, $values)) {
+                $synonyms[] = $marker_to_check;
+              }
+            }
+            break;
+
+          default:
+        }
+
+        return $synonyms;
+      },
+    ),
+  );
+}
+
+/**
+ * Marker call.
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ */
+function brapi_over_v1_markers_13_json() {
+  $actions = array(
+    'read' => 'brapi_over_v1_read_markers_13_json',
+    'list' => 'brapi_over_v1_markers_search_13_json',
+  );
+
+  return brapi_process_crud('markers/{markerDbId}', $actions, 'marker', $marker_id);
+}
+
+/**
+ * Returns a JSON array containing the details of a given marker.
+ *
+ * @param object $marker
+ *   A Tripal marker object from a custom table.
+ *
+ * @return array
+ *   a JSON array containing the marker details.
+ */
+function brapi_over_v1_read_markers_13_json($marker) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $marker_data = array();
+
+  // Default BrAPI function brapi_get_markers_details_10 will do the job as we
+  // redefined marker data mapping.
+  $marker_data = brapi_get_markers_details_10($marker);
+  $data = array('result' => array('data' => $marker_data));
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Marker search call.
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ */
+function brapi_over_v1_markers_search_13_json() {
+  $cv_settings = brapi_get_cv_settings();
+  $parameters = array(
+    'selectors' => array(),
+    // Default BrAPI function brapi_get_markers_details_10 will do the job as we
+    // redefined marker data mapping.
+    'get_object_details' => 'brapi_get_markers_details_10',
+  );
+
+  return brapi_v1_object_search_json('marker', $parameters);
+}
+
+/**
+ * Implements hook_brapi_object_selector_alter().
+ *
+ * Only allow stock ('germplasm', 'sample') with uniquename starting with '01%'
+ * to be loaded.
+ */
+function brapi_over_brapi_object_selector_alter(&$selector, $context) {
+  if (('germplasm' == $context['data_type'])
+      || ('sample' == $context['data_type'])) {
+    // Check how the selector has been setup already.
+    if (!empty($selector['uniquename'])) {
+      // We already have a constraint on uniquename.
+      if (is_array($selector['uniquename'])) {
+        if (is_array($selector['uniquename'][0])) {
+          // Complex filtering, add our filter.
+          $selector['uniquename'][] = 
+            array(
+              'op' => 'LIKE',
+              'data' => '01%',
+            );
+        }
+        else {
+          // Multiple values, we can check each now.
+          $valid_uniquenames = array();
+          foreach ($selector['uniquename'] as $un) {
+            if (0 === strpos($un, '01')) {
+              $valid_uniquenames[] = $un;
+            }
+          }
+
+          if (empty($valid_uniquenames)) {
+            // No uniquename starting with 01, make sure no result will come.
+            $selector = array('stock_id' => NULL);
+          }
+          else {
+            $selector['uniquename'] = $valid_uniquenames;
+          }
+        }
+      }
+      else {
+        // Single value, we can check now.
+        if (0 !== strpos($selector['uniquename'], '01')) {
+          // Not starting with 01, make sure no result will come.
+          $selector = array('stock_id' => NULL);
+        }
+      }
+    }
+    else {
+      // Not specified yet, add our filter.
+      $selector['uniquename'] = array(
+        'op' => 'LIKE',
+        'data' => '01%',
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_brapi_programs_programdbid_alter().
+ *
+ * Always add 'banana' as commonCropName.
+ */
+function brapi_over_brapi_programs_programdbid_alter(&$data, &$context) {
+  // Set common crop name to 'banana'.
+  foreach ($data['result']['data'] as &$program) {
+    $program['commonCropName'] = 'banana';
+  }
+}
+
+/**
+ * Implements hook_brapi_programs_programdbid_brapi_error_alter().
+ *
+ * Replace any BrAPI error for program call by a fake program object.
+ * Can be tested by providing an invalid programDbId.
+ */
+function brapi_over_brapi_programs_programdbid_brapi_error_alter(&$data) {
+  $debug_data = $data['debug'] ? : array();
+  $metadata = brapi_prepare_metadata(1);
+  // Clear previous error.
+  drupal_add_http_header('Status', FALSE);
+
+  $program = array(
+    'abbreviation' => 'P1',
+    'commonCropName' => 'Tomatillo',
+    'documentationURL' => 'https://brapi.org',
+    'leadPerson' => 'Name Nameson',
+    'leadPersonDbId' => 'person1',
+    'leadPersonName' => 'Name Nameson',
+    'name' => 'Program 1',
+    'objective' => 'Global Population Improvement',
+    'programDbId' => '1',
+    'programName' => 'Program 1',
+  );
+
+  $data = array(
+    'result' => array(
+      'data' => array(
+        $program,
+      ),
+    ),
+  );
+
+  $data = brapi_json_output(
+    brapi_json_prepare($data, $metadata, $debug_data)
+  );
+}
