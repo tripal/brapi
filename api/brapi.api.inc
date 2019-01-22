@@ -193,6 +193,76 @@ function hook_brapi_data_mapping_alter(&$brapi_data_mapping) {
 }
 
 /**
+ * Example implementation of hook_brapi_object_selector_alter.
+ *
+ * This implementation adds a constraint of the uniquename of stock. Chado stock
+ * with a uniquename not starting with '01' will be hidden.
+ *
+ * @param array $selector
+ *   A selector following the same format as the one used by
+ *   chado_select_record(). By default, it contains a key with a value that
+ *   identifies the object to load (usually 'xxx_id' or 'uniquename').
+ * @param array $context
+ *   'call' key contains the BrAPI call name and 'data_type' contains the type
+ *   of data that should be loaded (from brapi_get_data_mapping()).
+ *
+ * @see brapi_get_data_mapping()
+ * @see chado_select_record()
+ */
+function hook_brapi_object_selector_alter(&$selector, $context) {
+  if (('germplasm' == $context['data_type'])
+      || ('sample' == $context['data_type'])) {
+    // Check how the selector has been setup already.
+    if (!empty($selector['uniquename'])) {
+      // We already have a constraint on uniquename.
+      if (is_array($selector['uniquename'])) {
+        if (is_array($selector['uniquename'][0])) {
+          // Complex filtering, add our filter.
+          $selector['uniquename'][] =
+            array(
+              'op' => 'LIKE',
+              'data' => '01%',
+            );
+        }
+        else {
+          // Multiple values, we can check each now.
+          $valid_uniquenames = array();
+          foreach ($selector['uniquename'] as $un) {
+            if (0 === strpos($un, '01')) {
+              $valid_uniquenames[] = $un;
+            }
+          }
+
+          if (empty($valid_uniquenames)) {
+            // No uniquename starting with 01, make sure no result will come.
+            $selector = array('stock_id' => NULL);
+          }
+          else {
+            $selector['uniquename'] = $valid_uniquenames;
+          }
+        }
+      }
+      else {
+        // Single value, we can check now.
+        if (0 !== strpos($selector['uniquename'], '01')) {
+          // Not starting with 01, make sure no result will come.
+          $selector = array('stock_id' => NULL);
+        }
+      }
+    }
+    else {
+      // Not specified yet, add our filter.
+      $selector['uniquename'] = array(
+        array(
+          'op' => 'LIKE',
+          'data' => '01%',
+        ),
+      );
+    }
+  }
+}
+
+/**
  * Checks if an array contains the given values.
  *
  * @param mixed $mixed
@@ -1888,6 +1958,9 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
     $selector = array(
       $id_field => $id,
     );
+    // Allow other module interactions.
+    $context = array('call' => $call, 'data_type' => $data_type);
+    drupal_alter('brapi_object_selector', $selector, $context);
     $object = chado_generate_var($data_settings['table'], $selector);
     if (is_array($object)) {
       $object = current($object);
