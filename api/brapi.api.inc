@@ -2409,11 +2409,8 @@ function brapi_json_prepare(
  *   if set to a true value, output a nice indented human-readable JSON
  *   structure.
  *
- * @param $output_data
+ * @param mixed $output_data
  *   The PHP structure that represent the JSON data to serve.
- *
- * @return string
- *   a JSON string.
  *
  * @ingroup brapi_api
  */
@@ -2427,10 +2424,10 @@ function brapi_json_output($output_data) {
     );
     drupal_json_output();
     echo $output_data;
-    return;
   }
-
-  drupal_json_output($output_data);
+  else {
+    drupal_json_output($output_data);
+  }
 }
 
 /**

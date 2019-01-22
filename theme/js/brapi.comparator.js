@@ -1,17 +1,24 @@
 /**
  * @file
- * BrAPI Javascript library
- *
+ * BrAPI comparator Javascript.
  */
+
 (function ($) {
 "use strict";
 
   Drupal.brapi = Drupal.brapi || {};
 
   Drupal.behaviors.brapi = {
-    attach: function(context, settings) {
+    attach: function (context, settings) {
 /******************************************************************************/
-$(function() {
+$(function () {
+
+  /**
+   * BrAPI comparator functions.
+   *
+   * BrAPI comparator function used to highlight differences between call
+   * answers.
+   */
   var entity_settings = {
     'germplasm': {
       'search': 'germplasm-search',
@@ -26,7 +33,6 @@ $(function() {
     var brapi_comparator_url2 = $('#brapi_comparator_url2').val();
     alert('Test: ' + brapi_comparator_url1 + ' vs ' + brapi_comparator_url2);
   });
-  
 
 });
 /******************************************************************************/
