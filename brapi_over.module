@@ -6,48 +6,218 @@
  *
  * This examples demonstarte 3 things:
  * - How to replace default marker settings from BrAPI module by new settings.
- *   Those new settings use a new custom table called 'marker' that have the
- *   following definition (for instance):
- *   CREATE TABLE chado.marker (
- *     marker_id BIGSERIAL NOT NULL,
- *     PRIMARY KEY (marker_id),
- *     type_id BIGINT NOT NULL,
- *     name VARCHAR(255),
- *     uniquename TEXT NOT NULL,
- *     refalt TEXT[],
- *     CONSTRAINT marker_c1 UNIQUE(uniquename, type_id),
- *     FOREIGN KEY (type_id) REFERENCES chado.cvterm(cvterm_id)
- *       ON DELETE CASCADE INITIALLY DEFERRED
- *   );
- *   and the 2 following linking tables:
- *   CREATE TABLE chado.marker_analysis (
- *     marker_analysis_id BIGSERIAL NOT NULL,
- *     PRIMARY KEY (marker_analysis_id),
- *     analysis_id BIGINT NOT NULL,
- *     marker_id BIGINT NOT NULL,
- *     CONSTRAINT marker_analysis_c1 UNIQUE(analysis_id, marker_id),
- *     FOREIGN KEY (analysis_id) REFERENCES chado.analysis(analysis_id)
- *       ON DELETE CASCADE INITIALLY DEFERRED,
- *     FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
- *       ON DELETE CASCADE INITIALLY DEFERRED
- *   );
- *   CREATE TABLE chado.marker_synonym (
- *     marker_synonym_id BIGSERIAL NOT NULL,
- *     PRIMARY KEY (marker_synonym_id),
- *     synonym_id BIGINT NOT NULL,
- *     marker_id BIGINT NOT NULL,
- *     CONSTRAINT marker_synonym_c1 UNIQUE(synonym_id, marker_id),
- *     FOREIGN KEY (synonym_id) REFERENCES chado.synonym(synonym_id)
- *       ON DELETE CASCADE INITIALLY DEFERRED,
- *     FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
- *       ON DELETE CASCADE INITIALLY DEFERRED
- *   );
+ *   Those new settings use new custom tables detailed after.
  * - How to restrict access on private germplasm (and samples) for instance.
  *   Only stock with a uniquename starting with '01...' will be returned, others
  *   will be hidden.
  * - How to alter a call and also alter.
  * - How to alter a BrAPI call error in order to return something instead of an
  *   error.
+ *
+ * Additional details:
+ * Custom tables as SQL code:
+ * @code
+ * CREATE TABLE chado.marker (
+ *   marker_id BIGSERIAL NOT NULL,
+ *   PRIMARY KEY (marker_id),
+ *   type_id BIGINT NOT NULL,
+ *   name VARCHAR(255),
+ *   uniquename TEXT NOT NULL,
+ *   refalt TEXT[],
+ *   CONSTRAINT marker_c1 UNIQUE(uniquename, type_id),
+ *   FOREIGN KEY (type_id) REFERENCES chado.cvterm(cvterm_id)
+ *     ON DELETE CASCADE INITIALLY DEFERRED
+ * );
+ * CREATE INDEX marker_idx1 ON chado.marker (marker_id);
+ * CREATE INDEX marker_idx2 ON chado.marker (type_id);
+ * CREATE INDEX marker_idx3 ON chado.marker (uniquename);
+ * CREATE TABLE chado.marker_analysis (
+ *   marker_analysis_id BIGSERIAL NOT NULL,
+ *   PRIMARY KEY (marker_analysis_id),
+ *   analysis_id BIGINT NOT NULL,
+ *   marker_id BIGINT NOT NULL,
+ *   CONSTRAINT marker_analysis_c1 UNIQUE(analysis_id, marker_id),
+ *   FOREIGN KEY (analysis_id) REFERENCES chado.analysis(analysis_id)
+ *     ON DELETE CASCADE INITIALLY DEFERRED,
+ *   FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
+ *     ON DELETE CASCADE INITIALLY DEFERRED
+ * );
+ * CREATE INDEX marker_analysis_idx1 ON chado.marker_analysis (marker_analysis_id);
+ * CREATE INDEX marker_analysis_idx2 ON chado.marker_analysis (marker_id);
+ * CREATE INDEX marker_analysis_idx3 ON chado.marker_analysis (analysis_id);
+ * CREATE TABLE chado.marker_synonym (
+ *   marker_synonym_id BIGSERIAL NOT NULL,
+ *   PRIMARY KEY (marker_synonym_id),
+ *   synonym_id BIGINT NOT NULL,
+ *   marker_id BIGINT NOT NULL,
+ *   CONSTRAINT marker_synonym_c1 UNIQUE(synonym_id, marker_id),
+ *   FOREIGN KEY (synonym_id) REFERENCES chado.synonym(synonym_id)
+ *     ON DELETE CASCADE INITIALLY DEFERRED,
+ *   FOREIGN KEY (marker_id) REFERENCES chado.marker(marker_id)
+ *     ON DELETE CASCADE INITIALLY DEFERRED
+ * );
+ * CREATE INDEX marker_synonym_idx1 ON chado.marker_synonym (marker_synonym_id);
+ * CREATE INDEX marker_synonym_idx2 ON chado.marker_synonym (marker_id);
+ * CREATE INDEX marker_synonym_idx3 ON chado.marker_synonym (synonym_id);
+ * @endcode
+ *
+ * Custom table definitions for Tripal
+ * (admin/tripal/storage/chado/custom_tables):
+ * @code
+ * array(
+ *   'description' => 'Markers.',
+ *   'table' => 'marker',
+ *   'fields' => array(
+ *     'marker_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'serial',
+ *       'not null' => TRUE,
+ *     ),
+ *     'type_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'int',
+ *       'not null' => TRUE,
+ *     ),
+ *     'name' => array(
+ *       'size' => 'normal',
+ *       'type' => 'varchar',
+ *       'length' => '255',
+ *       'not null' => FALSE,
+ *     ),
+ *     'uniquename' => array(
+ *       'size' => 'normal',
+ *       'type' => 'text',
+ *       'not null' => TRUE,
+ *     ),
+ *     'refalt' => array(
+ *       'size' => 'normal',
+ *       'type' => 'text',
+ *       'not null' => TRUE,
+ *       'default' => '',
+ *     ),
+ *   ),
+ *   'indexes' => array(
+ *     'marker_idx1' => array('marker_id'),
+ *     'marker_idx2' => array('type_id'),
+ *     'marker_idx3' => array('uniquename'),
+ *   ),
+ *   'primary key' => array(
+ *     'marker_id',
+ *   ),
+ *   'unique keys' => array(
+ *   ),
+ *   'foreign keys' => array(
+ *     'cvterm' => array(
+ *       'table' => 'cvterm',
+ *       'columns' => array(
+ *         'type_id' => 'cvterm_id',
+ *       ),
+ *     ),
+ *   ),
+ *   'referring_tables' => array(
+ *     'marker_analysis',
+ *     'marker_synonym',
+ *   ),
+ * );
+ *
+ * array(
+ *   'description' => 'Marker-analysis links.',
+ *   'table' => 'marker_analysis',
+ *   'fields' => array(
+ *     'marker_analysis_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'serial',
+ *       'not null' => TRUE,
+ *     ),
+ *     'analysis_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'int',
+ *       'not null' => TRUE,
+ *     ),
+ *     'marker_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'int',
+ *       'not null' => TRUE,
+ *     ),
+ *   ),
+ *   'indexes' => array(
+ *     'marker_analysis_idx1' => array('marker_analysis_id'),
+ *     'marker_analysis_idx2' => array('marker_id'),
+ *     'marker_analysis_idx3' => array('analysis_id'),
+ *   ),
+ *   'primary key' => array(
+ *     'marker_analysis_id',
+ *   ),
+ *   'unique keys' => array(
+ *     'marker_analysis_c1' => array('analysis_id', 'marker_id'),
+ *   ),
+ *   'foreign keys' => array(
+ *     'analysis' => array(
+ *       'table' => 'analysis',
+ *       'columns' => array(
+ *         'analysis_id' => 'analysis_id',
+ *       ),
+ *     ),
+ *     'marker' => array(
+ *       'table' => 'marker',
+ *       'columns' => array(
+ *         'marker_id' => 'marker_id',
+ *       ),
+ *     ),
+ *   ),
+ *   'referring_tables' => array(
+ *   ),
+ * );
+ *
+ * array(
+ *   'description' => 'Marker-synonym links.',
+ *   'table' => 'marker_synonym',
+ *   'fields' => array(
+ *     'marker_synonym_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'serial',
+ *       'not null' => TRUE,
+ *     ),
+ *     'synonym_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'int',
+ *       'not null' => TRUE,
+ *     ),
+ *     'marker_id' => array(
+ *       'size' => 'big',
+ *       'type' => 'int',
+ *       'not null' => TRUE,
+ *     ),
+ *   ),
+ *   'indexes' => array(
+ *     'marker_synonym_idx1' => array('marker_synonym_id'),
+ *     'marker_synonym_idx2' => array('marker_id'),
+ *     'marker_synonym_idx3' => array('synonym_id'),
+ *   ),
+ *   'primary key' => array(
+ *     'marker_synonym_id',
+ *   ),
+ *   'unique keys' => array(
+ *     'marker_synonym_c1' => array('synonym_id', 'marker_id'),
+ *   ),
+ *   'foreign keys' => array(
+ *     'synonym' => array(
+ *       'table' => 'synonym',
+ *       'columns' => array(
+ *         'synonym_id' => 'synonym_id',
+ *       ),
+ *     ),
+ *     'marker' => array(
+ *       'table' => 'marker',
+ *       'columns' => array(
+ *         'marker_id' => 'marker_id',
+ *       ),
+ *     ),
+ *   ),
+ *   'referring_tables' => array(
+ *   ),
+ * );
+ * @endcode
  */
 
 /**
@@ -79,7 +249,7 @@ function brapi_over_brapi_data_mapping_alter(&$brapi_data_mapping) {
       // Table fields.
       'defaultDisplayName' => 'name',
       'markerDbId' => 'uniquename',
-      'refAlt' => 'refalt',
+      'refaltcol' => 'refalt',
 
       // Aliases.
       // Table joins.
@@ -93,6 +263,65 @@ function brapi_over_brapi_data_mapping_alter(&$brapi_data_mapping) {
       ),
 
       // Function fields.
+      'refAlt' => function ($data_type, $marker, $field_name, $op, $values = NULL) {
+        $ref_alt = NULL;
+        switch ($op) {
+          case NULL:
+            $ref_alt = array(
+              'read' => TRUE,
+              'filter' => TRUE,
+            );
+            break;
+
+          case 'read':
+            $ref_alt_col = brapi_get_field(
+              $data_type,
+              $marker,
+              'refaltcol'
+            );
+            if (!empty($ref_alt_col)) {
+              preg_match_all(
+                '/(?<=^\{|,)(([^,"{]*)|\s*"((?:[^"\\\\]|\\\\(?:.|[0-9]+|x[0-9a-f]+))*)"\s*)(,|(?<!^\{)(?=\}$))/i',
+                $ref_alt_col,
+                $matches,
+                PREG_SET_ORDER
+              );
+              $ref_alt = array();
+              foreach ($matches as $match) {
+                $ref_alt[] =
+                  ($match[3] != '') ?
+                    stripcslashes($match[3])
+                    : ((strtolower($match[2]) == 'null') ? NULL : $match[2]);
+              }
+            }
+            break;
+
+          case 'filter':
+            $ref_alt = array();
+
+            // Get possible values as an array.
+            if (is_array($values)) {
+              $values = implode(',', $values);
+            }
+            $values = explode(',', $values);
+            // Check each object.
+            foreach ($marker as $marker_to_check) {
+              $analysis_methods = brapi_get_field(
+                $data_type,
+                $marker_to_check,
+                'analysisMethods'
+              );
+              if (array_intersect($analysis_methods, $values)) {
+                $ref_alt[] = $marker_to_check;
+              }
+            }
+            break;
+
+          default:
+        }
+
+        return $ref_alt;
+      },
       'analysisMethods' => function ($data_type, $marker, $field_name, $op, $values = NULL) {
         $analysis = NULL;
         switch ($op) {
@@ -104,14 +333,17 @@ function brapi_over_brapi_data_mapping_alter(&$brapi_data_mapping) {
             break;
 
           case 'read':
+            $analysis = array();
             $marker = chado_expand_var($marker, 'table', 'marker_analysis');
             if (!empty($marker->marker_analysis)) {
-              $analysis = array_map(
-                function ($marker_analysis) {
-                  return $marker_analysis->analysis_id->name;
-                },
-                (array) $marker->marker_analysis
-              );
+              if (is_array($marker->marker_analysis)) {
+                foreach ($marker->marker_analysis as $marker_analysis) {
+                  $analysis[] = $marker_analysis->analysis_id->name;
+                }
+              }
+              else {
+                $analysis[] = $marker->marker_analysis->analysis_id->name;
+              }
             }
             break;
 
@@ -152,14 +384,17 @@ function brapi_over_brapi_data_mapping_alter(&$brapi_data_mapping) {
             break;
 
           case 'read':
+            $synonyms = array();
             $marker = chado_expand_var($marker, 'table', 'marker_synonym');
             if (!empty($marker->marker_synonym)) {
-              $synonyms = array_map(
-                function ($marker_synonym) {
-                  return $marker_synonym->synonym_id->name;
-                },
-                (array) $marker->marker_synonym
-              );
+              if (is_array($marker->marker_synonym)) {
+                foreach ($marker->marker_synonym as $marker_synonym) {
+                  $synonyms[] = $marker_synonym->synonym_id->name;
+                }
+              }
+              else {
+                $synonyms[] = $marker->marker_synonym->synonym_id->name;
+              }
             }
             break;
 
@@ -268,7 +503,7 @@ function brapi_over_brapi_object_selector_alter(&$selector, $context) {
       if (is_array($selector['uniquename'])) {
         if (is_array($selector['uniquename'][0])) {
           // Complex filtering, add our filter.
-          $selector['uniquename'][] = 
+          $selector['uniquename'][] =
             array(
               'op' => 'LIKE',
               'data' => '01%',
@@ -329,7 +564,7 @@ function brapi_over_brapi_programs_programdbid_alter(&$data, &$context) {
  * Can be tested by providing an invalid programDbId.
  */
 function brapi_over_brapi_programs_programdbid_brapi_error_alter(&$data) {
-  $debug_data = $data['debug'] ? : array();
+  $debug_data = $data['debug'] ?: array();
   $metadata = brapi_prepare_metadata(1);
   // Clear previous error.
   drupal_add_http_header('Status', FALSE);
