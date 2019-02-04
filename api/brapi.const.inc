@@ -122,6 +122,7 @@ function brapi_get_cv() {
     'SampleTimestamp'  => 'Sample timestamp (nd_experimentprop.type_id)',
     'SeedSource'       => 'Name or identifier of the seed provider',
     'Study'            => 'Study property type (nd_experimentprop.type_id).',
+    'Trait'            => 'An organism trait (cvterm.name)',
     'TypeOfTissue'     => 'Type of tissue (stock_cvterm.cvterm_id).',
   );
 }
@@ -1204,7 +1205,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
+          '1.1' => 'brapi_v1_traits_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -1219,7 +1220,7 @@ function brapi_get_calls() {
         'api versions' => array('1.0', '1.1', '1.2'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
+          '1.1' => 'brapi_v1_traits_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -2370,28 +2371,54 @@ function brapi_get_data_mapping() {
         // ),
         // @endcode
       ),
-      'trait'        => array(
-        // @code
-        // 'table' => 'xxx',
-        // 'identifier' => 'xx_id',
-        // 'accession' => 'uniquename',
-        // 'fields' => array(
-        //  // Table fields.
-        //  // Aliases.
-        //  // Table joins.
-        //  // Function fields.
-        //   'xxxDbId' => 'uniquename',
-        //   'defaultDisplayName' => 'name',
-        //   'type' => array(
-        //     'table' => 'cvterm',
-        //     'foreign_key' => 'cvterm_id',
-        //     'object_key' => 'type_id',
-        //     'column' => 'name',
-        //     'selector' => array(),
-        //     'field_type' => 'string',
-        //   ),
-        // ),
-        // @endcode
+      'trait' => array(
+         'table'      => 'cvterm',
+         'identifier' => 'cvterm_id',
+         'accession'  => 'name',
+         'fields' => array(
+           'description'        => 'definition',
+           'name'               => 'name',
+           'traitDbId'          => 'name',
+           'traitId'            => 'name',
+           'defaultDisplayName' => 'name',
+           'traitName'          => 'name',
+           'observationVariables' => function (
+              $data_type, 
+              $cvterm, 
+              $field_name, 
+              $op, 
+              $values = NULL) {
+                $observationVariables = array();
+                switch ($op) {
+                  case NULL:
+                    $observationVariables = array('read' => TRUE);
+                    break;
+                  case 'read':
+                    $sql_query = '
+                      SELECT v.name
+                      FROM {cvterm} v
+                        JOIN {cvterm_relationship} vr ON vr.subject_id=v.cvterm_id
+                        JOIN {cvterm} t ON t.cvterm_id=vr.type_id
+                          AND t.name = :variable_of
+                      WHERE
+                        vr.object_id = :cvterm_id
+                    ;';
+                    $filter_values = array(
+                      ':cvterm_id' => $cvterm->cvterm_id,
+                      ':variable_of' => 'variable_of',
+                    );
+                    $var_result = chado_query($sql_query, $filter_values);
+                    if ($var_result) {
+                      while ($variable = $var_result->fetchAssoc()) {
+                        $observationVariables[] = $variable['name'];
+                      }
+                    }
+                break;
+              default:
+            }
+            return $observationVariables;
+          },
+         ),
       ),
       'study'        => array(
         // @code

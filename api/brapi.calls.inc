@@ -2797,6 +2797,109 @@ function brapi_get_samples_details_11($stock) {
 }
 
 /**
+ * Trait details call.
+ *
+ * BRAPI: Trait Details by DbId
+ * URL: brapi/v1/traits/\<id\>
+ * Displays details of a trait.
+ *
+ * GET: returns details of the given accession.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/trait/
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Traits
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_traits_11_json($trait = NULL) {
+
+  $actions = array(
+    'read'   => 'brapi_v1_traits_read_11_json',
+    'list'   => 'brapi_v1_traits_search_11_json',
+  );
+
+  return brapi_process_crud('traits/{traitDbId}', $actions, 'trait', $trait);
+}
+
+/**
+ * Returns a JSON array containing the details of a given trait.
+ *
+ * @param object $trait
+ *   A Tripal Chado project object.
+ *
+ * @return array
+ *   a JSON array containing the trait details.
+ */
+function brapi_v1_traits_read_11_json($trait) {
+  $metadata = brapi_prepare_metadata(1);
+  $debug_data = array();
+  $trait_data = brapi_get_trait_details_11($trait);
+  $data = array('result' => $trait_data);
+  brapi_aggregate_call($data, $metadata, $debug_data);
+
+  return array(
+    $data,
+    $metadata,
+    $debug_data,
+  );
+}
+
+/**
+ * Trait search call.
+ *
+ * BRAPI: Trait Search
+ * URL: brapi/v1/traits
+ * Returns a list of traits.
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Traits
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Traits
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_traits_search_11_json() {
+  $cv_settings = brapi_get_cv_settings();
+  $parameters = array(
+    'get_object_details' => 'brapi_get_trait_details_11',
+  );
+  return brapi_v1_object_search_json('trait', $parameters);
+}
+
+/**
+ * Returns Trait details in an associative array.
+ *
+ * @param object $cvterm
+ *   A Tripal Chado cvterm object.
+ *
+ * @return array
+ *   the trait details in an associative array.
+ */
+function brapi_get_trait_details_11($trait) {
+  $trait_data = array();
+
+  $fields = array(
+    'description', 'name', 'observationVariables', 'traitDbId',
+    'traitId', 'traitName',
+  );
+
+  // Handle 'include'.
+  $fields = brapi_merge_fields_to_include($fields);
+
+  foreach ($fields as $field_name) {
+    $trait_data[$field_name] =
+      brapi_get_field('trait', $trait, $field_name);
+  }
+  return $trait_data;
+}
+
+/**
  * Updates a sample.
  *
  * @param array $user_data
