@@ -339,9 +339,14 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       }
     }
 
-    // Get term from MCPD CV.
+    // Get term from BrAPI CV.
     if (empty($default_ids)) {
-      $default_ids = brapi_get_cvterm_id($term_mapping);
+      $default_ids = brapi_get_cvterm_id(
+        array(
+          'name' => $term_name,
+          'cv_id' => $brapi_cv_select,
+        )
+      );
     }
 
     if (!empty($default_ids)) {
