@@ -1957,6 +1957,10 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
     $selector = array(
       $id_field => $id,
     );
+    // Apply pre-filtering.
+    if (!empty($data_settings['selector'])) {
+       $selector = array_merge($selector, $data_settings['selector']);
+    }
     // Allow other module interactions.
     $context = array('call' => $call, 'data_type' => $data_type);
     drupal_alter('brapi_object_selector', $selector, $context);

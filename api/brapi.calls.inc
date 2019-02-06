@@ -167,12 +167,14 @@ function brapi_v1_object_search_json($object_type, $parameters) {
   $cv_settings = brapi_get_cv_settings();
   $data_mapping = brapi_get_data_mapping();
 
-  if (isset($parameters['selectors'])) {
-    $selectors = $parameters['selectors'];
+  // Add pre-filtering.
+  if (!empty($data_mapping[$object_type]['selector'])) {
+    $selectors = $data_mapping[$object_type]['selector'];
   }
   else {
     $selectors = array();
   }
+
   // Prepare the list of post-filtering functions.
   $post_filters = array();
   // Hash of identifiers.
@@ -1041,9 +1043,6 @@ function brapi_v1_call_12_json($selected_call_name = NULL) {
 function brapi_v1_germplasm_search_10_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
-    'selectors' => array(
-      'type_id' => $cv_settings['Germplasm'],
-    ),
     'get_object_details' => 'brapi_get_germplasm_details_10',
   );
   return brapi_v1_object_search_json('germplasm', $parameters);
@@ -2269,9 +2268,6 @@ function brapi_v1_read_markers_11_json($feature) {
 function brapi_v1_markers_search_11_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
-    'selectors' => array(
-      'type_id' => $cv_settings['MarkerType'],
-    ),
     'get_object_details' => 'brapi_get_markers_details_10',
   );
 
@@ -2517,9 +2513,6 @@ function brapi_v1_programs_search_11_json() {
 function brapi_v1_samples_search_11_json() {
   $cv_settings = brapi_get_cv_settings();
   $parameters = array(
-    'selectors' => array(
-      'type_id' => $cv_settings['Sample'],
-    ),
     'get_object_details' => 'brapi_get_samples_details_11',
   );
   return brapi_v1_object_search_json('sample', $parameters);

@@ -1424,7 +1424,11 @@ function brapi_get_calls() {
  *   - 'identifier': the Chado database key used to identify the record;
  *   - 'accession': the Chado database field used to identify the record from
  *     outside (Restful, web, apps);
- *   - 'fields': an array of field configuration;
+ *   - selector (optional): a Tripal selector as described here as '$values':
+ *     http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
+ *     This selector allows to pre-filter resources (discreminate stock or
+ *     CV terms according to the data type for instance).
+ *   - 'fields': an array of field configuration (see below);
  *
  *   Each field can have the following structures:
  *   - a string: it will be treated as the name of the column holding the value
@@ -1502,6 +1506,9 @@ function brapi_get_data_mapping() {
         'table' => 'stock',
         'identifier' => 'stock_id',
         'accession' => 'uniquename',
+        'selector' => array(
+          'type_id' => $cv_settings['Germplasm'],
+        ),
         'fields' => array(
           // Table fields.
           'defaultDisplayName' => 'name',
@@ -1986,6 +1993,9 @@ function brapi_get_data_mapping() {
         'table' => 'stock',
         'identifier' => 'stock_id',
         'accession' => 'uniquename',
+        'selector' => array(
+          'type_id' => $cv_settings['Sample'],
+        ),
         'fields' => array(
           // @todo list:
           // Table fields.
@@ -2249,6 +2259,9 @@ function brapi_get_data_mapping() {
         'table' => 'feature',
         'identifier' => 'feature_id',
         'accession' => 'uniquename',
+        'selector' => array(
+          'type_id' => $cv_settings['MarkerType'],
+        ),
         'fields' => array(
           // Table fields.
           'defaultDisplayName' => 'name',
