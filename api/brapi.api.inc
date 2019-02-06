@@ -1959,7 +1959,7 @@ function brapi_process_crud($call, $actions, $data_type, $id = NULL) {
     );
     // Apply pre-filtering.
     if (!empty($data_settings['selector'])) {
-       $selector = array_merge($selector, $data_settings['selector']);
+      $selector = array_merge($selector, $data_settings['selector']);
     }
     // Allow other module interactions.
     $context = array('call' => $call, 'data_type' => $data_type);
@@ -3544,8 +3544,8 @@ function brapi_v1_get_cvterm_filter($cvterm_settings) {
  *   An array containing the CV term selection settings.
  *
  * @return array
- *   Returns a field selector that can be used by Tripal functions like
- *   @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x* chado_select_record() @endlink
+ *   Returns a field selector that can be used by Tripal functions
+ *   like @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x* chado_select_record() @endlink
  *   to select cvterms from the cvterm table.
  */
 function brapi_v1_get_cvterm_selector($cvterm_settings) {

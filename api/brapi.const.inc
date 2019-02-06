@@ -2388,58 +2388,61 @@ function brapi_get_data_mapping() {
         // @endcode
       ),
       'trait' => array(
-         'table'      => 'cvterm',
-         'identifier' => 'cvterm_id',
-         'accession'  => 'name',
-         'selector' => (
-           isset($storage_options['traits']) ?
-           brapi_v1_get_cvterm_selector($storage_options['traits'])
-           : NULL
-         ),
-         'fields' => array(
-           'description'        => 'definition',
-           'name'               => 'name',
-           'traitDbId'          => 'name',
-           'traitId'            => 'name',
-           'defaultDisplayName' => 'name',
-           'traitName'          => 'name',
-           'observationVariables' => function (
-              $data_type, 
-              $cvterm, 
-              $field_name, 
-              $op, 
-              $values = NULL) {
-                $observationVariables = array();
-                switch ($op) {
-                  case NULL:
-                    $observationVariables = array('read' => TRUE);
-                    break;
-                  case 'read':
-                    $sql_query = '
-                      SELECT v.name
-                      FROM {cvterm} v
-                        JOIN {cvterm_relationship} vr ON vr.subject_id=v.cvterm_id
-                        JOIN {cvterm} t ON t.cvterm_id=vr.type_id
-                          AND t.name = :variable_of
-                      WHERE
-                        vr.object_id = :cvterm_id
-                    ;';
-                    $filter_values = array(
-                      ':cvterm_id' => $cvterm->cvterm_id,
-                      ':variable_of' => 'variable_of',
-                    );
-                    $var_result = chado_query($sql_query, $filter_values);
-                    if ($var_result) {
-                      while ($variable = $var_result->fetchAssoc()) {
-                        $observationVariables[] = $variable['name'];
-                      }
-                    }
+        'table'      => 'cvterm',
+        'identifier' => 'cvterm_id',
+        'accession'  => 'name',
+        'selector' => (
+          isset($storage_options['traits']) ?
+          brapi_v1_get_cvterm_selector($storage_options['traits'])
+          : NULL
+        ),
+        'fields' => array(
+          'description'        => 'definition',
+          'name'               => 'name',
+          'traitDbId'          => 'name',
+          'traitId'            => 'name',
+          'defaultDisplayName' => 'name',
+          'traitName'          => 'name',
+          'observationVariables' => function (
+            $data_type,
+            $cvterm,
+            $field_name,
+            $op,
+            $values = NULL
+          ) {
+            $observationVariables = array();
+            switch ($op) {
+              case NULL:
+                $observationVariables = array('read' => TRUE);
                 break;
+
+              case 'read':
+                $sql_query = '
+                  SELECT v.name
+                  FROM {cvterm} v
+                    JOIN {cvterm_relationship} vr ON vr.subject_id=v.cvterm_id
+                    JOIN {cvterm} t ON t.cvterm_id=vr.type_id
+                      AND t.name = :variable_of
+                  WHERE
+                    vr.object_id = :cvterm_id
+                ;';
+                $filter_values = array(
+                  ':cvterm_id' => $cvterm->cvterm_id,
+                  ':variable_of' => 'variable_of',
+                );
+                $var_result = chado_query($sql_query, $filter_values);
+                if ($var_result) {
+                  while ($variable = $var_result->fetchAssoc()) {
+                    $observationVariables[] = $variable['name'];
+                  }
+                }
+                break;
+
               default:
             }
             return $observationVariables;
           },
-         ),
+        ),
       ),
       'study'        => array(
         // @code
@@ -2806,7 +2809,6 @@ function brapi_get_data_mapping() {
     );
 
     // Alter default settings.
-
     // Germplasm fields...
     $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];
 

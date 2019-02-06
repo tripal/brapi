@@ -307,7 +307,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#size' => 80,
   );
 
-  // Trait terms settings
+  // Trait terms settings.
   $trait_cvs = isset($storage_options['traits']['cvs']) ?
     $storage_options['traits']['cvs']
     : '';

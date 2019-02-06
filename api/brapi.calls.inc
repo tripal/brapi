@@ -2816,7 +2816,7 @@ function brapi_v1_traits_search_11_json() {
 /**
  * Returns Trait details in an associative array.
  *
- * @param object $cvterm
+ * @param object $trait
  *   A Tripal Chado cvterm object.
  *
  * @return array
