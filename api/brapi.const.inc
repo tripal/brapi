@@ -1483,6 +1483,9 @@ function brapi_get_data_mapping() {
   static $brapi_data_mapping;
 
   if (!isset($brapi_data_mapping)) {
+    // Get settings.
+    $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
+
     $cv_settings = brapi_get_cv_settings();
     $organism_info_func = function ($data_type, $stock, $field_name, $op, $values = NULL) {
       $data = '';
@@ -2388,6 +2391,11 @@ function brapi_get_data_mapping() {
          'table'      => 'cvterm',
          'identifier' => 'cvterm_id',
          'accession'  => 'name',
+         'selector' => (
+           isset($storage_options['traits']) ?
+           brapi_v1_get_cvterm_selector($storage_options['traits'])
+           : NULL
+         ),
          'fields' => array(
            'description'        => 'definition',
            'name'               => 'name',
@@ -2798,7 +2806,6 @@ function brapi_get_data_mapping() {
     );
 
     // Alter default settings.
-    $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
 
     // Germplasm fields...
     $germplasm_fields = &$brapi_data_mapping['germplasm']['fields'];

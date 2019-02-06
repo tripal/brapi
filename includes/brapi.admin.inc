@@ -307,6 +307,74 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#size' => 80,
   );
 
+  // Trait terms settings
+  $trait_cvs = isset($storage_options['traits']['cvs']) ?
+    $storage_options['traits']['cvs']
+    : '';
+  $trait_parent_cvterms = isset($storage_options['traits']['parent_cvterms']) ?
+    $storage_options['traits']['parent_cvterms']
+    : '';
+  $trait_cvterms = isset($storage_options['traits']['cvterms']) ?
+    $storage_options['traits']['cvterms']
+    : '';
+  $form['storage_options']['traits'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Trait terms selection'),
+    '#collapsible' => FALSE,
+    '#collapsed'   => FALSE,
+  );
+  $form['storage_options']['traits']['markup'] = array(
+    '#markup' => t('You can specify either a list of CVs or a list CV term
+      identifiers (parent terms or terms) to let BrAPI know which CV terms
+      are traits but not both (CV identifiers and terms identifiers are
+      mutually exclusive).<br/><br/>'),
+  );
+  $form['storage_options']['traits']['trait_cvs'] = array(
+    '#type' => 'textfield',
+    '#title' => t('List of CV(s) holding traits'),
+    '#title_display' => 'before',
+    '#description' => t(
+      'Specify a list of cv.cv_id. If you include CV names in the list, only
+      the numeric identifier cv_id (last number for each CV) will be used by
+      the system. You can specify multiple CV with comas. All the terms of
+      those CV can be used as traits.
+    '),
+    '#default_value' => $trait_cvs,
+    '#required' => FALSE,
+    '#size' => 80,
+    '#maxlength' => 2048,
+    '#autocomplete_path' => 'brapi/cvs/autocomplete',
+  );
+  $form['storage_options']['traits']['trait_parent_cvterms'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Trait parent CV term(s)'),
+    '#title_display' => 'before',
+    '#description' => t('
+      Specify a list of CV term identifiers (cvterm.cvterm_id) that are parent
+      terms of other terms used as traits (nb. the parent term is not a trait).
+      Child terms must be linked to parents through the cvterm_relationship
+      table using a "is_a" or "isa" type of relationship.'),
+    '#default_value' => $trait_parent_cvterms,
+    '#required' => FALSE,
+    '#size' => 80,
+    '#maxlength' => 2048,
+    '#autocomplete_path' => 'brapi/terms/autocomplete',
+  );
+  $form['storage_options']['traits']['trait_cvterms'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Trait CV term(s)'),
+    '#title_display' => 'before',
+    '#description' => t('
+      Specify a list of CV term identifiers (cvterm.cvterm_id) that are used as
+      traits.
+    '),
+    '#default_value' => $trait_cvterms,
+    '#required' => FALSE,
+    '#size' => 80,
+    '#maxlength' => 2048,
+    '#autocomplete_path' => 'brapi/terms/autocomplete',
+  );
+
   // CV settings.
   $form['cv_settings'] = array(
     '#type'        => 'fieldset',
@@ -738,6 +806,19 @@ function brapi_add_category_add_one($form, &$form_state) {
 }
 
 /**
+ * Validate Breeding API configuration changes.
+ *
+ * @ingroup brapi
+ */
+function brapi_admin_form_validate($form_id, &$form_state) {
+  if (!empty($form_state['values']['trait_cvs'])
+      && (!empty($form_state['values']['trait_parent_cvterms'])
+          || !empty($form_state['values']['trait_cvterms']))) {
+    form_set_error('traits', t('You can not mix CV identifiers and CV term identifiers for traits. Please only fill CV identifiers OR CV term identifiers (simple terms, parents or both).'));
+  }
+}
+
+/**
  * Check and applies Breeding API configuration changes.
  *
  * It updates Drupal variables BRAPI_CV_SETTINGS and BRAPI_EXAMPLE_SETTINGS. See
@@ -790,7 +871,6 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   if ($form_state['values']['institute_name']) {
     $storage_options['institute_name'] = $form_state['values']['institute_name'];
   }
-  variable_set(BRAPI_STORAGE_OPTIONS, $storage_options);
 
   // Save date format.
   switch ($form_state['values']['date_format']) {
@@ -816,6 +896,25 @@ function brapi_admin_form_submit($form_id, &$form_state) {
       drupal_set_message(t('Invalid date format specification!'), 'error');
       break;
   }
+
+  // Save date traits.
+  $trait_cvs = $trait_parent_cvterms = $trait_cvterms = '';
+  if (!empty($form_state['values']['trait_cvs'])) {
+    $trait_cvs = $form_state['values']['trait_cvs'];
+  }
+  if (!empty($form_state['values']['trait_parent_cvterms'])) {
+    $trait_parent_cvterms = $form_state['values']['trait_parent_cvterms'];
+  }
+  if (!empty($form_state['values']['trait_cvterms'])) {
+    $trait_cvterms = $form_state['values']['trait_cvterms'];
+  }
+  $storage_options['traits'] = array(
+    'cvs' => $trait_cvs,
+    'parent_cvterms' => $trait_parent_cvterms,
+    'cvterms' => $trait_cvterms,
+  );
+
+  variable_set(BRAPI_STORAGE_OPTIONS, $storage_options);
 
   // CV settings.
   $brapi_cv_settings = brapi_get_cv_settings();

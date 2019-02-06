@@ -3461,3 +3461,155 @@ function brapi_get_organism_info($organism_id) {
   }
   return $organism_data[$organism_id];
 }
+
+/**
+ * Helper function that returns CV/CV term filter for CV terms.
+ *
+ * @param array $cvterm_settings
+ *   An array containing the CV term selection settings.
+ *
+ * @return array
+ *   2 elements: the first one is the WHERE clause, and the second one is the
+ *   associated values.
+ */
+function brapi_v1_get_cvterm_filter($cvterm_settings) {
+
+  // Get all terms for current term settings.
+  $cvterm_ids = array();
+  $parent_cvterm_ids = array();
+  $cv_ids = array();
+  // If we got a list of cvterms.
+  if ($cvterm_settings['cvterms']) {
+    $cvterm_refs = explode(',', $cvterm_settings['cvterms']);
+    foreach ($cvterm_refs as $cvterm_ref) {
+      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+        $cvterm_ids[$matches[1]] = TRUE;
+      }
+    }
+  }
+  // Get from relationship.
+  if ($cvterm_settings['parent_cvterms']) {
+    $cvterm_refs = explode(',', $cvterm_settings['parent_cvterms']);
+    foreach ($cvterm_refs as $cvterm_ref) {
+      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+        $parent_cvterm_ids[$matches[1]] = TRUE;
+      }
+    }
+  }
+  // Get terms from CV.
+  if ($cvterm_settings['cvs']) {
+    $cv_refs = explode(',', $cvterm_settings['cvs']);
+    foreach ($cv_refs as $cv_ref) {
+      if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
+        $cv_ids[$matches[1]] = TRUE;
+      }
+    }
+  }
+
+  $filter_values = array(
+    ':cvterm_ids' => array_keys($cvterm_ids),
+    ':parent_cvterm_ids' => array_keys($parent_cvterm_ids),
+    ':cv_ids' => array_keys($cv_ids),
+  );
+
+  $sql_filter_list = array();
+  if (count($cvterm_ids)) {
+    $sql_filter_list[] = 'cvt.cvterm_id IN (:cvterm_ids)';
+  }
+
+  if (count($parent_cvterm_ids)) {
+    $sql_filter_list[] = 'cvt.cvterm_id IN (
+      SELECT child_cvtr.subject_id
+      FROM {cvterm_relationship} child_cvtr
+        JOIN {cvterm} child_cvtr_type
+          ON (child_cvtr.type_id = child_cvtr_type.cvterm_id)
+      WHERE child_cvtr.object_id IN (:parent_cvterm_ids)
+        AND child_cvtr_type.name IN (\'is_a\', \'isa\')
+    )';
+  }
+
+  if (count($cv_ids)) {
+    $sql_filter_list[] = 'cvt.cv_id IN (:cv_ids)';
+  }
+
+  $sql_filter = implode(' OR ', $sql_filter_list);
+
+  return array($sql_filter, $filter_values);
+}
+
+/**
+ * Helper function that returns CV/CV term selector for CV terms.
+ *
+ * @param array $cvterm_settings
+ *   An array containing the CV term selection settings.
+ *
+ * @return array
+ *   Returns a field selector that can be used by Tripal functions like
+ *   @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x* chado_select_record() @endlink
+ *   to select cvterms from the cvterm table.
+ */
+function brapi_v1_get_cvterm_selector($cvterm_settings) {
+
+  // Get all terms for current term settings.
+  $selector = array();
+  // If we got a list of cvterms.
+  if ($cvterm_settings['cvterms']) {
+    $cvterm_refs = explode(',', $cvterm_settings['cvterms']);
+    foreach ($cvterm_refs as $cvterm_ref) {
+      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+        $cvterm_ids[$matches[1]] = TRUE;
+      }
+    }
+    if (!empty($cvterm_ids)) {
+      $selector['cvterm_id'] = array_keys($cvterm_ids);
+    }
+  }
+  // Get from relationship.
+  if ($cvterm_settings['parent_cvterms']) {
+    $cvterm_refs = explode(',', $cvterm_settings['parent_cvterms']);
+    foreach ($cvterm_refs as $cvterm_ref) {
+      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
+        $parent_cvterm_ids[$matches[1]] = TRUE;
+      }
+    }
+
+    if (!empty($parent_cvterm_ids)) {
+      $sql_query = "
+        SELECT DISTINCT subject_id
+        FROM cvterm_relationship
+          JOIN cvterm ON (cvterm_id = type_id AND name IN ('is_a', 'isa'))
+        WHERE
+          object_id IN (:values)
+      ;";
+      $results = chado_query(
+        $sql_query,
+        array(':values' => array_keys($parent_cvterm_ids))
+      )->fetchCol();
+
+      if (array_key_exists('cvterm_id', $selector)) {
+        $selector['cvterm_id'] = array_merge(
+          $selector['cvterm_id'],
+          $results
+        );
+      }
+      else {
+        $selector['cvterm_id'] = $results;
+      }
+    }
+  }
+
+  // Get terms from CV.
+  if ($cvterm_settings['cvs']) {
+    $cv_refs = explode(',', $cvterm_settings['cvs']);
+    foreach ($cv_refs as $cv_ref) {
+      if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
+        $cv_ids[$matches[1]] = TRUE;
+      }
+    }
+    if (!empty($cv_ids)) {
+      $selector['cv_id'] = array_keys($cv_ids);
+    }
+  }
+
+  return $selector;
+}

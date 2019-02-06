@@ -1733,59 +1733,6 @@ function brapi_v1_read_germplasm_germplasmdbid_pedigree_11_json($stock) {
 }
 
 /**
- * Helper function that returns CV/CV term filter for an attribute.
- *
- * @param array $attribute_settings
- *   An array containing the attribute settings.
- *
- * @return array
- *   2 elements: the first one is the WHERE clause, and the second one is the
- *   associated values.
- */
-function brapi_v1_get_attribute_filter($attribute_settings) {
-
-  // Get all attributes for current attribute settings.
-  $cvterm_ids = array();
-  $cv_ids = array();
-  // If we got a list of cvterms.
-  if ($attribute_settings['cvterms']) {
-    $cvterm_refs = explode(',', $attribute_settings['cvterms']);
-    foreach ($cvterm_refs as $cvterm_ref) {
-      if (preg_match('/(\d+)\D*$/', $cvterm_ref, $matches)) {
-        $cvterm_ids[$matches[1]] = TRUE;
-      }
-    }
-  }
-  // Get terms from CV.
-  if ($attribute_settings['cvs']) {
-    $cv_refs = explode(',', $attribute_settings['cvs']);
-    foreach ($cv_refs as $cv_ref) {
-      if (preg_match('/(\d+)\D*$/', $cv_ref, $matches)) {
-        $cv_ids[$matches[1]] = TRUE;
-      }
-    }
-  }
-
-  $filter_values = array(
-    ':cvterm_ids' => array_keys($cvterm_ids),
-    ':cv_ids' => array_keys($cv_ids),
-  );
-
-  $sql_filter = '';
-  if (count($cvterm_ids)) {
-    $sql_filter = 'cvt.cvterm_id IN (:cvterm_ids)';
-    if (count($cv_ids)) {
-      $sql_filter .= 'OR cvt.cv_id IN (:cv_ids)';
-    }
-  }
-  elseif (count($cv_ids)) {
-    $sql_filter = 'cvt.cv_id IN (:cv_ids)';
-  }
-
-  return array($sql_filter, $filter_values);
-}
-
-/**
  * Returns a JSON array containing the germplasm attribute categories.
  *
  * @return array
@@ -1811,10 +1758,11 @@ function brapi_v1_attributes_11_json() {
       continue;
     }
     list($term_filter, $filter_values) =
-      brapi_v1_get_attribute_filter($attribute_settings);
+      brapi_v1_get_cvterm_filter($attribute_settings);
 
     // Only query if we got CVs or CV terms.
     if (count($filter_values[':cvterm_ids'])
+        || count($filter_values[':parent_cvterm_ids'])
         || count($filter_values[':cv_ids'])) {
       // Get results.
       $sql_query = '
@@ -2050,7 +1998,7 @@ function brapi_v1_read_germplasm_germplasmdbid_attributes_10_json($stock) {
 
   foreach ($germplasm_attributes as $attribute_index => $attribute_settings) {
     list($term_filter, $filter_values) =
-      brapi_v1_get_attribute_filter($attribute_settings);
+      brapi_v1_get_cvterm_filter($attribute_settings);
     $filter_values[':stock_id'] = $stock->stock_id;
     $sql_query = '
       SELECT
