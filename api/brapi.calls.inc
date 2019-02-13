@@ -2827,7 +2827,7 @@ function brapi_get_trait_details_11($trait) {
 
   $fields = array(
     'description', 'name', 'observationVariables', 'traitDbId',
-    'traitId', 'traitName',
+    'traitId', 'traitName', 'defaultValue',
   );
 
   // Handle 'include'.
