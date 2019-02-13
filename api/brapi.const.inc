@@ -2390,7 +2390,7 @@ function brapi_get_data_mapping() {
       'trait' => array(
         'table'      => 'cvterm',
         'identifier' => 'cvterm_id',
-        'accession'  => 'name',
+        'accession'  => 'cvterm_id',
         'selector' => (
           isset($storage_options['traits']) ?
           brapi_v1_get_cvterm_selector($storage_options['traits'])
