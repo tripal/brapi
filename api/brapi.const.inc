@@ -2399,8 +2399,35 @@ function brapi_get_data_mapping() {
         'fields' => array(
           'description'        => 'definition',
           'name'               => 'name',
-          'traitDbId'          => 'name',
-          'traitId'            => 'name',
+          'traitDbId'          => 'cvterm_id',
+          'traitId' => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
+            $trait_id = NULL;
+            switch ($op) {
+              case NULL:
+                $trait_id = array('read' => TRUE);
+                break;
+
+              case 'read':
+                $sql_query = '
+                  SELECT db.name || \':\' || dbx.accession AS "trait_id"
+                  FROM cvterm cvt
+                    JOIN dbxref dbx USING (dbxref_id)
+                    JOIN db USING (db_id)
+                  WHERE cvterm_id = :cvterm_id
+                ;';
+                $filter_values = array(
+                  ':cvterm_id' => $cvterm->cvterm_id,
+                );
+                $result = chado_query($sql_query, $filter_values);
+                if ($result) {
+                  $trait_id = $result->fetchAssoc()['trait_id'];
+                }
+                break;
+
+              default:
+            }
+            return $trait_id;
+          },
           'defaultDisplayName' => 'name',
           'traitName'          => 'name',
           'observationVariables' => function (
