@@ -1206,6 +1206,7 @@ function brapi_get_calls() {
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_traits_11_json',
+          '1.2' => 'brapi_v1_traits_11_json',
         ),
         'aggregable' => TRUE,
       ),
@@ -1221,6 +1222,7 @@ function brapi_get_calls() {
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
           '1.1' => 'brapi_v1_traits_11_json',
+          '1.2' => 'brapi_v1_traits_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -2445,8 +2447,10 @@ function brapi_get_data_mapping() {
 
               case 'read':
                 $sql_query = '
-                  SELECT v.name
+                  SELECT db.name || \':\' || dbx.accession AS "name"
                   FROM {cvterm} v
+                    JOIN {dbxref} dbx USING (dbxref_id)
+                    JOIN {db} db USING (db_id)
                     JOIN {cvterm_relationship} vr ON vr.subject_id=v.cvterm_id
                     JOIN {cvterm} t ON t.cvterm_id=vr.type_id
                       AND t.name = :variable_of
