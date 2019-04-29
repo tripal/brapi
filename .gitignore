@@ -1,2 +1,5 @@
 docs/_build
 .DS_STORE
+
+# PhpStorm IDE metadata ignored
+.idea/*
