@@ -2286,10 +2286,16 @@ function brapi_get_locations_details_11($geolocation) {
       brapi_get_field('location', $geolocation, $field_name);
   }
 
+  // Field name (a.k.a. 'description') must not be null
+  if (is_null($geolocation_data['name'])) {
+    $geolocation_data['name'] = '';
+  }
+
   // Field countryCode must not be null.
   if (is_null($geolocation_data['countryCode'])) {
     $geolocation_data['countryCode'] = '';
   }
+
   // Type cast needed for latitude, longitude and altitude.
   if (isset($geolocation_data['latitude']) && $geolocation_data['latitude']) {
     $geolocation_data['latitude'] = (float) $geolocation_data['latitude'];
