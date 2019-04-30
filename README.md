@@ -77,6 +77,7 @@ snippet:
     <input type="hidden" name="brapi_html" value="URL_ENCODED_HTML_STRING"/>
     <input type="submit" name="submit" value="Get BrAPI data"/>
   </form>
+```
 
 ```
 
