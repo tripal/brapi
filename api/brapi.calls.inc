@@ -797,7 +797,7 @@ function brapi_v1_authentication_json() {
 }
 
 /**
- * Call list/search call.
+ * Call list/search call for BrAPI v1.1.
  *
  * BRAPI: Call search
  * URL:  brapi/v1/calls
@@ -893,7 +893,7 @@ function brapi_v1_call_10_json($selected_call_name = NULL) {
 }
 
 /**
- * Call list/search call.
+ * Call list/search call for BrAPI v1.2
  *
  * BRAPI: Call search
  * URL:  brapi/v1/calls
@@ -987,6 +987,25 @@ function brapi_v1_call_12_json($selected_call_name = NULL) {
       TRUE
     );
   }
+}
+
+
+/**
+ * Call list/search call for BrAPI v1.3
+ *
+ * BRAPI: Call search
+ * URL:  brapi/v1/calls
+ * Displays the list of available calls.
+ *
+ * GET: search and returns the list of supported BrAPI calls.
+ *
+ * Supported GET parameters:
+ * - call (string)
+ *     The name of a call.
+ */
+function brapi_v1_call_13_json($selected_call_name = NULL){
+    // Stub for BrAPI v1.3 delegates to v1.2
+    brapi_v1_call_12_json($selected_call_name);
 }
 
 /**

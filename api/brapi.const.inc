@@ -356,12 +356,13 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET' => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2','1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_call_10_json',
-          '1.1' => 'brapi_v1_call_10_json',
-          '1.2' => 'brapi_v1_call_12_json',
+            '1.0' => 'brapi_v1_call_10_json',
+            '1.1' => 'brapi_v1_call_10_json',
+            '1.2' => 'brapi_v1_call_12_json',
+            '1.3' => 'brapi_v1_call_13_json',
         ),
         'arguments'      => array(
           3 => array(
