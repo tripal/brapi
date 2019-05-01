@@ -1961,7 +1961,7 @@ function brapi_v1_categories_11_json() {
  *
  * @ingroup brapi
  */
-function brapi_v1_germplasm_germplasmdbid_attributes_10_json($germplasm_id = NULL) {
+function brapi_v1_germplasm_germplasmdbid_attributes_13_json($germplasm_id = NULL) {
 
   $actions = array(
     'read'   => 'brapi_v1_read_germplasm_germplasmdbid_attributes_10_json',

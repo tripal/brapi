@@ -457,6 +457,7 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregable' => TRUE,
       ),
+
       'germplasm/{germplasmDbId}/attributes' => array(
         'title'          => 'Germplasm Attributes',
         'description'    => 'Germplasm attribute values by germplasmDbId',
@@ -464,10 +465,10 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
+          '1.3' => 'brapi_v1_germplasm_germplasmdbid_attributes_13_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -479,6 +480,39 @@ function brapi_get_calls() {
         ),
         'aggregable' => TRUE,
       ),
+
+        'germplasm/breedingmethods' => array(
+            'title'          => 'Germplasm Breeding Methods',
+            'description'    => 'Get the list of germplasm breeding methods available in a system.',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'GET'  => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.2', '1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.2' => 'brapi_v1_external_call_json',
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
+        ),
+
+        'germplasm/breedingmethods/{breedingMethodDbId}' => array(
+            'title'          => 'Germplasm Breeding Method',
+            'description'    => 'Get specific germplasm breeding method by identifier',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'GET'  => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.2', '1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.2' => 'brapi_v1_external_call_json',
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
+        ),
+
         'germplasm/{germplasmDbId}/mcpd' => array(
             'title'          => 'Germplasm by MCPD',
             'description'    => 'Germplasm by Multi-Crop Passport Descriptors',
@@ -494,7 +528,8 @@ function brapi_get_calls() {
             ),
             'aggregable' => TRUE,
         ),
-      'germplasm/{germplasmDbId}/markerprofiles' => array(
+
+        'germplasm/{germplasmDbId}/markerprofiles' => array(
         'title'          => 'Germplasm Markerprofiles',
         'description'    => 'Markerprofiles by germplasmDbId',
         'datatypes'      => array('json'),
@@ -549,7 +584,6 @@ function brapi_get_calls() {
             'datatypes'      => array('json'),
             'methods'        => array(
                 'GET'  => BRAPI_USE_PERMISSION,
-                'POST' => BRAPI_USE_PERMISSION,
             ),
             'api versions' => array('1,2','1.3'),
             'active version' => BRAPI_SERVICE_VERSION,
