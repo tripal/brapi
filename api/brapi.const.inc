@@ -410,6 +410,7 @@ function brapi_get_calls() {
             ),
             'aggregable' => TRUE,
         ),
+
       'germplasm' => array(
         'title'          => 'Germplasm',
         'description'    => 'Germplasm list',
@@ -428,6 +429,7 @@ function brapi_get_calls() {
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregable' => TRUE,
       ),
+
       'germplasm/{germplasmDbId}' => array(
         'title'          => 'Germplasm Details',
         'description'    => 'Germplasm details by germplasmDbId',
@@ -458,28 +460,58 @@ function brapi_get_calls() {
         'aggregable' => TRUE,
       ),
 
-      'germplasm/{germplasmDbId}/attributes' => array(
-        'title'          => 'Germplasm Attributes',
-        'description'    => 'Germplasm attribute values by germplasmDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
+        'search/germplasm' => array(
+            'title'          => 'Search Germplasm',
+            'description'    => 'Search for a set of germplasm based on some criteria, returning a search results id',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'POST' => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
         ),
-        'api versions' => array('1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.3' => 'brapi_v1_germplasm_germplasmdbid_attributes_13_json',
+
+        'search/germplasm/{searchResultsDbId}' => array(
+            'title'          => 'Get Germplasm Search Results',
+            'description'    => 'Get results of search/germplasm call by search id',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'GET' => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
         ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'germplasmDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado stock$dbid_column value",
-            'required' => TRUE,
-          ),
+
+        'germplasm/{germplasmDbId}/attributes' => array(
+            'title' => 'Germplasm Attributes',
+            'description' => 'Germplasm attribute values by germplasmDbId',
+            'datatypes' => array('json'),
+            'methods' => array(
+                'GET' => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.3' => 'brapi_v1_germplasm_germplasmdbid_attributes_13_json',
+            ),
+            'arguments' => array(
+                3 => array(
+                    'name' => 'germplasmDbId',
+                    'type' => 'string',
+                    'description' => "correspond to a Chado stock$dbid_column value",
+                    'required' => TRUE,
+                ),
+            ),
+            'aggregable' => TRUE,
         ),
-        'aggregable' => TRUE,
-      ),
 
         'germplasm/breedingmethods' => array(
             'title'          => 'Germplasm Breeding Methods',
@@ -519,7 +551,6 @@ function brapi_get_calls() {
             'datatypes'      => array('json'),
             'methods'        => array(
                 'GET'  => BRAPI_USE_PERMISSION,
-                'POST' => BRAPI_USE_PERMISSION,
             ),
             'api versions' => array('1.3'),
             'active version' => BRAPI_SERVICE_VERSION,
