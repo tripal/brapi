@@ -2831,9 +2831,10 @@ function brapi_v1_traits_search_11_json() {
 function brapi_get_trait_details_11($trait) {
   $trait_data = array();
 
+  // RMB: issue #32 fix: removed 'traitName' field (non-existent)
   $fields = array(
     'description', 'name', 'observationVariables', 'traitDbId',
-    'traitId', 'traitName', 'defaultValue',
+    'traitId', /*'traitName',*/  'defaultValue',
   );
 
   // Handle 'include'.
