@@ -418,10 +418,12 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2','1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_10_json',
+            '1.1' => 'brapi_v1_germplasm_10_json',
+            '1.2' => 'brapi_v1_germplasm_10_json',
+            '1.3' => 'brapi_v1_germplasm_10_json',
         ),
         'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
         'aggregable' => TRUE,
@@ -436,11 +438,13 @@ function brapi_get_calls() {
           'PUT'    => BRAPI_UPDATE_PERMISSION,
           'DELETE' => BRAPI_UPDATE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2','1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_germplasm_10_json',
-          '1.1' => 'brapi_v1_germplasm_10_json',
+            '1.0' => 'brapi_v1_germplasm_10_json',
+            '1.1' => 'brapi_v1_germplasm_10_json',
+            '1.2' => 'brapi_v1_germplasm_10_json',
+            '1.3' => 'brapi_v1_germplasm_10_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -475,6 +479,21 @@ function brapi_get_calls() {
         ),
         'aggregable' => TRUE,
       ),
+        'germplasm/{germplasmDbId}/mcpd' => array(
+            'title'          => 'Germplasm by MCPD',
+            'description'    => 'Germplasm by Multi-Crop Passport Descriptors',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'GET'  => BRAPI_USE_PERMISSION,
+                'POST' => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
+        ),
       'germplasm/{germplasmDbId}/markerprofiles' => array(
         'title'          => 'Germplasm Markerprofiles',
         'description'    => 'Markerprofiles by germplasmDbId',
@@ -497,6 +516,7 @@ function brapi_get_calls() {
         ),
         'aggregable' => TRUE,
       ),
+
       'germplasm/{germplasmDbId}/pedigree' => array(
         'title'          => 'Germplasm Pedigree',
         'description'    => 'Pedigree by germplasmDbId',
@@ -504,11 +524,13 @@ function brapi_get_calls() {
         'methods'        => array(
           'GET'    => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_germplasm_germplasmdbid_pedigree_10_json',
-          '1.1' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+            '1.0' => 'brapi_v1_germplasm_germplasmdbid_pedigree_10_json',
+            '1.1' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+            '1.2' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+            '1.3' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
         ),
         'arguments'      => array(
           3 => array(
@@ -520,6 +542,25 @@ function brapi_get_calls() {
         ),
         'aggregable' => TRUE,
       ),
+
+        'germplasm/{germplasmDbId}/progeny' => array(
+            'title'          => 'Germplasm by Progeny',
+            'description'    => 'Get the germplasmDbIds for all the Progeny of a particular germplasm',
+            'datatypes'      => array('json'),
+            'methods'        => array(
+                'GET'  => BRAPI_USE_PERMISSION,
+                'POST' => BRAPI_USE_PERMISSION,
+            ),
+            'api versions' => array('1,2','1.3'),
+            'active version' => BRAPI_SERVICE_VERSION,
+            'callback versions' => array(
+                '1.2' => 'brapi_v1_external_call_json',
+                '1.3' => 'brapi_v1_external_call_json',
+            ),
+            'aggregable' => TRUE,
+        ),
+
+      // Deprecated in BrAPI v1.3
       'germplasm-search' => array(
         'title'          => 'Germplasm Search',
         'description'    => 'Germplasm search',
@@ -528,10 +569,13 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.1' => 'brapi_v1_germplasm_search_10_json',
+            '1.0' => 'brapi_v1_germplasm_search_10_json',
+            '1.1' => 'brapi_v1_germplasm_search_10_json',
+            '1.2' => 'brapi_v1_germplasm_search_10_json',
+            '1.3' => 'brapi_v1_germplasm_search_10_json',
         ),
         'parameters' => array(
           '1.0' => array(
