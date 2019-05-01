@@ -2780,89 +2780,104 @@ function brapi_aggregate_call(
         array_keys($results['brapi_site'])
       );
 
-      $aggregated_from_list = array();
-      foreach ($brapi_sites as $bsid => $brapi_site) {
-        // Check if the site is in the list of caller URL to avoid infinite
-        // loops. If so, go next.
-        // Remove protocol.
-        $site_url = preg_replace('/^.*:\/\//', '', $brapi_site->url);
-        if (isset($callers[$site_url])) {
-          continue;
-        }
-        $aggregated_from_list[] = $brapi_site->url;
+      /* RMB Tripal/brapi Issue #30 fix:  deprecated 'aggregated_from' tag removed from metadata
+           $aggregated_from_list = array();
+        * Not sure what code below id deprecated with respect
+        * to the 'aggregated_from' tag to it is left in for now
+        */
 
-        // Prepare URL.
-        $url = $brapi_site->url
-          . $call
-          . (isset($parameters['GET']) ?
-            '?' . http_build_query($parameters['GET'])
-            : '');
-        // Prepare context.
-        // Check method to use.
-        if (isset($parameters['POST']) && !empty($parameters['POST'])) {
-          // POST.
-          $json_post_data = json_encode($parameters['POST']);
-          $options = array(
-            'http' => array(
-              'method'  => 'POST',
-              'header'  => "Content-Type: application/json\r\n",
-              'content' => $json_post_data,
-            ),
-          );
-        }
-        else {
-          // GET.
-          $options = array(
-            'http' => array(
-              'method'  => 'GET',
-              'header'  => '',
-            ),
-          );
-        }
-        // @todo: Manage authentication.
-        // If the site supports authentication, check if we got a valid
-        // bearer. If not, get a new one and add it to the header.
-        // @code
-        // if ($username && $password) {
-        //   ... array($brapi_site->username, $brapi_site->password);
-        //   $options['http']['header'] .=
-        //     'Authorization: Bearer '
-        //     . base64_encode($bearer)
-        //     . "\r\n";
-        // }
-        // @endcode
-        try {
-          $context = stream_context_create($options);
-          if (!$call_result_json = file_get_contents($url, FALSE, $context)) {
-            // If it failed, try without context.
-            // $call_result_json = file_get_contents($url);
+        foreach ($brapi_sites as $bsid => $brapi_site) {
+          // Check if the site is in the list of caller URL to avoid infinite
+          // loops. If so, go next.
+          // Remove protocol.
+          $site_url = preg_replace('/^.*:\/\//', '', $brapi_site->url);
+          if (isset($callers[$site_url])) {
+            continue;
           }
-          if (isset($call_result_json)) {
-            $call_result = json_decode($call_result_json, TRUE);
-            if (isset($call_result)) {
-              // Count the answer.
-              ++$queried_site_count;
-              $data = brapi_merge_array($data, $call_result);
-              // @todo +FIXME: take into account metadata (pager, files).
-              // @code unset($data['metadata']); @endcode
+
+            /* RMB Tripal/brapi Issue #30 fix: deprecated 'aggregated_from' tag removed from metadata
+
+            $aggregated_from_list[] = $brapi_site->url;
+
+             * Not sure what code below id deprecated with respect
+             * to the 'aggregated_from' tag to it is left in for now
+             */
+
+          // Prepare URL.
+          $url = $brapi_site->url
+            . $call
+            . (isset($parameters['GET']) ?
+              '?' . http_build_query($parameters['GET'])
+              : '');
+          // Prepare context.
+          // Check method to use.
+          if (isset($parameters['POST']) && !empty($parameters['POST'])) {
+            // POST.
+            $json_post_data = json_encode($parameters['POST']);
+            $options = array(
+              'http' => array(
+                'method'  => 'POST',
+                'header'  => "Content-Type: application/json\r\n",
+                'content' => $json_post_data,
+              ),
+            );
+          }
+          else {
+            // GET.
+            $options = array(
+              'http' => array(
+                'method'  => 'GET',
+                'header'  => '',
+              ),
+            );
+          }
+          // @todo: Manage authentication.
+          // If the site supports authentication, check if we got a valid
+          // bearer. If not, get a new one and add it to the header.
+          // @code
+          // if ($username && $password) {
+          //   ... array($brapi_site->username, $brapi_site->password);
+          //   $options['http']['header'] .=
+          //     'Authorization: Bearer '
+          //     . base64_encode($bearer)
+          //     . "\r\n";
+          // }
+          // @endcode
+          try {
+            $context = stream_context_create($options);
+            if (!$call_result_json = file_get_contents($url, FALSE, $context)) {
+              // If it failed, try without context.
+              // $call_result_json = file_get_contents($url);
+            }
+            if (isset($call_result_json)) {
+              $call_result = json_decode($call_result_json, TRUE);
+              if (isset($call_result)) {
+                // Count the answer.
+                ++$queried_site_count;
+                $data = brapi_merge_array($data, $call_result);
+                // @todo +FIXME: take into account metadata (pager, files).
+                // @code unset($data['metadata']); @endcode
+              }
             }
           }
+          catch (Exception $error_handle) {
+            drupal_set_message(
+              t(
+                "ERROR calling '@url': @message",
+                array(
+                  '@url' => $url,
+                  '@message' => $error_handle->getMessage(),
+                )
+              ),
+              'error'
+            );
+          }
         }
-        catch (Exception $error_handle) {
-          drupal_set_message(
-            t(
-              "ERROR calling '@url': @message",
-              array(
-                '@url' => $url,
-                '@message' => $error_handle->getMessage(),
-              )
-            ),
-            'error'
-          );
-        }
-      }
-      // Add to metadata the list of caller URLs.
-      $metadata['aggregated_from'] = $aggregated_from_list;
+
+        /* RMB Tripal/brapi Issue #30 fix: deprecated 'aggregated_from' tag removed from metadata
+        // Add to metadata the list of caller URLs.
+        //$metadata['aggregated_from'] = $aggregated_from_list;
+        */
     }
   }
 
