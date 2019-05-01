@@ -374,6 +374,7 @@ function brapi_get_calls() {
         ),
         'aggregable' => FALSE,
       ),
+      //   /brapi/v1/crops deprecated as of v1.2
       'crops' => array(
         'title'          => 'Crops',
         'description'    => 'List supported crops',
@@ -382,11 +383,13 @@ function brapi_get_calls() {
           'GET'  => BRAPI_USE_PERMISSION,
           'POST' => BRAPI_USE_PERMISSION,
         ),
-        'api versions' => array('1.0', '1.1', '1.2'),
+        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
         'active version' => BRAPI_SERVICE_VERSION,
         'callback versions' => array(
-          '1.0' => 'brapi_v1_crops_10_json',
-          '1.1' => 'brapi_v1_crops_10_json',
+            '1.0' => 'brapi_v1_crops_10_json',
+            '1.1' => 'brapi_v1_crops_10_json',
+            '1.2' => 'brapi_v1_crops_10_json',
+            '1.3' => 'brapi_v1_crops_10_json',
         ),
         'aggregable' => TRUE,
       ),
