@@ -1182,38 +1182,24 @@ function brapi_get_calls() {
            * Observation Variables
            ***********************/
 
-          'observationlevels' => array(
-              'title' => 'Observation Level List',
-              'description' => 'List observation levels',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.0', '1.1', '1.2'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-
           'ontologies' => array(
               'title' => 'Variable ontology list',
               'description' => 'List ontologies',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
 
+          // 'traits' endpoint relocated into 'Observation Variables/Traits' group in v1.3
           'traits' => array(
               'title' => 'Trait List',
               'description' => 'List all traits',
@@ -1225,23 +1211,26 @@ function brapi_get_calls() {
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_traits_11_json',
                   '1.1' => 'brapi_v1_traits_11_json',
                   '1.2' => 'brapi_v1_traits_11_json',
               ),
               'aggregable' => TRUE,
           ),
 
+          // 'traits' endpoint relocated into 'Observation Variables/Traits' group in v1.3
           'traits/{traitDbId}' => array(
               'title' => 'Trait Details',
               'description' => 'Trait details by traitDbId',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
+                  'PUT' => BRAPI_USE_PERMISSION, // 'PUT' http verb only added in v1.3
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_traits_11_json',
                   '1.1' => 'brapi_v1_traits_11_json',
                   '1.2' => 'brapi_v1_traits_11_json',
               ),
@@ -1262,12 +1251,13 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_variables_11_json',
                   '1.1' => 'brapi_v1_variables_11_json',
+                  '1.2' => 'brapi_v1_variables_11_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1278,12 +1268,13 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_UPDATE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_variables_11_json',
                   '1.1' => 'brapi_v1_variables_11_json',
+                  '1.2' => 'brapi_v1_variables_11_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1302,13 +1293,13 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.0' => 'brapi_v1_variables_datatypes_11_json',
                   '1.1' => 'brapi_v1_variables_datatypes_11_json',
+                  '1.2' => 'brapi_v1_variables_datatypes_11_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1318,13 +1309,14 @@ function brapi_get_calls() {
               'description' => 'Search variables',
               'datatypes' => array('json'),
               'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_variables_search_11_json',
                   '1.1' => 'brapi_v1_variables_search_11_json',
+                  '1.2' => 'brapi_v1_variables_search_11_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1756,6 +1748,22 @@ function brapi_get_calls() {
           /**********
            * Studies
            **********/
+
+          'observationlevels' => array(
+              'title' => 'Observation Level List',
+              'description' => 'List observation levels',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
           'studies' => array(
               'title' => 'Study List',
