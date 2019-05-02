@@ -1384,6 +1384,12 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          /*
+           * This endpoint doesn't actually exist in BrAPI
+           * even though it would be somewhat consistent
+           * with the  rest of the API; I keep the code
+           * commented out here just in case MGIS uses it??
+           *
           'phenotypes/{phenotypeDbId}' => array(
               'title' => 'Phenotype Details',
               'description' => 'Phenotypes details by phenotypeDbId',
@@ -1407,6 +1413,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+          */
 
           // Deprecated endpoint from v1.3
           'phenotypes-search' => array(
@@ -1417,7 +1424,7 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION, // GET http verb only supported from v1.2
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2',' 1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_external_call_json',
@@ -1433,7 +1440,7 @@ function brapi_get_calls() {
               'methods' => array(
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.2'),
+              'api versions' => array('1.2',' 1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.2' => 'brapi_v1_external_call_json',
@@ -1449,7 +1456,7 @@ function brapi_get_calls() {
               'methods' => array(
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.2'),
+              'api versions' => array('1.2',' 1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.2' => 'brapi_v1_external_call_json',
@@ -1465,7 +1472,7 @@ function brapi_get_calls() {
               'methods' => array(
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.2'),
+              'api versions' => array('1.2',' 1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.2' => 'brapi_v1_external_call_json',
