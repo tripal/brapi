@@ -1369,28 +1369,11 @@ function brapi_get_calls() {
            * Phenotypes
            ************/
 
-          'phenotypes-search' => array(
-              'title' => 'Phenotype Search',
-              'description' => 'Search phenotypes',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.0', '1.1', '1.2'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-
           'phenotypes' => array(
-              'title' => 'Phenotype List',
-              'description' => 'List phenotypes',
+              'title' => 'Save Phenotypes',
+              'description' => 'Save phenotypes for many studies',
               'datatypes' => array('json'),
               'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2'),
@@ -1409,10 +1392,10 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_UPDATE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1421,6 +1404,71 @@ function brapi_get_calls() {
                       'description' => 'n/a',
                       'required' => FALSE,
                   ),
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Deprecated endpoint from v1.3
+          'phenotypes-search' => array(
+              'title' => 'Phenotype Search',
+              'description' => 'Search phenotypes',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION, // GET http verb only supported from v1.2
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Deprecated endpoint from v1.3
+          'phenotypes-search/csv' => array(
+              'title' => 'Phenotype Search (CSV)',
+              'description' => 'Search phenotypes returning a CSV formatted file',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Deprecated endpoint from v1.3
+          'phenotypes-search/tsv' => array(
+              'title' => 'Phenotype Search (TSV)',
+              'description' => 'Search phenotypes returning a TSV formatted file',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Deprecated endpoint from v1.3
+          'phenotypes-search/table' => array(
+              'title' => 'Phenotype Search (Table as JSON)',
+              'description' => 'Search phenotypes returning JSON formatted file',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
