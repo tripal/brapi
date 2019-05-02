@@ -1082,18 +1082,19 @@ function brapi_get_calls() {
            * Markers
            *********/
 
+          // Strangely enough, this endpoint seems missing from v1.1 and v1.2?
           'markers' => array(
               'title' => 'Marker List',
               'description' => 'List markers',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_markers_11_json',
+                  '1.0' => 'brapi_v1_markers_11_json',
+                  '1.3' => 'brapi_v1_markers_11_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1105,10 +1106,13 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2','1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_markers_11_json',
                   '1.1' => 'brapi_v1_markers_11_json',
+                  '1.2' => 'brapi_v1_markers_11_json',
+                  '1.3' => 'brapi_v1_markers_11_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1121,6 +1125,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          // Unspecified in v1.0 but deprecated, from v1.3
           'markers-search' => array(
               'title' => 'Markers Search',
               'description' => 'Search markers',
@@ -1129,10 +1134,42 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_markers_search_11_json',
+                  '1.2' => 'brapi_v1_markers_search_11_json',
+                  '1.3' => 'brapi_v1_markers_search_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/markers' => array(
+              'title' => 'Search Markers',
+              'description' => 'Search for a set of markers based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/markers/{searchResultsDbId}' => array(
+              'title' => 'Get Germplasm Search Results',
+              'description' => 'Get results of search/markers call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
