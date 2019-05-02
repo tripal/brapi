@@ -954,11 +954,9 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-
           /***********
            * Locations
            ***********/
-
 
           'locations' => array(
               'title' => 'Locations',
@@ -966,12 +964,14 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_locations_11_json',
                   '1.1' => 'brapi_v1_locations_11_json',
+                  '1.2' => 'brapi_v1_locations_11_json',
+                  '1.3' => 'brapi_v1_locations_11_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -990,13 +990,20 @@ function brapi_get_calls() {
                       'required' => FALSE,
                   ),
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_locations_11_json',
                   '1.1' => 'brapi_v1_locations_11_json',
+                  '1.2' => 'brapi_v1_locations_11_json',
+                  '1.3' => 'brapi_v1_locations_11_json',
               ),
               'aggregable' => TRUE,
           ),
+
+          /*****************
+           * Marker Profiles
+           *****************/
 
           'markerprofiles' => array(
               'title' => 'Markerprofile Search',
