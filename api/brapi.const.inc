@@ -842,6 +842,66 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          'images/{imageDbId}' => array(
+              'title' => 'Images',
+              'description' => 'Get/Update one image meta data',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'PUT' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'images/{imageDbId}/imagecontent' => array(
+              'title' => 'Images',
+              'description' => 'Update an image with the image file content',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'PUT' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/images' => array(
+              'title' => 'Search Germplasm',
+              'description' => 'Search for a set of images based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/images/{searchResultsDbId}' => array(
+              'title' => 'Search Germplasm',
+              'description' => 'Get results of search/images call by search id',
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
 
           /***********
            * Locations
