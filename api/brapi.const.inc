@@ -239,1304 +239,1331 @@ function brapi_get_calls() {
       $dbid_column = '_id';
     }
 
-    $brapi_calls = array(
-      ''               => array(
-        'title'          => 'About',
-        'description'    => 'About Breeding API Drupal implementation',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET' => 'access content',
-        ),
-        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.0' => 'brapi_v1_root_10_json',
-          '1.1' => 'brapi_v1_root_10_json',
-          '1.2' => 'brapi_v1_root_10_json',
-          '1.3' => 'brapi_v1_root_10_json',
-        ),
-        'aggregable' => FALSE,
-      ),
-      'allelematrices'     => array(
-        'title'          => 'Allele Matrices',
-        'description'    => 'List allele matrices',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.0' => 'brapi_v1_external_call_json',
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'allelematrices-search'      => array(
-        'title'          => 'MarkerProfile Allele Matrix',
-        'description'    => 'Search allele matrices',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.0' => 'brapi_v1_external_call_json',
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'allelematrix'     => array(
-        'title'          => 'Allele Matrices',
-        'description'    => 'List allele matrices',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.2' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'allelematrix-search'      => array(
-        'title'          => 'MarkerProfile Allele Matrix',
-        'description'    => 'Search allele matrices',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.2' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'calls'      => array(
-        'title'          => 'Call Search',
-        'description'    => 'List supported Breeding API calls',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2','1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.0' => 'brapi_v1_call_10_json',
-            '1.1' => 'brapi_v1_call_10_json',
-            '1.2' => 'brapi_v1_call_12_json',
-            '1.3' => 'brapi_v1_call_13_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'callName',
-            'type' => 'string',
-            'description' => 'a call name (machine name)',
-            'required' => FALSE,
+      $brapi_calls = array(
+          '' => array(
+              'title' => 'About',
+              'description' => 'About Breeding API Drupal implementation',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => 'access content',
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_root_10_json',
+                  '1.1' => 'brapi_v1_root_10_json',
+                  '1.2' => 'brapi_v1_root_10_json',
+                  '1.3' => 'brapi_v1_root_10_json',
+              ),
+              'aggregable' => FALSE,
           ),
-        ),
-        'aggregable' => FALSE,
-      ),
-        // Deprecstaed as of v1.2; use /commonCropNames instead
-        'crops' => array(
-            'title'          => 'Crops',
-            'description'    => 'List supported crops',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-                'POST' => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.0', '1.1', '1.2','1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.0' => 'brapi_v1_crops_10_json',
-                '1.1' => 'brapi_v1_crops_10_json',
-                '1.2' => 'brapi_v1_crops_10_json',
-                '1.3' => 'brapi_v1_crops_10_json',
-            ),
-            'aggregable' => TRUE,
-        ),
-        // Replaces /crops as of v1.2
-        'commonCropNames' => array(
-            'title'          => 'Cmmon Crop Names',
-            'description'    => 'List the common crop names for the crops available in the database server.',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-                'POST' => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array( '1.2', '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.2' => 'brapi_v1_crops_10_json',
-                '1.3' => 'brapi_v1_crops_10_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          'allelematrices' => array(
+              'title' => 'Allele Matrices',
+              'description' => 'List allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'allelematrices-search' => array(
+              'title' => 'MarkerProfile Allele Matrix',
+              'description' => 'Search allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'allelematrix' => array(
+              'title' => 'Allele Matrices',
+              'description' => 'List allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'allelematrix-search' => array(
+              'title' => 'MarkerProfile Allele Matrix',
+              'description' => 'Search allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-      'germplasm' => array(
-        'title'          => 'Germplasm',
-        'description'    => 'Germplasm list',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2','1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.1' => 'brapi_v1_germplasm_10_json',
-            '1.2' => 'brapi_v1_germplasm_10_json',
-            '1.3' => 'brapi_v1_germplasm_10_json',
-        ),
-        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
-      ),
+          /********
+           * Calls
+           ********/
 
-      'germplasm/{germplasmDbId}' => array(
-        'title'          => 'Germplasm Details',
-        'description'    => 'Germplasm details by germplasmDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_UPDATE_PERMISSION,
-          'PUT'    => BRAPI_UPDATE_PERMISSION,
-          'DELETE' => BRAPI_UPDATE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2','1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.0' => 'brapi_v1_germplasm_10_json',
-            '1.1' => 'brapi_v1_germplasm_10_json',
-            '1.2' => 'brapi_v1_germplasm_10_json',
-            '1.3' => 'brapi_v1_germplasm_10_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'germplasmDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado stock$dbid_column value",
-            'required' => FALSE,
+          'calls' => array(
+              'title' => 'Call Search',
+              'description' => 'List supported Breeding API calls',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_call_10_json',
+                  '1.1' => 'brapi_v1_call_10_json',
+                  '1.2' => 'brapi_v1_call_12_json',
+                  '1.3' => 'brapi_v1_call_13_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'callName',
+                      'type' => 'string',
+                      'description' => 'a call name (machine name)',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => FALSE,
           ),
-        ),
-        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
-      ),
 
-        'search/germplasm' => array(
-            'title'          => 'Search Germplasm',
-            'description'    => 'Search for a set of germplasm based on some criteria, returning a search results id',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'POST' => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          /********
+           * Crops
+           ********/
 
-        'search/germplasm/{searchResultsDbId}' => array(
-            'title'          => 'Get Germplasm Search Results',
-            'description'    => 'Get results of search/germplasm call by search id',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET' => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          // Deprecstaed as of v1.2; use /commonCropNames instead
+          'crops' => array(
+              'title' => 'Crops',
+              'description' => 'List supported crops',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_crops_10_json',
+                  '1.1' => 'brapi_v1_crops_10_json',
+                  '1.2' => 'brapi_v1_crops_10_json',
+                  '1.3' => 'brapi_v1_crops_10_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-        'attributes' => array(
-            'title'          => 'Germplasm Attribute List',
-            'description'    => 'List attributes available',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.0', '1.1', '1.2', '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.0' => 'brapi_v1_attributes_11_json',
-                '1.1' => 'brapi_v1_attributes_11_json',
-                '1.2' => 'brapi_v1_attributes_11_json',
-                '1.3' => 'brapi_v1_attributes_11_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          // Replaces /crops as of v1.2
+          'commonCropNames' => array(
+              'title' => 'Cmmon Crop Names',
+              'description' => 'List the common crop names for the crops available in the database server.',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_crops_10_json',
+                  '1.3' => 'brapi_v1_crops_10_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-        'attributes/categories' => array(
-            'title'          => 'Germplasm Attribute Category List',
-            'description'    => 'List attribute categories available',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.0', '1.1', '1.2', '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.0' => 'brapi_v1_categories_11_json',
-                '1.1' => 'brapi_v1_categories_11_json',
-                '1.2' => 'brapi_v1_categories_11_json',
-                '1.3' => 'brapi_v1_categories_11_json',
-            ),
-            'aggregable' => TRUE,
-        ),
-        // This call moved under the 'Germplasm' group in BrAPI v1.3
-        'germplasm/{germplasmDbId}/attributes' => array(
-            'title' => 'Germplasm Attributes',
-            'description' => 'Germplasm attribute values by germplasmDbId',
-            'datatypes' => array('json'),
-            'methods' => array(
-                'GET' => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1,0', '1.1', '1.2',  '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.0' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
-                '1.1' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
-                '1.2' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
-                '1.3' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
-            ),
-            'arguments' => array(
-                3 => array(
-                    'name' => 'germplasmDbId',
-                    'type' => 'string',
-                    'description' => "correspond to a Chado stock$dbid_column value",
-                    'required' => TRUE,
-                ),
-            ),
-            'aggregable' => TRUE,
-        ),
+          /***************
+           * Genomic Maps
+           ***************/
 
-        'germplasm/breedingmethods' => array(
-            'title'          => 'Germplasm Breeding Methods',
-            'description'    => 'Get the list of germplasm breeding methods available in a system.',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.2', '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.2' => 'brapi_v1_external_call_json',
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          'maps' => array(
+              'title' => 'Genome Map',
+              'description' => 'Get list of maps',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-        'germplasm/breedingmethods/{breedingMethodDbId}' => array(
-            'title'          => 'Germplasm Breeding Method',
-            'description'    => 'Get specific germplasm breeding method by identifier',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.2', '1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.2' => 'brapi_v1_external_call_json',
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          'maps/{mapDbId}' => array(
+              'title' => 'Genome Map Details',
+              'description' => 'Get map details',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-        'germplasm/{germplasmDbId}/mcpd' => array(
-            'title'          => 'Germplasm by MCPD',
-            'description'    => 'Germplasm by Multi-Crop Passport Descriptors',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          'maps/{mapDbId}/positions' => array(
+              'title' => 'Genome map data',
+              'description' => 'Get map data',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
 
-        'germplasm/{germplasmDbId}/markerprofiles' => array(
-        'title'          => 'Germplasm Markerprofiles',
-        'description'    => 'Markerprofiles by germplasmDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2','1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.0' => 'brapi_v1_external_call_json',
-            '1.1' => 'brapi_v1_external_call_json',
-            '1.2' => 'brapi_v1_external_call_json',
-            '1.3' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'germplasmDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado stock$dbid_column value",
-            'required' => TRUE,
+          'maps/{mapDbId}/positions/{linkageGroupName}' => array(
+              'title' => 'Genome Map Data by range on linkageGroup',
+              'description' => 'Get map data by range on linkageGroup',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
 
-      'germplasm/{germplasmDbId}/pedigree' => array(
-        'title'          => 'Germplasm Pedigree',
-        'description'    => 'Pedigree by germplasmDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.0' => 'brapi_v1_germplasm_germplasmdbid_pedigree_10_json',
-            '1.1' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
-            '1.2' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
-            '1.3' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'germplasmDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado stock$dbid_column value",
-            'required' => TRUE,
-          ),
-        ),
-        'aggregable' => TRUE,
-      ),
+          /*************************
+           * Germplasm & Attributes
+           *************************/
 
-        'germplasm/{germplasmDbId}/progeny' => array(
-            'title'          => 'Germplasm by Progeny',
-            'description'    => 'Get the germplasmDbIds for all the Progeny of a particular germplasm',
-            'datatypes'      => array('json'),
-            'methods'        => array(
-                'GET'  => BRAPI_USE_PERMISSION,
-            ),
-            'api versions' => array('1,2','1.3'),
-            'active version' => BRAPI_SERVICE_VERSION,
-            'callback versions' => array(
-                '1.2' => 'brapi_v1_external_call_json',
-                '1.3' => 'brapi_v1_external_call_json',
-            ),
-            'aggregable' => TRUE,
-        ),
+          'germplasm' => array(
+              'title' => 'Germplasm',
+              'description' => 'Germplasm list',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_germplasm_10_json',
+                  '1.2' => 'brapi_v1_germplasm_10_json',
+                  '1.3' => 'brapi_v1_germplasm_10_json',
+              ),
+              'features' => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+              'aggregable' => TRUE,
+          ),
 
-      // Deprecated in BrAPI v1.3
-      'germplasm-search' => array(
-        'title'          => 'Germplasm Search',
-        'description'    => 'Germplasm search',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2', '1.3'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-            '1.0' => 'brapi_v1_germplasm_search_10_json',
-            '1.1' => 'brapi_v1_germplasm_search_10_json',
-            '1.2' => 'brapi_v1_germplasm_search_10_json',
-            '1.3' => 'brapi_v1_germplasm_search_10_json',
-        ),
-        'parameters' => array(
-          '1.0' => array(
-            'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+          'germplasm/{germplasmDbId}' => array(
+              'title' => 'Germplasm Details',
+              'description' => 'Germplasm details by germplasmDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_UPDATE_PERMISSION,
+                  'PUT' => BRAPI_UPDATE_PERMISSION,
+                  'DELETE' => BRAPI_UPDATE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_germplasm_10_json',
+                  '1.1' => 'brapi_v1_germplasm_10_json',
+                  '1.2' => 'brapi_v1_germplasm_10_json',
+                  '1.3' => 'brapi_v1_germplasm_10_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'germplasmDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado stock$dbid_column value",
+                      'required' => FALSE,
+                  ),
+              ),
+              'features' => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+              'aggregable' => TRUE,
           ),
-          '1.1' => array(
-            'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+
+          'search/germplasm' => array(
+              'title' => 'Search Germplasm',
+              'description' => 'Search for a set of germplasm based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'filters' => array(
-          '1.0' => array(
-            'germplasm' => array(
-              'germplasmPUIs',
-              'germplasmDbIds',
-              'germplasmSpecies',
-              'germplasmGenus',
-              'germplasmNames',
-              'accessionNumbers',
-            ),
+
+          'search/germplasm/{searchResultsDbId}' => array(
+              'title' => 'Get Germplasm Search Results',
+              'description' => 'Get results of search/germplasm call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-          '1.1' => array(
-            'germplasm' => array(
-              'germplasmDbId',
-              'defaultDisplayName',
-              'accessionNumber',
-              'germplasmName',
-              'germplasmPUI',
-              'pedigree',
-              'seedSource',
-              'synonyms',
-              'commonCropName',
-              'instituteCode',
-              'instituteName',
-              'biologicalStatusOfAccessionCode',
-              'countryOfOriginCode',
-              'typeOfGermplasmStorageCode',
-              'genus',
-              'species',
-              'taxonIds',
-              'speciesAuthority',
-              'subtaxa',
-              'subtaxaAuthority',
-              'donors',
-              'acquisitionDate',
-            ),
+
+          'attributes' => array(
+              'title' => 'Germplasm Attribute List',
+              'description' => 'List attributes available',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_attributes_11_json',
+                  '1.1' => 'brapi_v1_attributes_11_json',
+                  '1.2' => 'brapi_v1_attributes_11_json',
+                  '1.3' => 'brapi_v1_attributes_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-          '1.2' => array(
-            'germplasm' => array(
-              'germplasmDbId',
-              'defaultDisplayName',
-              'accessionNumber',
-              'germplasmName',
-              'germplasmPUI',
-              'pedigree',
-              'seedSource',
-              'synonyms',
-              'commonCropName',
-              'instituteCode',
-              'instituteName',
-              'biologicalStatusOfAccessionCode',
-              'countryOfOriginCode',
-              'typeOfGermplasmStorageCode',
-              'genus',
-              'species',
-              'taxonIds',
-              'speciesAuthority',
-              'subtaxa',
-              'subtaxaAuthority',
-              'donors',
-              'acquisitionDate',
-            ),
+
+          'attributes/categories' => array(
+              'title' => 'Germplasm Attribute Category List',
+              'description' => 'List attribute categories available',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_categories_11_json',
+                  '1.1' => 'brapi_v1_categories_11_json',
+                  '1.2' => 'brapi_v1_categories_11_json',
+                  '1.3' => 'brapi_v1_categories_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'features'       => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
-        'aggregable' => TRUE,
-      ),
-      'locations' => array(
-        'title'          => 'Locations',
-        'description'    => 'List Locations',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_locations_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'locations/{locationDbId}' => array(
-        'title'          => 'Locations Details',
-        'description'    => 'Locations details by locationDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'locationDbId',
-            'type' => 'string',
-            'description' => 'correspond to a Chado nd_geolocation.nd_geolocation_id value',
-            'required' => FALSE,
+
+          // This call moved under the 'Germplasm' group in BrAPI v1.3
+          'germplasm/{germplasmDbId}/attributes' => array(
+              'title' => 'Germplasm Attributes',
+              'description' => 'Germplasm attribute values by germplasmDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1,0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
+                  '1.1' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
+                  '1.2' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
+                  '1.3' => 'brapi_v1_germplasm_germplasmdbid_attributes_10_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'germplasmDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado stock$dbid_column value",
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_locations_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'maps'      => array(
-        'title'          => 'Genome Map',
-        'description'    => 'Get list of maps',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'maps/{mapDbId}' => array(
-        'title'          => 'Genome Map Details',
-        'description'    => 'Get map details',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'maps/{mapDbId}/positions' => array(
-        'title'          => 'Genome map data',
-        'description'    => 'Get map data',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'maps/{mapDbId}/positions/{linkageGroupName}' => array(
-        'title'          => 'Genome Map Data by range on linkageGroup',
-        'description'    => 'Get map data by range on linkageGroup',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'markerprofiles'      => array(
-        'title'          => 'Markerprofile Search',
-        'description'    => 'List marker profiles',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'markerprofiles/{markerprofileDbId}' => array(
-        'title'          => 'Marker profiles',
-        'description'    => 'Alleles by markerprofileDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'markers' => array(
-        'title'          => 'Marker List',
-        'description'    => 'List markers',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_markers_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'markers/{markerDbId}' => array(
-        'title'          => 'Marker Details',
-        'description'    => 'Markers details by markerDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_markers_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'markerDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado feature$dbid_column value for feature type \"genetic_marker\"",
-            'required' => FALSE,
+
+          'germplasm/breedingmethods' => array(
+              'title' => 'Germplasm Breeding Methods',
+              'description' => 'Get the list of germplasm breeding methods available in a system.',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'markers-search'      => array(
-        'title'          => 'Markers Search',
-        'description'    => 'Search markers',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_markers_search_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'observationlevels' => array(
-        'title'          => 'Observation Level List',
-        'description'    => 'List observation levels',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'ontologies' => array(
-        'title'          => 'Variable ontology list',
-        'description'    => 'List ontologies',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'phenotypes-search'      => array(
-        'title'          => 'Phenotype Search',
-        'description'    => 'Search phenotypes',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'phenotypes'      => array(
-        'title'          => 'Phenotype List',
-        'description'    => 'List phenotypes',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'phenotypes/{phenotypeDbId}' => array(
-        'title'          => 'Phenotype Details',
-        'description'    => 'Phenotypes details by phenotypeDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_UPDATE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'phenotypeDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => FALSE,
+
+          'germplasm/breedingmethods/{breedingMethodDbId}' => array(
+              'title' => 'Germplasm Breeding Method',
+              'description' => 'Get specific germplasm breeding method by identifier',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'programs'      => array(
-        'title'          => 'Program List',
-        'description'    => 'List programs',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_programs_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'programs/{programDbId}' => array(
-        'title'          => 'Program Details',
-        'description'    => 'Program details by programDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_programs_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'programDbId',
-            'type' => 'string',
-            'description' => 'correspond to a Chado project.project_id.',
-            'required' => FALSE,
+
+          'germplasm/{germplasmDbId}/mcpd' => array(
+              'title' => 'Germplasm by MCPD',
+              'description' => 'Germplasm by Multi-Crop Passport Descriptors',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'programs-search'      => array(
-        'title'          => 'Program Search',
-        'description'    => 'Search programs',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_programs_search_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'samples' => array(
-        'title'          => 'Sample List',
-        'description'    => 'Sample list call',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_samples_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'samples/{sampleDbId}' => array(
-        'title'          => 'Sample Details',
-        'description'    => 'Sample details by sampleDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_UPDATE_PERMISSION,
-          'PUT'    => BRAPI_UPDATE_PERMISSION,
-          'DELETE' => BRAPI_UPDATE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_samples_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'sampleDbId',
-            'type' => 'string',
-            'description' => "correspond to a Chado stock$dbid_column value",
-            'required' => FALSE,
+
+          'germplasm/{germplasmDbId}/markerprofiles' => array(
+              'title' => 'Germplasm Markerprofiles',
+              'description' => 'Markerprofiles by germplasmDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'germplasmDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado stock$dbid_column value",
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'samples-search' => array(
-        'title'          => 'Sample Search',
-        'description'    => 'Search samples',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_samples_search_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'seasons'      => array(
-        'title'          => 'Season List',
-        'description'    => 'List seasons',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies'      => array(
-        'title'          => 'Study List',
-        'description'    => 'List studies',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}'      => array(
-        'title'          => 'Study Details',
-        'description'    => 'Studies details by studyDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => FALSE,
+
+          'germplasm/{germplasmDbId}/pedigree' => array(
+              'title' => 'Germplasm Pedigree',
+              'description' => 'Pedigree by germplasmDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_germplasm_germplasmdbid_pedigree_10_json',
+                  '1.1' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+                  '1.2' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+                  '1.3' => 'brapi_v1_germplasm_germplasmdbid_pedigree_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'germplasmDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado stock$dbid_column value",
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/germplasm'      => array(
-        'title'          => 'Study Germplasm Details',
-        'description'    => 'Study germplasm details by studyDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+
+          'germplasm/{germplasmDbId}/progeny' => array(
+              'title' => 'Germplasm by Progeny',
+              'description' => 'Get the germplasmDbIds for all the Progeny of a particular germplasm',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1,2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/layout'      => array(
-        'title'          => 'Plot Layout Details',
-        'description'    => 'Retrieve plot layout details',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+
+          // Deprecated in BrAPI v1.3
+          'germplasm-search' => array(
+              'title' => 'Germplasm Search',
+              'description' => 'Germplasm search',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_germplasm_search_10_json',
+                  '1.1' => 'brapi_v1_germplasm_search_10_json',
+                  '1.2' => 'brapi_v1_germplasm_search_10_json',
+                  '1.3' => 'brapi_v1_germplasm_search_10_json',
+              ),
+              'parameters' => array(
+                  '1.0' => array(
+                      'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+                  ),
+                  '1.1' => array(
+                      'matchMethod' => array('exact', 'case_insensitive', 'wildcard'),
+                  ),
+              ),
+              'filters' => array(
+                  '1.0' => array(
+                      'germplasm' => array(
+                          'germplasmPUIs',
+                          'germplasmDbIds',
+                          'germplasmSpecies',
+                          'germplasmGenus',
+                          'germplasmNames',
+                          'accessionNumbers',
+                      ),
+                  ),
+                  '1.1' => array(
+                      'germplasm' => array(
+                          'germplasmDbId',
+                          'defaultDisplayName',
+                          'accessionNumber',
+                          'germplasmName',
+                          'germplasmPUI',
+                          'pedigree',
+                          'seedSource',
+                          'synonyms',
+                          'commonCropName',
+                          'instituteCode',
+                          'instituteName',
+                          'biologicalStatusOfAccessionCode',
+                          'countryOfOriginCode',
+                          'typeOfGermplasmStorageCode',
+                          'genus',
+                          'species',
+                          'taxonIds',
+                          'speciesAuthority',
+                          'subtaxa',
+                          'subtaxaAuthority',
+                          'donors',
+                          'acquisitionDate',
+                      ),
+                  ),
+                  '1.2' => array(
+                      'germplasm' => array(
+                          'germplasmDbId',
+                          'defaultDisplayName',
+                          'accessionNumber',
+                          'germplasmName',
+                          'germplasmPUI',
+                          'pedigree',
+                          'seedSource',
+                          'synonyms',
+                          'commonCropName',
+                          'instituteCode',
+                          'instituteName',
+                          'biologicalStatusOfAccessionCode',
+                          'countryOfOriginCode',
+                          'typeOfGermplasmStorageCode',
+                          'genus',
+                          'species',
+                          'taxonIds',
+                          'speciesAuthority',
+                          'subtaxa',
+                          'subtaxaAuthority',
+                          'donors',
+                          'acquisitionDate',
+                      ),
+                  ),
+              ),
+              'features' => array('MCPD' => 'yes', 'MCPD-version' => 'V.' . BRAPI_MCPD_VERSION),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/observations'      => array(
-        'title'          => 'Observations Details',
-        'description'    => 'Get observation units by observation variable by studyDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+
+          'locations' => array(
+              'title' => 'Locations',
+              'description' => 'List Locations',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_locations_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/observationunits'      => array(
-        'title'          => 'Observation Units Details',
-        'description'    => 'Get all observation units by studyDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+          'locations/{locationDbId}' => array(
+              'title' => 'Locations Details',
+              'description' => 'Locations details by locationDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'locationDbId',
+                      'type' => 'string',
+                      'description' => 'correspond to a Chado nd_geolocation.nd_geolocation_id value',
+                      'required' => FALSE,
+                  ),
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_locations_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/observationvariables'      => array(
-        'title'          => 'Study Observation Variables',
-        'description'    => 'Get observation variables by studyDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+
+          'markerprofiles' => array(
+              'title' => 'Markerprofile Search',
+              'description' => 'List marker profiles',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies/{studyDbId}/table'      => array(
-        'title'          => 'Study Observation Units as a Table',
-        'description'    => 'Retrieve study observation units as table',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'studyDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+
+          'markerprofiles/{markerprofileDbId}' => array(
+              'title' => 'Marker profiles',
+              'description' => 'Alleles by markerprofileDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studies-search'      => array(
-        'title'          => 'Study search',
-        'description'    => 'Search studies',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'studytypes'      => array(
-        'title'          => 'Study Type List',
-        'description'    => 'List study types',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'token'      => array(
-        'title'          => 'Authentication',
-        'description'    => 'User authentication in OAuth2 style',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_USE_PERMISSION,
-          'DELETE' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.0' => 'brapi_v1_authentication_json',
-          '1.1' => 'brapi_v1_authentication_json',
-        ),
-        'aggregable' => FALSE,
-      ),
-      'traits'      => array(
-        'title'          => 'Trait List',
-        'description'    => 'List all traits',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_traits_11_json',
-          '1.2' => 'brapi_v1_traits_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'traits/{traitDbId}' => array(
-        'title'          => 'Trait Details',
-        'description'    => 'Trait details by traitDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_traits_11_json',
-          '1.2' => 'brapi_v1_traits_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'traitDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => FALSE,
+          'markers' => array(
+              'title' => 'Marker List',
+              'description' => 'List markers',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_markers_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'trials'      => array(
-        'title'          => 'Trial List',
-        'description'    => 'Get list of trial summaries',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'trials/{trialDbId}' => array(
-        'title'          => 'Trial Details',
-        'description'    => 'Get Trial By trialDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'trialDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => FALSE,
+          'markers/{markerDbId}' => array(
+              'title' => 'Marker Details',
+              'description' => 'Markers details by markerDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_markers_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'markerDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado feature$dbid_column value for feature type \"genetic_marker\"",
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'variables'      => array(
-        'title'          => 'Variable List',
-        'description'    => 'List variables',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_variables_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'variables/{observationVariableDbId}' => array(
-        'title'          => 'Variable Details',
-        'description'    => 'Variable details by observationVariableDbId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'    => BRAPI_USE_PERMISSION,
-          'POST'   => BRAPI_UPDATE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_variables_11_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'observationVariableDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => FALSE,
+          'markers-search' => array(
+              'title' => 'Markers Search',
+              'description' => 'Search markers',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_markers_search_11_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'variables/datatypes' => array(
-        'title'          => 'Variable Data Types',
-        'description'    => 'Variable data type list',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.0' => 'brapi_v1_variables_datatypes_11_json',
-          '1.1' => 'brapi_v1_variables_datatypes_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'variables-search' => array(
-        'title'          => 'Variable Search',
-        'description'    => 'Search variables',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_variables_search_11_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'vendors/plates/{vendorPlateDbId}' => array(
-        'title'          => 'Plate Details',
-        'description'    => 'Get plate details by vendorPlateId',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'arguments'      => array(
-          3 => array(
-            'name' => 'vendorPlateDbId',
-            'type' => 'string',
-            'description' => 'n/a',
-            'required' => TRUE,
+          'observationlevels' => array(
+              'title' => 'Observation Level List',
+              'description' => 'List observation levels',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
           ),
-        ),
-        'aggregable' => TRUE,
-      ),
-      'vendors/plates-search' => array(
-        'title'          => 'Plate Search',
-        'description'    => 'Search for plates',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-      'vendors/specifications' => array(
-        'title'          => 'Vendor Specifications',
-        'description'    => 'Get vendor specifications',
-        'datatypes'      => array('json'),
-        'methods'        => array(
-          'GET'  => BRAPI_USE_PERMISSION,
-          'POST' => BRAPI_USE_PERMISSION,
-        ),
-        'api versions' => array('1.0', '1.1', '1.2'),
-        'active version' => BRAPI_SERVICE_VERSION,
-        'callback versions' => array(
-          '1.1' => 'brapi_v1_external_call_json',
-        ),
-        'aggregable' => TRUE,
-      ),
-    );
+          'ontologies' => array(
+              'title' => 'Variable ontology list',
+              'description' => 'List ontologies',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'phenotypes-search' => array(
+              'title' => 'Phenotype Search',
+              'description' => 'Search phenotypes',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'phenotypes' => array(
+              'title' => 'Phenotype List',
+              'description' => 'List phenotypes',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'phenotypes/{phenotypeDbId}' => array(
+              'title' => 'Phenotype Details',
+              'description' => 'Phenotypes details by phenotypeDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_UPDATE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'phenotypeDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'programs' => array(
+              'title' => 'Program List',
+              'description' => 'List programs',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_programs_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'programs/{programDbId}' => array(
+              'title' => 'Program Details',
+              'description' => 'Program details by programDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_programs_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'programDbId',
+                      'type' => 'string',
+                      'description' => 'correspond to a Chado project.project_id.',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'programs-search' => array(
+              'title' => 'Program Search',
+              'description' => 'Search programs',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_programs_search_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'samples' => array(
+              'title' => 'Sample List',
+              'description' => 'Sample list call',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_samples_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'samples/{sampleDbId}' => array(
+              'title' => 'Sample Details',
+              'description' => 'Sample details by sampleDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_UPDATE_PERMISSION,
+                  'PUT' => BRAPI_UPDATE_PERMISSION,
+                  'DELETE' => BRAPI_UPDATE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_samples_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'sampleDbId',
+                      'type' => 'string',
+                      'description' => "correspond to a Chado stock$dbid_column value",
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'samples-search' => array(
+              'title' => 'Sample Search',
+              'description' => 'Search samples',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_samples_search_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'seasons' => array(
+              'title' => 'Season List',
+              'description' => 'List seasons',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies' => array(
+              'title' => 'Study List',
+              'description' => 'List studies',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}' => array(
+              'title' => 'Study Details',
+              'description' => 'Studies details by studyDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/germplasm' => array(
+              'title' => 'Study Germplasm Details',
+              'description' => 'Study germplasm details by studyDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/layout' => array(
+              'title' => 'Plot Layout Details',
+              'description' => 'Retrieve plot layout details',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/observations' => array(
+              'title' => 'Observations Details',
+              'description' => 'Get observation units by observation variable by studyDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/observationunits' => array(
+              'title' => 'Observation Units Details',
+              'description' => 'Get all observation units by studyDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/observationvariables' => array(
+              'title' => 'Study Observation Variables',
+              'description' => 'Get observation variables by studyDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies/{studyDbId}/table' => array(
+              'title' => 'Study Observation Units as a Table',
+              'description' => 'Retrieve study observation units as table',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studies-search' => array(
+              'title' => 'Study search',
+              'description' => 'Search studies',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'studytypes' => array(
+              'title' => 'Study Type List',
+              'description' => 'List study types',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'token' => array(
+              'title' => 'Authentication',
+              'description' => 'User authentication in OAuth2 style',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+                  'DELETE' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_authentication_json',
+                  '1.1' => 'brapi_v1_authentication_json',
+              ),
+              'aggregable' => FALSE,
+          ),
+          'traits' => array(
+              'title' => 'Trait List',
+              'description' => 'List all traits',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_traits_11_json',
+                  '1.2' => 'brapi_v1_traits_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'traits/{traitDbId}' => array(
+              'title' => 'Trait Details',
+              'description' => 'Trait details by traitDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_traits_11_json',
+                  '1.2' => 'brapi_v1_traits_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'traitDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'trials' => array(
+              'title' => 'Trial List',
+              'description' => 'Get list of trial summaries',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'trials/{trialDbId}' => array(
+              'title' => 'Trial Details',
+              'description' => 'Get Trial By trialDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'trialDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'variables' => array(
+              'title' => 'Variable List',
+              'description' => 'List variables',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_variables_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'variables/{observationVariableDbId}' => array(
+              'title' => 'Variable Details',
+              'description' => 'Variable details by observationVariableDbId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_UPDATE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_variables_11_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'observationVariableDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => FALSE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'variables/datatypes' => array(
+              'title' => 'Variable Data Types',
+              'description' => 'Variable data type list',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_variables_datatypes_11_json',
+                  '1.1' => 'brapi_v1_variables_datatypes_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'variables-search' => array(
+              'title' => 'Variable Search',
+              'description' => 'Search variables',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_variables_search_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'vendors/plates/{vendorPlateDbId}' => array(
+              'title' => 'Plate Details',
+              'description' => 'Get plate details by vendorPlateId',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'vendorPlateDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+          'vendors/plates-search' => array(
+              'title' => 'Plate Search',
+              'description' => 'Search for plates',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'vendors/specifications' => array(
+              'title' => 'Vendor Specifications',
+              'description' => 'Get vendor specifications',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+      );
 
     // Update function active versions according to settings.
     $version_options = variable_get(BRAPI_VERSION_OPTIONS, array());
