@@ -480,6 +480,26 @@ function commoncropnames (params,behavior){
     return this.simple_brapi_call(call);
 }
 
+/** `GET /germplasm`
+ * @alias BrAPINode.prototype.germplasm
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function germplasm (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/germplasm',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
 /** `POST /germplasm-search`
 * @alias BrAPINode.prototype.germplasm_search
 * @param {Object} params Parameters to provide to the call
@@ -487,17 +507,7 @@ function commoncropnames (params,behavior){
 * @return {BrAPI_Behavior_Node}
 */
 function germplasm_search(params,behavior){
-    var call = {
-        'defaultMethod': 'post',
-        'urlTemplate': '/germplasm-search',
-        'params': params,
-        'behaviorOptions': ['fork','map'],
-        'behavior': behavior,
-    };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
-    });
-    return this.simple_brapi_call(call);
+    return this.search_germplasm(params,behavior);
 }
 
 /** `GET /germplasm/{germplasmDbId}`
@@ -515,6 +525,25 @@ function germplasm_detail (params){
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /germplasm/{germplasmDbId}/mcpd`
+ * @alias BrAPINode.prototype.germplasm_mcpd
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.germplasmDbId germplasmDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function germplasm_mcpd (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/germplasm/{germplasmDbId}/mcpd',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -595,6 +624,164 @@ function germplasm_markerprofiles (params){
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `POST /germplasm-search`, `POST /search/germplasm -> GET /search/germplasm`
+* @alias BrAPINode.prototype.search_germplasm
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_germplasm(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'defaultMethod': 'post',
+            'urlTemplate': '/germplasm-search',
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.0",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    }
+    else {
+        this.version.check("POST /search/germplasm -> GET /search/germplasm",{
+            introduced:"v1.3"
+        });
+        return this.search("germplasm",params,behavior);
+    }
+}
+
+/** `GET /images`
+ * @alias BrAPINode.prototype.images
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function images (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/images',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /images/{imageDbId}`
+ * @alias BrAPINode.prototype.images_detail
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.imageDbId imageDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function images_detail (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/images/{imageDbId}',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `PUT /images/{imageDbId}/imagecontent`
+ * @alias BrAPINode.prototype.images_imagecontent
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.imageDbId imageDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function images_imagecontent (params){
+    var call = {
+        'defaultMethod': 'put',
+        'urlTemplate': '/images/{imageDbId}/imagecontent',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `POST /search/images -> GET /search/images`
+* @alias BrAPINode.prototype.search_images
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_images(params,behavior){
+    this.version.check("POST /search/images -> GET /search/images",{
+        introduced:"v1.3"
+    });
+    return this.search("images",params,behavior);
+}
+
+/** `GET /lists`
+ * @alias BrAPINode.prototype.lists
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function lists (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/lists',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /lists/{listDbId}`
+ * @alias BrAPINode.prototype.lists_detail
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.listDbId listDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function lists_detail (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/lists/{listDbId}',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `PUT /lists/{listDbId}/items`
+ * @alias BrAPINode.prototype.lists_items
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.imageDbId imageDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function lists_items (params){
+    var call = {
+        'defaultMethod': 'put',
+        'urlTemplate': '/lists/{listDbId}/items',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -789,30 +976,30 @@ function markerprofiles_detail (params){
     return this.simple_brapi_call(call);
 }
 
-/** `POST /markers-search`(>=v1.1) or `GET /markers`(<v1.1)
-* @alias BrAPINode.prototype.markers_search
+/** `GET /markers`
+* @alias BrAPINode.prototype.markers
 * @param {Object} params Parameters to provide to the call
 * @param {String} [behavior="fork"] Behavior of the node
 * @return {BrAPI_Behavior_Node}
 */
-function markers_search(params,behavior){
+function markers(params,behavior){
     var call = {
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
     };
-    if(this.version.predates("v1.1")){
-        call.urlTemplate = "/markers";
-        call.defaultMethod = "get";
+    call.urlTemplate = "/markers";
+    call.defaultMethod = "get";
+    
+    if(this.version.predates("v1.3")){
         this.version.check(call.urlTemplate,{
             introduced:"v1.0",
             deprecated:"v1.1"
         });
-    } else {
-        call.urlTemplate = "/markers-search";
-        call.defaultMethod = "post";
+    }
+    else {
         this.version.check(call.urlTemplate,{
-            introduced:"v1.1"
+            introduced:"v1.3"
         });
     }
     return this.simple_brapi_call(call);
@@ -833,6 +1020,83 @@ function markers_detail (params){
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `POST /markers-search`
+* @alias BrAPINode.prototype.markers_search
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function markers_search(params,behavior){
+    return this.search_markers(params,behavior);
+}
+
+/** `POST /markers-search`, `POST /search/markers -> GET /search/markers`
+* @alias BrAPINode.prototype.search_markers
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_markers(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        call.urlTemplate = "/markers-search";
+        call.defaultMethod = "post";
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.1",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    } else {
+        this.version.check("POST /search/markers -> GET /search/markers",{
+            introduced:"v1.3"
+        });
+        return this.search("markers",params,behavior);
+    }
+}
+
+/** `GET /methods`
+ * @alias BrAPINode.prototype.methods
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function methods (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/methods',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /methods/{methodDbId}`
+ * @alias BrAPINode.prototype.methods_detail
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.methodDbId methodDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function methods_detail (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/methods/{methodDbId}',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -867,6 +1131,52 @@ function observationlevels (params,behavior){
     return this.simple_brapi_call(call);
 }
 
+/** `GET /observationunits`
+ * @alias BrAPINode.prototype.observationunits
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function observationunits (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/observationunits',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `POST /search/observationunits -> GET /search/observationunits`
+* @alias BrAPINode.prototype.search_observationunits
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_observationunits(params,behavior){
+    this.version.check("POST /search/observationunits -> GET /search/observationunits",{
+        introduced:"v1.3"
+    });
+    return this.search("observationunits",params,behavior);
+}
+
+/** `POST /search/observationtables -> GET /search/observationtables`
+* @alias BrAPINode.prototype.search_observationtables
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_observationtables(params,behavior){
+    this.version.check("POST /search/observationtables -> GET /search/observationtables",{
+        introduced:"v1.3"
+    });
+    return this.search("observationtables",params,behavior);
+}
+
 /** `GET /ontologies`
  * @alias BrAPINode.prototype.ontologies
  * @param {Object} params Parameters to provide to the call
@@ -883,6 +1193,45 @@ function ontologies (params,behavior){
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /people`
+ * @alias BrAPINode.prototype.people
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function people (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/people',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /people/{personDbId}`
+ * @alias BrAPINode.prototype.people_detail
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.personDbId personDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function people_detail (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/people/{personDbId}',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -922,7 +1271,8 @@ function phenotypes_search (params,behavior){
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
+        introduced:"v1.0",
+        deprecated:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -942,7 +1292,8 @@ function phenotypes_search_csv (params,behavior){
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.2"
+        introduced:"v1.2",
+        deprecated:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -962,7 +1313,8 @@ function phenotypes_search_table (params,behavior){
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.2"
+        introduced:"v1.2",
+        deprecated:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -982,7 +1334,8 @@ function phenotypes_search_tsv (params,behavior){
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.2"
+        introduced:"v1.2",
+        deprecated:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -1007,60 +1360,58 @@ function programs (params,behavior){
     return this.simple_brapi_call(call);
 }
 
-/** `GET /programs-search`
- * @alias BrAPINode.prototype.programs_search
- * @param {Object} params Parameters to provide to the call
- * @param {String} [behavior="fork"] Behavior of the node
- * @return {BrAPI_Behavior_Node}
- */
-function programs_search (params,behavior){
-    var call = {
-        'defaultMethod': 'post',
-        'urlTemplate': '/programs-search',
-        'params': params,
-        'behaviorOptions': ['fork','map'],
-        'behavior': behavior,
-    };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
-    });
-    return this.simple_brapi_call(call);
+/** `POST /programs-search`
+* @alias BrAPINode.prototype.programs_search
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function programs_search(params,behavior){
+    return this.search_programs(params,behavior);
 }
 
-/** `PUT /samples`
- * @alias BrAPINode.prototype.samples_add
+/** `POST /programs-search`, `POST /search/programs -> GET /search/programs`
+* @alias BrAPINode.prototype.search_programs
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_programs(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        call.urlTemplate = "/programs-search";
+        call.defaultMethod = "post";
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.0",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    } else {
+        this.version.check("POST /search/programs -> GET /search/programs",{
+            introduced:"v1.3"
+        });
+        return this.search("programs",params,behavior);
+    }
+}
+
+/** `GET /samples`
+ * @alias BrAPINode.prototype.samples
  * @param {Object} params Parameters to provide to the call
  * @return {BrAPI_Behavior_Node}
  */
-function samples_add (params){
+function samples (params){
     var call = {
-        'defaultMethod': 'put',
+        'defaultMethod': 'get',
         'urlTemplate': '/samples',
         'params': params,
         'behavior': 'map',
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
-    });
-    return this.simple_brapi_call(call);
-}
-
-/** `POST /samples-search`
- * @alias BrAPINode.prototype.samples_search
- * @param {Object} params Parameters to provide to the call
- * @param {String} [behavior="fork"] Behavior of the node
- * @return {BrAPI_Behavior_Node}
- */
-function samples_search (params,behavior){
-    var call = {
-        'defaultMethod': 'post',
-        'urlTemplate': '/samples-search',
-        'params': params,
-        'behaviorOptions': ['fork','map'],
-        'behavior': behavior,
-    };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.1"
     });
     return this.simple_brapi_call(call);
 }
@@ -1080,6 +1431,83 @@ function samples_detail (params){
     };
     this.version.check(call.urlTemplate,{
         introduced:"v1.0"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `POST /samples-search`
+* @alias BrAPINode.prototype.samples_search
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function samples_search(params,behavior){
+    return this.search_samples(params,behavior);
+}
+
+/** `POST /samples-search`, `POST /search/samples -> GET /search/samples`
+* @alias BrAPINode.prototype.search_samples
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_samples(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        call.urlTemplate = "/samples-search";
+        call.defaultMethod = "post";
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.1",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    } else {
+        this.version.check("POST /search/samples -> GET /search/samples",{
+            introduced:"v1.3"
+        });
+        return this.search("samples",params,behavior);
+    }
+}
+
+/** `GET /scales`
+ * @alias BrAPINode.prototype.scales
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} [behavior="fork"] Behavior of the node
+ * @return {BrAPI_Behavior_Node}
+ */
+function scales (params,behavior){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/scales',
+        'params': params,
+        'behaviorOptions': ['fork','map'],
+        'behavior': behavior,
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /scales/{scaleDbId}`
+ * @alias BrAPINode.prototype.scales_detail
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.scaleDbId scaleDbId
+ * @return {BrAPI_Behavior_Node}
+ */
+function scales_detail (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/scales/{scaleDbId}',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -1145,35 +1573,6 @@ function search_GET(entity,params,behavior){
     return this.simple_brapi_call(call);
 }
 
-/** `POST /germplasm-search`, `POST /search/germplasm -> GET /search/germplasm`
-* @alias BrAPINode.prototype.search_germplasm
-* @param {Object} params Parameters to provide to the call
-* @param {String} [behavior="fork"] Behavior of the node
-* @return {BrAPI_Behavior_Node}
-*/
-function search_germplasm(params,behavior){
-    if (this.version.predates("v1.3")){
-        var call = {
-            'defaultMethod': 'post',
-            'urlTemplate': '/germplasm-search',
-            'params': params,
-            'behaviorOptions': ['fork','map'],
-            'behavior': behavior,
-        };
-        this.version.check(call.urlTemplate,{
-            introduced:"v1.0",
-            deprecated:"v1.3"
-        });
-        return this.simple_brapi_call(call);
-    }
-    else {
-        this.version.check("POST /search/germplasm -> GET /search/germplasm",{
-            introduced:"v1.3"
-        });
-        return this.search("germplasm",params,behavior);
-    }
-}
-
 /** `GET /seasons`
  * @alias BrAPINode.prototype.seasons
  * @param {Object} params Parameters to provide to the call
@@ -1195,21 +1594,59 @@ function seasons (params,behavior){
 }
 
 /** `POST /studies-search`
- * @alias BrAPINode.prototype.studies_search
+* @alias BrAPINode.prototype.studies_search
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function studies_search(params,behavior){
+    return this.search_studies(params,behavior);
+}
+
+/** `POST /studies-search`, `POST /search/studies -> GET /search/studies`
+* @alias BrAPINode.prototype.search_studies
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_studies(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        call.urlTemplate = "/studies-search";
+        call.defaultMethod = "post";
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.0",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    } else {
+        this.version.check("POST /search/studies -> GET /search/studies",{
+            introduced:"v1.3"
+        });
+        return this.search("studies",params,behavior);
+    }
+}
+
+/** `GET /studies`
+ * @alias BrAPINode.prototype.studies
  * @param {Object} params Parameters to provide to the call
  * @param {String} [behavior="fork"] Behavior of the node
  * @return {BrAPI_Behavior_Node}
  */
-function studies_search (params,behavior){
+function studies (params,behavior){
     var call = {
-        'defaultMethod': 'post',
-        'urlTemplate': '/studies-search',
+        'defaultMethod': 'get',
+        'urlTemplate': '/studies',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
+        introduced:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -1223,7 +1660,7 @@ function studies_search (params,behavior){
 function studies_detail (params){
     var call = {
         'defaultMethod': 'get',
-        'urlTemplate': '/studies/{studyDbId}`',
+        'urlTemplate': '/studies/{studyDbId}',
         'params': params,
         'behavior': 'map',
     };
@@ -1243,7 +1680,7 @@ function studies_detail (params){
 function studies_germplasm (params,behavior){
     var call = {
         'defaultMethod': 'get',
-        'urlTemplate': '/studies/{studyDbId}/germplasm`',
+        'urlTemplate': '/studies/{studyDbId}/germplasm',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
@@ -1254,43 +1691,31 @@ function studies_germplasm (params,behavior){
     return this.simple_brapi_call(call);
 }
 
-/** `GET /studies/{studyDbId}/layout`
- * @alias BrAPINode.prototype.studies_layout
+/** `GET /studies/{studyDbId}/layouts`, `GET /studies/{studyDbId}/layout`
+ * @alias BrAPINode.prototype.studies_layouts
  * @param {Object} params Parameters to provide to the call
  * @param {String} params.studyDbId studyDbId
  * @param {String} [behavior="fork"] Behavior of the node
  * @return {BrAPI_Behavior_Node}
  */
-function studies_layout (params,behavior){
+function studies_layouts (params,behavior){
     var call = {
         'defaultMethod': 'get',
-        'urlTemplate': '/studies/{studyDbId}/layout`',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
     };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
-    });
-    return this.simple_brapi_call(call);
-}
-
-/** `PUT /studies/{studyDbId}/layout`
- * @alias BrAPINode.prototype.studies_layout_modify
- * @param {Object} params Parameters to provide to the call
- * @param {String} params.studyDbId studyDbId
- * @return {BrAPI_Behavior_Node}
- */
-function studies_layout_modify (params){
-    var call = {
-        'defaultMethod': 'put',
-        'urlTemplate': '/studies/{studyDbId}/layout`',
-        'params': params,
-        'behavior': 'map',
-    };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.2"
-    });
+    if(this.version.predates("v1.3")){
+        call.urlTemplate = '/studies/{studyDbId}/layout';
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.0"
+        });
+    } else {
+        call.urlTemplate = '/studies/{studyDbId}/layouts';
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.3"
+        });
+    }
     return this.simple_brapi_call(call);
 }
 
@@ -1304,7 +1729,7 @@ function studies_layout_modify (params){
 function studies_observations (params,behavior){
     var call = {
         'defaultMethod': 'get',
-        'urlTemplate': '/studies/{studyDbId}/observations`',
+        'urlTemplate': '/studies/{studyDbId}/observations',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
@@ -1324,7 +1749,7 @@ function studies_observations (params,behavior){
 function studies_observations_modify (params){
     var call = {
         'defaultMethod': 'put',
-        'urlTemplate': '/studies/{studyDbId}/observations`',
+        'urlTemplate': '/studies/{studyDbId}/observations',
         'params': params,
         'behavior': 'map',
     };
@@ -1353,7 +1778,7 @@ function studies_observations_modify (params){
 function studies_observations_zip (params){
     var call = {
         'defaultMethod': 'post',
-        'urlTemplate': '/studies/{studyDbId}/observations/zip`',
+        'urlTemplate': '/studies/{studyDbId}/observations/zip',
         'params': params,
         'behavior': 'map',
     };
@@ -1379,13 +1804,13 @@ function studies_observationvariables (params,behavior){
         'behavior': behavior,
     };
     if(this.version.predates("v1.1")){
-        call.urlTemplate= '/studies/{studyDbId}/observationVariables`',
+        call.urlTemplate= '/studies/{studyDbId}/observationVariables',
         this.version.check(call.urlTemplate,{
             introduced:"v1.0",
             deprecated:"v1.1"
         });
     } else {
-        call.urlTemplate= '/studies/{studyDbId}/observationvariables`',
+        call.urlTemplate= '/studies/{studyDbId}/observationvariables',
         this.version.check(call.urlTemplate,{
             introduced:"v1.1"
         });
@@ -1404,7 +1829,7 @@ function studies_observationvariables (params,behavior){
 function studies_table (params,behavior){
     var call = {
         'defaultMethod': 'get',
-        'urlTemplate':'/studies/{studyDbId}/table`',
+        'urlTemplate':'/studies/{studyDbId}/table',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
@@ -1426,7 +1851,7 @@ function studies_table (params,behavior){
 function studies_table_add (params,behavior){
     var call = {
         'defaultMethod': 'post',
-        'urlTemplate':'/studies/{studyDbId}/table`',
+        'urlTemplate':'/studies/{studyDbId}/table',
         'params': params,
         'behaviorOptions': ['fork','map'],
         'behavior': behavior,
@@ -1566,23 +1991,41 @@ function variables (params,behavior){
 }
 
 /** `POST /variables-search`
- * @alias BrAPINode.prototype.variables_search
- * @param {Object} params Parameters to provide to the call
- * @param {String} [behavior="fork"] Behavior of the node
- * @return {BrAPI_Behavior_Node}
- */
-function variables_search (params,behavior){
-    var call = {
-        'defaultMethod': 'post',
-        'urlTemplate': '/variables-search',
-        'params': params,
-        'behaviorOptions': ['fork','map'],
-        'behavior': behavior,
-    };
-    this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
-    });
-    return this.simple_brapi_call(call);
+* @alias BrAPINode.prototype.variables_search
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function variables_search(params,behavior){
+    return this.search_variables(params,behavior);
+}
+
+/** `POST /variables-search`, `POST /search/variables -> GET /search/variables`
+* @alias BrAPINode.prototype.search_variables
+* @param {Object} params Parameters to provide to the call
+* @param {String} [behavior="fork"] Behavior of the node
+* @return {BrAPI_Behavior_Node}
+*/
+function search_variables(params,behavior){
+    if (this.version.predates("v1.3")){
+        var call = {
+            'params': params,
+            'behaviorOptions': ['fork','map'],
+            'behavior': behavior,
+        };
+        call.urlTemplate = "/variables-search";
+        call.defaultMethod = "post";
+        this.version.check(call.urlTemplate,{
+            introduced:"v1.0",
+            deprecated:"v1.3"
+        });
+        return this.simple_brapi_call(call);
+    } else {
+        this.version.check("POST /search/variables -> GET /search/variables",{
+            introduced:"v1.3"
+        });
+        return this.search("variables",params,behavior);
+    }
 }
 
 /** `GET /variables/{observationVariableDbId}`
@@ -1619,7 +2062,8 @@ function variables_datatypes (params,behavior){
         'behavior': behavior,
     };
     this.version.check(call.urlTemplate,{
-        introduced:"v1.0"
+        introduced:"v1.0",
+        deprecated:"v1.3"
     });
     return this.simple_brapi_call(call);
 }
@@ -1665,16 +2109,17 @@ function vendor_plates_search(params,behavior){
     } else {
         call.urlTemplate = '/vendor/plates-search';
         this.version.check(call.urlTemplate,{
-            introduced:"v1.2"
+            introduced:"v1.2",
+            deprecated:"v1.3"
         });
     }
     return this.simple_brapi_call(call);
 }
 
-/** `GET /vendor/plates/{vendorPlateDbId}`
+/** `GET /vendor/plates/{submissionId}`
  * @alias BrAPINode.prototype.vendor_plates_detail
  * @param {Object} params Parameters to provide to the call
- * @param {String} params.vendorPlateDbId vendorPlateDbId
+ * @param {String} params.submissionId submissionId
  * @return {BrAPI_Behavior_Node}
  */
 function vendor_plates_detail (params){
@@ -1684,13 +2129,13 @@ function vendor_plates_detail (params){
         'behavior': 'map',
     };
     if(this.version.predates("v1.2")){
-        call.urlTemplate = '/vendor/plate/{vendorPlateDbId}';
+        call.urlTemplate = '/vendor/plate/{submissionId}';
         this.version.check(call.urlTemplate,{
             introduced:"v1.1",
             deprecated:"v1.2"
         });
     } else {
-        call.urlTemplate = '/vendor/plates/{vendorPlateDbId}';
+        call.urlTemplate = '/vendor/plates/{submissionId}';
         this.version.check(call.urlTemplate,{
             introduced:"v1.2"
         });
@@ -1716,6 +2161,81 @@ function vendor_specifications (params){
     return this.simple_brapi_call(call);
 }
 
+/** `GET /vendor/orders`
+ * @alias BrAPINode.prototype.vendor_orders
+ * @param {Object} params Parameters to provide to the call
+ * @return {BrAPI_Behavior_Node}
+ */
+function vendor_orders (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/vendor/orders',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /vendor/orders/{orderId}/results`
+ * @alias BrAPINode.prototype.vendor_orders_results
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.orderId orderId
+ * @return {BrAPI_Behavior_Node}
+ */
+function vendor_orders_results (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/vendor/orders/{orderId}/results',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /vendor/orders/{orderId}/plates`
+ * @alias BrAPINode.prototype.vendor_orders_plates
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.orderId orderId
+ * @return {BrAPI_Behavior_Node}
+ */
+function vendor_orders_plates (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/vendor/orders/{orderId}/plates',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
+/** `GET /vendor/orders/{orderId}/status`
+ * @alias BrAPINode.prototype.vendor_orders_status
+ * @param {Object} params Parameters to provide to the call
+ * @param {String} params.orderId orderId
+ * @return {BrAPI_Behavior_Node}
+ */
+function vendor_orders_status (params){
+    var call = {
+        'defaultMethod': 'get',
+        'urlTemplate': '/vendor/orders/{orderId}/status',
+        'params': params,
+        'behavior': 'map',
+    };
+    this.version.check(call.urlTemplate,{
+        introduced:"v1.3"
+    });
+    return this.simple_brapi_call(call);
+}
+
 
 
 var brapiMethods = Object.freeze({
@@ -1727,12 +2247,22 @@ var brapiMethods = Object.freeze({
 	breedingmethods_detail: breedingmethods_detail,
 	calls: calls,
 	commoncropnames: commoncropnames,
+	germplasm: germplasm,
 	germplasm_search: germplasm_search,
 	germplasm_detail: germplasm_detail,
+	germplasm_mcpd: germplasm_mcpd,
 	germplasm_attributes: germplasm_attributes,
 	germplasm_pedigree: germplasm_pedigree,
 	germplasm_progeny: germplasm_progeny,
 	germplasm_markerprofiles: germplasm_markerprofiles,
+	search_germplasm: search_germplasm,
+	images: images,
+	images_detail: images_detail,
+	images_imagecontent: images_imagecontent,
+	search_images: search_images,
+	lists: lists,
+	lists_detail: lists_detail,
+	lists_items: lists_items,
 	locations: locations,
 	locations_detail: locations_detail,
 	maps: maps,
@@ -1742,10 +2272,19 @@ var brapiMethods = Object.freeze({
 	markerprofiles: markerprofiles,
 	markerprofiles_search: markerprofiles_search,
 	markerprofiles_detail: markerprofiles_detail,
-	markers_search: markers_search,
+	markers: markers,
 	markers_detail: markers_detail,
+	markers_search: markers_search,
+	search_markers: search_markers,
+	methods: methods,
+	methods_detail: methods_detail,
 	observationlevels: observationlevels,
+	observationunits: observationunits,
+	search_observationunits: search_observationunits,
+	search_observationtables: search_observationtables,
 	ontologies: ontologies,
+	people: people,
+	people_detail: people_detail,
 	phenotypes: phenotypes,
 	phenotypes_search: phenotypes_search,
 	phenotypes_search_csv: phenotypes_search_csv,
@@ -1753,19 +2292,23 @@ var brapiMethods = Object.freeze({
 	phenotypes_search_tsv: phenotypes_search_tsv,
 	programs: programs,
 	programs_search: programs_search,
-	samples_add: samples_add,
-	samples_search: samples_search,
+	search_programs: search_programs,
+	samples: samples,
 	samples_detail: samples_detail,
+	samples_search: samples_search,
+	search_samples: search_samples,
+	scales: scales,
+	scales_detail: scales_detail,
 	search: search,
 	search_POST: search_POST,
 	search_GET: search_GET,
-	search_germplasm: search_germplasm,
 	seasons: seasons,
 	studies_search: studies_search,
+	search_studies: search_studies,
+	studies: studies,
 	studies_detail: studies_detail,
 	studies_germplasm: studies_germplasm,
-	studies_layout: studies_layout,
-	studies_layout_modify: studies_layout_modify,
+	studies_layouts: studies_layouts,
 	studies_observations: studies_observations,
 	studies_observations_modify: studies_observations_modify,
 	studies_observations_zip: studies_observations_zip,
@@ -1779,12 +2322,17 @@ var brapiMethods = Object.freeze({
 	trials_detail: trials_detail,
 	variables: variables,
 	variables_search: variables_search,
+	search_variables: search_variables,
 	variables_detail: variables_detail,
 	variables_datatypes: variables_datatypes,
 	vendor_plates: vendor_plates,
 	vendor_plates_search: vendor_plates_search,
 	vendor_plates_detail: vendor_plates_detail,
-	vendor_specifications: vendor_specifications
+	vendor_specifications: vendor_specifications,
+	vendor_orders: vendor_orders,
+	vendor_orders_results: vendor_orders_results,
+	vendor_orders_plates: vendor_orders_plates,
+	vendor_orders_status: vendor_orders_status
 });
 
 class BrAPI_Version_Class {
@@ -1897,6 +2445,12 @@ class BrAPINode extends ThreadNode {
             return callback(response) || last_result;
         };
         return this;
+    }
+    server(address,version,auth_token,call_limit){
+        var newNode = this.map(d=>d);
+        newNode.brapi = new BrAPICallController(address,version,auth_token,call_limit||5);
+        newNode.version = newNode.brapi.version;
+        return newNode;
     }
     simple_brapi_call(call){
         // {
