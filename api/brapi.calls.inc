@@ -2800,6 +2800,57 @@ function brapi_v1_traits_11_json($trait = NULL) {
 }
 
 /**
+ * Scale details call.
+ *
+ * BRAPI: Scale Details by DbId
+ * URL: brapi/v1/scales/\<id\>
+ * Displays details of a scale.
+ *
+ * GET: returns details of the given scale.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/scales/
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Scales
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_scales_13_json($trait = NULL) {
+    // Not implemented.
+    throw new BrapiException(501, "Not implemented!");
+}
+
+/**
+ * Method details call.
+ *
+ * BRAPI: Method Details by DbId
+ * URL: brapi/v1/methods/\<id\>
+ * Displays details of a method.
+ *
+ * GET: returns details of the given method.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/methods/
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Methods
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_methods_13_json($trait = NULL) {
+    // Not implemented.
+    throw new BrapiException(501, "Not implemented!");
+}
+
+
+/**
  * Returns a JSON array containing the details of a given trait.
  *
  * @param object $trait
