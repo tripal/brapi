@@ -6,5 +6,5 @@ configure = admin/tripal/extension/brapi/configuration
 
 dependencies[] = brapi_site
 
-scripts[] = theme/js/brapi.js
+scripts[] = theme/js/brapi.module.js
 
