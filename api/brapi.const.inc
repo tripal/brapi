@@ -1415,7 +1415,7 @@ function brapi_get_calls() {
           ),
           */
 
-          // Deprecated endpoint from v1.3
+          // Deprecated endpoint from v1.3 - use new /search methods below?
           'phenotypes-search' => array(
               'title' => 'Phenotype Search',
               'description' => 'Search phenotypes',
@@ -1432,7 +1432,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-          // Deprecated endpoint from v1.3
+          // Deprecated endpoint from v1.3; use 'search/observationtables' instead
           'phenotypes-search/csv' => array(
               'title' => 'Phenotype Search (CSV)',
               'description' => 'Search phenotypes returning a CSV formatted file',
@@ -1448,7 +1448,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-          // Deprecated endpoint from v1.3
+          // Deprecated endpoint from v1.3; use 'search/observationtables' instead
           'phenotypes-search/tsv' => array(
               'title' => 'Phenotype Search (TSV)',
               'description' => 'Search phenotypes returning a TSV formatted file',
@@ -1464,7 +1464,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-          // Deprecated endpoint from v1.3
+          // Deprecated endpoint from v1.3; use 'search/observationtables' instead
           'phenotypes-search/table' => array(
               'title' => 'Phenotype Search (Table as JSON)',
               'description' => 'Search phenotypes returning JSON formatted file',
@@ -1476,6 +1476,83 @@ function brapi_get_calls() {
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'observationunits' => array(
+              'title' => 'Observation Unit List',
+              'description' => 'Get a set of observation units',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/observationtables' => array(
+              'title' => 'Search Observation Tables ',
+              'description' => 'Search for a set of Observation Units based on some criteria, to be retrieved as a'.
+                               'formatted table of results of a  preferred format; returns a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/observationtables/{searchResultsDbId}' => array(
+              'title' => 'Get Observation Tables Search Results',
+              'description' => 'Get results of search/observationtables call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/observationunits' => array(
+              'title' => 'Search Observation Units',
+              'description' => 'Globally search for a set of Observation Units based on some criteria, '.
+                               'to be retrieved as JSON results,;eturnsa search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/observationunits/{searchResultsDbId}' => array(
+              'title' => 'Get Observation Units Search Results',
+              'description' => 'Get results of search/observationunits call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
