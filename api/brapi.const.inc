@@ -1036,6 +1036,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /*********
+           * Markers
+           *********/
+
           'markers' => array(
               'title' => 'Marker List',
               'description' => 'List markers',
@@ -1051,6 +1056,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'markers/{markerDbId}' => array(
               'title' => 'Marker Details',
               'description' => 'Markers details by markerDbId',
@@ -1073,6 +1079,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'markers-search' => array(
               'title' => 'Markers Search',
               'description' => 'Search markers',
@@ -1088,6 +1095,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /***********************
+           * Observation Variables
+           ***********************/
+
           'observationlevels' => array(
               'title' => 'Observation Level List',
               'description' => 'List observation levels',
@@ -1103,6 +1115,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'ontologies' => array(
               'title' => 'Variable ontology list',
               'description' => 'List ontologies',
@@ -1118,6 +1131,47 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /*********
+           * People
+           *********/
+
+          'people' => array(
+              'title' => 'Images',
+              'description' => 'Get/Create filtered set of people records',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'people/{personDbId}' => array(
+              'title' => 'Images',
+              'description' => 'Get/Update one person',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'PUT' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          /************
+           * Phenotypes
+           ************/
+
           'phenotypes-search' => array(
               'title' => 'Phenotype Search',
               'description' => 'Search phenotypes',
@@ -1133,6 +1187,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'phenotypes' => array(
               'title' => 'Phenotype List',
               'description' => 'List phenotypes',
