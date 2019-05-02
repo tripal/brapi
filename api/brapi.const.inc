@@ -452,6 +452,10 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          /*
+           * NOTE: Use of HTTP verbs 'POST', 'PUT' and 'DELETE'
+           * are unspecified in BrAPI (in v1.*)
+           */
           'germplasm/{germplasmDbId}' => array(
               'title' => 'Germplasm Details',
               'description' => 'Germplasm details by germplasmDbId',
@@ -1210,7 +1214,6 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-
           'traits' => array(
               'title' => 'Trait List',
               'description' => 'List all traits',
@@ -1481,26 +1484,35 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-          /**********
+          /**************************************
            * Samples
-           **********/
+           *
+           * NOTE: BrAPI defines sample creation
+           * as a 'PUT' REST operation rather
+           * than the standard 'POST' convention?
+           **************************************/
 
           'samples' => array(
               'title' => 'Sample List',
               'description' => 'Sample list call',
               'datatypes' => array('json'),
               'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
+                  'GET' => BRAPI_USE_PERMISSION,  // GET operation on this endpoint only defined as of v1.3
+                  'PUT' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_samples_11_json',
                   '1.1' => 'brapi_v1_samples_11_json',
+                  '1.2' => 'brapi_v1_samples_11_json',
+                  '1.3' => 'brapi_v1_samples_13_json',
               ),
               'aggregable' => TRUE,
           ),
 
+          // NOTE: Sample 'POST', 'PUT' and 'DELETE' are HTTP verbs not actually
+          // yet defined in BrAPI for this endpoint (as of v1.3)?
           'samples/{sampleDbId}' => array(
               'title' => 'Sample Details',
               'description' => 'Sample details by sampleDbId',
@@ -1511,10 +1523,13 @@ function brapi_get_calls() {
                   'PUT' => BRAPI_UPDATE_PERMISSION,
                   'DELETE' => BRAPI_UPDATE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_samples_11_json',
                   '1.1' => 'brapi_v1_samples_11_json',
+                  '1.2' => 'brapi_v1_samples_11_json',
+                  '1.3' => 'brapi_v1_samples_11_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1527,6 +1542,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          // Deprecated in v1.3; see GET /samples instead
           'samples-search' => array(
               'title' => 'Sample Search',
               'description' => 'Search samples',
@@ -1535,26 +1551,42 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_samples_search_11_json',
+                  '1.2' => 'brapi_v1_samples_search_11_json',
+                  '1.3' => 'brapi_v1_samples_search_11_json',
               ),
               'aggregable' => TRUE,
           ),
 
-          'seasons' => array(
-              'title' => 'Season List',
-              'description' => 'List seasons',
+          'search/samples' => array(
+              'title' => 'Search Germplasm',
+              'description' => 'Search for a set of samples based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/samples/{searchResultsDbId}' => array(
+              'title' => 'Get Samples Search Results',
+              'description' => 'Get results of search/samples call by search id',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1766,6 +1798,22 @@ function brapi_get_calls() {
           'studytypes' => array(
               'title' => 'Study Type List',
               'description' => 'List study types',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'seasons' => array(
+              'title' => 'Season List',
+              'description' => 'List seasons',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
@@ -2100,9 +2148,9 @@ function brapi_get_data_mapping() {
             'biologicalStatusOfAccessionCode' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
 
                 // Caching status codes to avoid unnecessary calls to CVTerm table?
-                static status_codes_cache;
+                static $status_codes_cache;
                 if (!isset($brapi_data_mapping)) {
-                    status_codes_cache =  [];
+                    $status_codes_cache =  [];
                 }
 
                 // default to NULL value == empty string unlees proven otherwise

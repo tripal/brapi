@@ -2462,6 +2462,19 @@ function brapi_v1_programs_search_11_json() {
   return brapi_v1_object_search_json('program', $parameters);
 }
 
+function brapi_v1_samples_13_json($sample_id = NULL) {
+    /*
+     * This function needs to merge the sample-search GET code from
+     *
+     *      'brapi_v1_samples_search_11_json'
+     *
+     * with the sample creation PUT code of
+     *
+     *       'brapi_v1_samples_11_json',
+     */
+
+    throw new BrapiException(501, "Not implemented!");
+}
 /**
  * Sample search call.
  *
@@ -2501,7 +2514,7 @@ function brapi_v1_samples_search_11_json() {
  * @return array
  *   a JSON structure. See official BrAPI documentation.
  *
- * @see https://github.com/plantbreeding/API/blob/master/Specification/Samples/Samples_GET.md
+ * @see https://github.com/plantbreeding/API/blob/v1.3/Specification/Samples/Samples_GET.md
  *
  * @ingroup brapi
  */
