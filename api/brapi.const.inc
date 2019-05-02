@@ -828,7 +828,7 @@ function brapi_get_calls() {
 
           'images' => array(
               'title' => 'Images',
-              'description' => 'Get/Post filtered set of image meta data',
+              'description' => 'Get/Create filtered set of image meta data',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
@@ -893,6 +893,58 @@ function brapi_get_calls() {
               'description' => 'Get results of search/images call by search id',
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+
+          /***************
+           * Generic Lists
+           ***************/
+
+          'lists' => array(
+              'title' => 'Images',
+              'description' => 'Get/Create filtered set of generic lists',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'lists/{listDbId}' => array(
+              'title' => 'Images',
+              'description' => 'Get/Update one generic lists',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'PUT' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'lists/{listDbId}/items' => array(
+              'title' => 'Images',
+              'description' => 'Add new data to a specific generic lists',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
               ),
               'api versions' => array('1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
