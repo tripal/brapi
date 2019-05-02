@@ -1875,9 +1875,13 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
-          /**********
-           * Vendors
-           **********/
+          /**************************************
+           * External Vendor Samples
+           * CHANGED DRASTICALLY IN v1.3
+           * See "new" Vendor Samples Group below.
+           * Deprecated 'singular' plate endpoints
+           * not documented here...
+           **************************************/
 
           'vendors/plates/{vendorPlateDbId}' => array(
               'title' => 'Plate Details',
@@ -1887,10 +1891,10 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array( '1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1911,10 +1915,10 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1925,12 +1929,11 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.2'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
