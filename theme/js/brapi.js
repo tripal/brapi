@@ -28,14 +28,11 @@
    *   An array of values.
    */
   Drupal.brapi.extractDataValues = function (data, field_path) {
-console.log("field_path: " + field_path); //+debug
     function brapiGetFieldValue(data_array, field_path_array) {
       var field = field_path_array.shift();
-console.log("field: " + field); //+debug
       var new_values = [];
       data_array.forEach(function (current_value) {
         if (field == '*') {
-console.log("got a star"); //+debug
           if (Array.isArray(current_value)) {
             new_values = new_values.concat(current_value);
           }
@@ -49,7 +46,6 @@ console.log("got a star"); //+debug
           }
         }
         else {
-console.log("got a value"); //+debug
           new_values.push(current_value[field]);        
         }
       });
@@ -129,54 +125,186 @@ console.log("got a value"); //+debug
               + '">BrAPI match</a>'
             );
           }
-          // @TODO: replace for-loop with new code.
-          // Replace each property place-holder by its value.
-         // for (var prop in output.result.data[0]) {
-         //   if (output.result.data[0].hasOwnProperty(prop)) {
-         //     var regex = new RegExp('\\[' + prop + '\\]', 'g');
-         //     var value = Drupal.brapi.extractDataValue(output.result.data, prop);
-         //     output_html = output_html.replace(regex, value);
-         //   }
-         // }
+ 
           // Create an array of HTML lines with one line.
           var html_lines = [decodeURIComponent(output_html)];
           // Find placeholders.
           var regex_match = new RegExp('\\[([\\w\\.\\*]+)\\]', 'g');
           var placeholders = {};
           var placeholder = regex_match.exec(output_html);
-console.log("placeholder: " + placeholder);
           while (placeholder != null) {
-console.log("GOT: " + placeholder[1]);
             placeholders[placeholder[1]] = null;
             // Get next placeholder.
             placeholder = regex_match.exec(output_html);
           }
-          // For each placeholder, extract corresponding field values.
-          for (placeholder in placeholders) {
-            placeholders[placeholder] = Drupal.brapi.extractDataValues(
-              output.result.data,
-              placeholder
-            );
-            var new_html_lines = [];
-            // For HTML each line, duplicate current line for each value and
-            // replace the placeholders by the value in the duplicated HTML
-            // line.
-            html_lines.forEach(function (current_line) {
-              var regex_replace = new RegExp(
-                '\\['
-                + placeholder.replace(/\.|\*/g, function (x) {return '\\' + x;})
-                + '\\]',
-                'g'
+          // Group wildcard on a same level into a placeholder structure.
+          // Ex.: the 3 following field paths:
+          // *.germplasmName
+          // *.donors.*.donorAccessionNumber
+          // *.donors.*.donorInstituteCode
+          // 
+          // will lead to the following grouped field path (placeholders):
+          // {
+          //   *: {
+          //     germplasmName: null,
+          //     donors.*: {
+          //       donorAccessionNumber: null,
+          //       donorInstituteCode: null
+          //     }
+          //   }
+          // }
+          var grouped_placeholders = {};
+          function brapiStructurePlaceholders(
+            grouping_node,
+            subplaceholder_array
+          ) {
+            var subplaceholder = subplaceholder_array.shift();
+            // Check if it was the last part.
+            if (0 == subplaceholder_array.length) {
+              grouping_node[subplaceholder] = null;
+            }
+            else {
+              subplaceholder += '*';
+              if (typeof grouping_node[subplaceholder] === 'undefined') {
+                grouping_node[subplaceholder] = {};
+              }
+              grouping_node[subplaceholder] = brapiStructurePlaceholders(
+                grouping_node[subplaceholder],
+                subplaceholder_array
               );
-              placeholders[placeholder].forEach(function (current_value) {
-                var updated_line =
-                  current_line.replace(regex_replace, current_value);
-                new_html_lines.push(updated_line);
-              });
-            });
-            // Update HTML lines.
-            html_lines = new_html_lines;
+            }
+            return grouping_node;
           }
+          for (placeholder in placeholders) {
+            grouped_placeholders = brapiStructurePlaceholders(
+              grouped_placeholders,
+              placeholder.split('*.')
+            );
+          }
+
+          // For each placeholder group, extract corresponding field values.
+          function brapiProcessGroupedPlaceholders(
+            group_structure,
+            current_data,
+            current_html_lines,
+            current_fieldpath = ''
+          ) {
+            var new_html_lines = [];
+            if ((typeof group_structure === 'object')
+                && (group_structure !== null)) {
+              // Internal node.
+              // Loop on each line for string replacement.
+              current_html_lines.forEach(function(current_line) {
+                var updated_lines = [current_line];
+                // Loop on each field or group of fields to replace.
+                for (var subgroup in group_structure) {
+                  // Get subgroup field values.
+                  var values = Drupal.brapi.extractDataValues(
+                    current_data,
+                    subgroup
+                  );
+                  if ('*' === subgroup.substr(-1)) {
+                    // We are about to process a group of fields, we must
+                    // duplicate current lines for each subdata element to then
+                    // process each of its grouped fields.
+                    var new_updated_lines = [];
+                    values.forEach(function(current_value) {
+                        if (null == group_structure[subgroup]) {
+                          // Leaf, no subfields, replace values.
+                          var placeholder =
+                            current_fieldpath.substr(1) + '.' + subgroup;
+                          var regex_replace = new RegExp(
+                            '\\['
+                            + placeholder.replace(
+                              /\.|\*/g,
+                              function (x) {return '\\' + x;}
+                            )
+                            + '\\]',
+                            'g'
+                          );
+                          updated_lines.forEach(function (line_to_update) {
+                            var updated_line =
+                              line_to_update.replace(regex_replace, current_value);
+                            new_updated_lines.push(updated_line);
+                          });
+                        }
+                        else {
+                          // Node, process subfields.
+                          new_updated_lines = new_updated_lines.concat(
+                            brapiProcessGroupedPlaceholders(
+                              group_structure[subgroup],
+                              current_value,
+                              updated_lines,
+                              current_fieldpath + '.' + subgroup
+                            )
+                          );
+                        }
+                    });
+                    updated_lines = new_updated_lines;
+                  }
+                  else {
+                    var placeholder =
+                      current_fieldpath.substr(1) + '.' + subgroup;
+                    var regex_replace = new RegExp(
+                      '\\['
+                      + placeholder.replace(
+                        /\.|\*/g,
+                        function (x) {return '\\' + x;}
+                      )
+                      + '\\]',
+                      'g'
+                    );
+                    var new_updated_lines = [];
+                    updated_lines.forEach(function (line_to_update) {
+                      var updated_line =
+                        line_to_update.replace(regex_replace, values);
+                      new_updated_lines.push(updated_line);
+                    });
+                    updated_lines = new_updated_lines;
+                  }
+                }
+                // Add new lines.
+                new_html_lines = new_html_lines.concat(updated_lines);
+              });
+            }
+            else {
+              // Could be a leaf here but we shouldn't get here because the
+              // function should not be called with just a leaf as
+              // group_structure parameter.
+           }
+            return new_html_lines;
+          }
+          html_lines = brapiProcessGroupedPlaceholders(
+            grouped_placeholders,
+            output.result.data,
+            html_lines
+          );
+
+          // for (placeholder in grouped_placeholders) {
+          //   placeholders[placeholder] = Drupal.brapi.extractDataValues(
+          //     output.result.data,
+          //     placeholder
+          //   );
+          //   var new_html_lines = [];
+          //   // For HTML each line, duplicate current line for each value and
+          //   // replace the placeholders by the value in the duplicated HTML
+          //   // line.
+          //   html_lines.forEach(function (current_line) {
+          //     var regex_replace = new RegExp(
+          //       '\\['
+          //       + placeholder.replace(/\.|\*/g, function (x) {return '\\' + x;})
+          //       + '\\]',
+          //       'g'
+          //     );
+          //     placeholders[placeholder].forEach(function (current_value) {
+          //       var updated_line =
+          //         current_line.replace(regex_replace, current_value);
+          //       new_html_lines.push(updated_line);
+          //     });
+          //   });
+          //   // Update HTML lines.
+          //   html_lines = new_html_lines;
+          // }
           $brapi_form.html(html_lines.join('\n'));
         }
         else {
