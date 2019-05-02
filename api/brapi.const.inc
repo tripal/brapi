@@ -281,69 +281,6 @@ function brapi_get_calls() {
               'aggregable' => FALSE,
           ),
 
-          'allelematrices' => array(
-              'title' => 'Allele Matrices',
-              'description' => 'List allele matrices',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.0', '1.1'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.0' => 'brapi_v1_external_call_json',
-                  '1.1' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-          'allelematrices-search' => array(
-              'title' => 'MarkerProfile Allele Matrix',
-              'description' => 'Search allele matrices',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.0', '1.1'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.0' => 'brapi_v1_external_call_json',
-                  '1.1' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-          'allelematrix' => array(
-              'title' => 'Allele Matrices',
-              'description' => 'List allele matrices',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.2'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.2' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-          'allelematrix-search' => array(
-              'title' => 'MarkerProfile Allele Matrix',
-              'description' => 'Search allele matrices',
-              'datatypes' => array('json'),
-              'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
-              ),
-              'api versions' => array('1.2'),
-              'active version' => BRAPI_SERVICE_VERSION,
-              'callback versions' => array(
-                  '1.2' => 'brapi_v1_external_call_json',
-              ),
-              'aggregable' => TRUE,
-          ),
-
           /********
            * Calls
            ********/
@@ -1029,18 +966,96 @@ function brapi_get_calls() {
            * Marker Profiles
            *****************/
 
+          'allelematrices' => array(
+              'title' => 'Allele Matrices',
+              'description' => 'List allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+          'allelematrices-search' => array(
+              'title' => 'MarkerProfile Allele Matrix',
+              'description' => 'Search allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          /*
+           * Not sure where this is defined in BrAPI?
+           *
+          'allelematrix' => array(
+              'title' => 'Allele Matrices',
+              'description' => 'List allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.1', '1.2'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.2' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+           */
+
+          // Deprecated? Use allelematrices-search instead?
+          'allelematrix-search' => array(
+              'title' => 'MarkerProfile Allele Matrix',
+              'description' => 'Search allele matrices',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1',  '1.2', '1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
           'markerprofiles' => array(
               'title' => 'Markerprofile Search',
               'description' => 'List marker profiles',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1051,12 +1066,14 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
