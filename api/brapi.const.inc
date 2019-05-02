@@ -1833,16 +1833,18 @@ function brapi_get_calls() {
 
           'trials' => array(
               'title' => 'Trial List',
-              'description' => 'Get list of trial summaries',
+              'description' => 'Retrieve a filtered list of Trials. A Trial is a collection of studies',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1853,12 +1855,14 @@ function brapi_get_calls() {
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
