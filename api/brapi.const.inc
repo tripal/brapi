@@ -1203,6 +1203,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'phenotypes/{phenotypeDbId}' => array(
               'title' => 'Phenotype Details',
               'description' => 'Phenotypes details by phenotypeDbId',
@@ -1226,6 +1227,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /**********
+           * Programs
+           **********/
+
           'programs' => array(
               'title' => 'Program List',
               'description' => 'List programs',
@@ -1241,6 +1247,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'programs/{programDbId}' => array(
               'title' => 'Program Details',
               'description' => 'Program details by programDbId',
@@ -1263,6 +1270,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'programs-search' => array(
               'title' => 'Program Search',
               'description' => 'Search programs',
@@ -1278,6 +1286,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /**********
+           * Samples
+           **********/
+
           'samples' => array(
               'title' => 'Sample List',
               'description' => 'Sample list call',
@@ -1293,6 +1306,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'samples/{sampleDbId}' => array(
               'title' => 'Sample Details',
               'description' => 'Sample details by sampleDbId',
@@ -1318,6 +1332,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'samples-search' => array(
               'title' => 'Sample Search',
               'description' => 'Search samples',
@@ -1333,6 +1348,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'seasons' => array(
               'title' => 'Season List',
               'description' => 'List seasons',
@@ -1348,6 +1364,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /**********
+           * Studies
+           **********/
+
           'studies' => array(
               'title' => 'Study List',
               'description' => 'List studies',
@@ -1363,6 +1384,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}' => array(
               'title' => 'Study Details',
               'description' => 'Studies details by studyDbId',
@@ -1386,6 +1408,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/germplasm' => array(
               'title' => 'Study Germplasm Details',
               'description' => 'Study germplasm details by studyDbId',
@@ -1409,6 +1432,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/layout' => array(
               'title' => 'Plot Layout Details',
               'description' => 'Retrieve plot layout details',
@@ -1432,6 +1456,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/observations' => array(
               'title' => 'Observations Details',
               'description' => 'Get observation units by observation variable by studyDbId',
@@ -1455,6 +1480,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/observationunits' => array(
               'title' => 'Observation Units Details',
               'description' => 'Get all observation units by studyDbId',
@@ -1478,6 +1504,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/observationvariables' => array(
               'title' => 'Study Observation Variables',
               'description' => 'Get observation variables by studyDbId',
@@ -1501,6 +1528,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies/{studyDbId}/table' => array(
               'title' => 'Study Observation Units as a Table',
               'description' => 'Retrieve study observation units as table',
@@ -1524,6 +1552,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studies-search' => array(
               'title' => 'Study search',
               'description' => 'Search studies',
@@ -1539,6 +1568,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'studytypes' => array(
               'title' => 'Study Type List',
               'description' => 'List study types',
@@ -1554,6 +1584,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'token' => array(
               'title' => 'Authentication',
               'description' => 'User authentication in OAuth2 style',
@@ -1571,6 +1602,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => FALSE,
           ),
+
           'traits' => array(
               'title' => 'Trait List',
               'description' => 'List all traits',
@@ -1587,6 +1619,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'traits/{traitDbId}' => array(
               'title' => 'Trait Details',
               'description' => 'Trait details by traitDbId',
@@ -1611,6 +1644,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /**********
+           * Trials
+           **********/
+
           'trials' => array(
               'title' => 'Trial List',
               'description' => 'Get list of trial summaries',
@@ -1626,6 +1664,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'trials/{trialDbId}' => array(
               'title' => 'Trial Details',
               'description' => 'Get Trial By trialDbId',
@@ -1649,6 +1688,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'variables' => array(
               'title' => 'Variable List',
               'description' => 'List variables',
@@ -1664,6 +1704,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'variables/{observationVariableDbId}' => array(
               'title' => 'Variable Details',
               'description' => 'Variable details by observationVariableDbId',
@@ -1687,6 +1728,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'variables/datatypes' => array(
               'title' => 'Variable Data Types',
               'description' => 'Variable data type list',
@@ -1703,6 +1745,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'variables-search' => array(
               'title' => 'Variable Search',
               'description' => 'Search variables',
@@ -1718,6 +1761,11 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
+          /**********
+           * Vendors
+           **********/
+
           'vendors/plates/{vendorPlateDbId}' => array(
               'title' => 'Plate Details',
               'description' => 'Get plate details by vendorPlateId',
@@ -1741,6 +1789,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'vendors/plates-search' => array(
               'title' => 'Plate Search',
               'description' => 'Search for plates',
@@ -1756,6 +1805,7 @@ function brapi_get_calls() {
               ),
               'aggregable' => TRUE,
           ),
+
           'vendors/specifications' => array(
               'title' => 'Vendor Specifications',
               'description' => 'Get vendor specifications',
