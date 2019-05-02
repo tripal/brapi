@@ -259,7 +259,7 @@ function brapi_get_calls() {
           ),
 
           /*****************
-           * AAuthentication
+           * Authentication
            *****************/
 
 
@@ -839,7 +839,7 @@ function brapi_get_calls() {
           ),
 
           'search/images' => array(
-              'title' => 'Search Germplasm',
+              'title' => 'Search Images',
               'description' => 'Search for a set of images based on some criteria, returning a search results id',
               'datatypes' => array('json'),
               'methods' => array(
@@ -854,7 +854,7 @@ function brapi_get_calls() {
           ),
 
           'search/images/{searchResultsDbId}' => array(
-              'title' => 'Search Germplasm',
+              'title' => 'Search Images',
               'description' => 'Get results of search/images call by search id',
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
@@ -1164,7 +1164,7 @@ function brapi_get_calls() {
           ),
 
           'search/markers/{searchResultsDbId}' => array(
-              'title' => 'Get Germplasm Search Results',
+              'title' => 'Get Markers Search Results',
               'description' => 'Get results of search/markers call by search id',
               'datatypes' => array('json'),
               'methods' => array(
@@ -1452,7 +1452,7 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_programs_11_json',
@@ -1468,18 +1468,48 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          // Deprecated as of v1.3 - use search/programs instead?
           'programs-search' => array(
               'title' => 'Program Search',
               'description' => 'Search programs',
               'datatypes' => array('json'),
               'methods' => array(
-                  'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_programs_search_11_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/programs' => array(
+              'title' => 'Search Breeding Programs',
+              'description' => 'Search for a set of breeding programs based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/programs/{searchResultsDbId}' => array(
+              'title' => 'Get Breeding Programs Search Results',
+              'description' => 'Get results of search/programs call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1562,7 +1592,7 @@ function brapi_get_calls() {
           ),
 
           'search/samples' => array(
-              'title' => 'Search Germplasm',
+              'title' => 'Search Samples',
               'description' => 'Search for a set of samples based on some criteria, returning a search results id',
               'datatypes' => array('json'),
               'methods' => array(
