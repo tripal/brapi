@@ -1882,18 +1882,18 @@ function brapi_get_calls() {
            * Studies
            **********/
 
+          // It seems like this endpoint was only introduced in v1.3?
           'studies' => array(
               'title' => 'Study List',
               'description' => 'List studies',
               'datatypes' => array('json'),
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
-                  'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array(),
+              'api versions' => array('1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -1905,10 +1905,13 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1',  '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1928,10 +1931,13 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1',  '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1944,6 +1950,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          // Singular 'layout' version of this call deprecated in v1.3
           'studies/{studyDbId}/layout' => array(
               'title' => 'Plot Layout Details',
               'description' => 'Retrieve plot layout details',
@@ -1952,10 +1959,38 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'PUT' => BRAPI_USE_PERMISSION, // PUT http verb a dded in v1.2
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3' /*Deprecated!*/),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'arguments' => array(
+                  3 => array(
+                      'name' => 'studyDbId',
+                      'type' => 'string',
+                      'description' => 'n/a',
+                      'required' => TRUE,
+                  ),
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Plural 'layouts' endpoint only introduced in v1.3
+          'studies/{studyDbId}/layouts' => array(
+              'title' => 'Plot Layout Details',
+              'description' => 'Retrieve plot layout details',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+                  'PUT' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -1977,12 +2012,13 @@ function brapi_get_calls() {
                   'POST' => BRAPI_USE_PERMISSION, // POST http verb call deprecated in v1.1?
                   'PUT' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
                   '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -2004,10 +2040,13 @@ function brapi_get_calls() {
                   'POST' => BRAPI_USE_PERMISSION, // POST http verb deprecated for PUT call in v1.1
                   'PUT' => BRAPI_USE_PERMISSION,  // PUT http verb introduced in v1.1?
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -2027,10 +2066,12 @@ function brapi_get_calls() {
               'methods' => array(
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.1', '1.2'),
+              'api versions' => array('1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -2047,10 +2088,13 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1' /*Deprecated!*/ , '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -2071,10 +2115,12 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.1', '1.2'),
+              'api versions' => array('1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -2095,10 +2141,13 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'arguments' => array(
                   3 => array(
@@ -2111,6 +2160,7 @@ function brapi_get_calls() {
               'aggregable' => TRUE,
           ),
 
+          /* Deprecated from v1.3  */
           'studies-search' => array(
               'title' => 'Study search',
               'description' => 'Search studies',
@@ -2119,14 +2169,67 @@ function brapi_get_calls() {
                   'GET' => BRAPI_USE_PERMISSION,
                   'POST' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3' /*Deprecated!*/ ),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
 
+          'search/studies' => array(
+              'title' => 'Search Studies',
+              'description' => 'Search for a set of Studies based on some criteria, returning a search results id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'POST' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          'search/studies/{searchResultsDbId}' => array(
+              'title' => 'Get Studies Search Results',
+              'description' => 'Get results of search/studies call by search id',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.3'),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // camelCase 'studyTypes' endpoint deprecated in v1.3
+          'studyTypes' => array(
+              'title' => 'Study Type List',
+              'description' => 'List study types',
+              'datatypes' => array('json'),
+              'methods' => array(
+                  'GET' => BRAPI_USE_PERMISSION,
+              ),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3' /*Deprecated!*/),
+              'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
+              ),
+              'aggregable' => TRUE,
+          ),
+
+          // Lower case 'studytypes' endpoint only introduced in v1.3
           'studytypes' => array(
               'title' => 'Study Type List',
               'description' => 'List study types',
@@ -2134,10 +2237,10 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1', '1.2'),
+              'api versions' => array('1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
-                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -2153,10 +2256,13 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0','1.1'),
+              'api versions' => array('1.0', '1.1' /*Deprecated!*/ , '1,2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
                   '1.0' => 'brapi_v1_external_call_json',
+                  '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -2168,10 +2274,12 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.1','1.2'),
+              'api versions' => array('1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.1' => 'brapi_v1_external_call_json',
                   '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
@@ -2183,10 +2291,13 @@ function brapi_get_calls() {
               'methods' => array(
                   'GET' => BRAPI_USE_PERMISSION,
               ),
-              'api versions' => array('1.0', '1.1','1.2'),
+              'api versions' => array('1.0', '1.1', '1.2', '1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
               'callback versions' => array(
+                  '1.0' => 'brapi_v1_external_call_json',
                   '1.1' => 'brapi_v1_external_call_json',
+                  '1.2' => 'brapi_v1_external_call_json',
+                  '1.3' => 'brapi_v1_external_call_json',
               ),
               'aggregable' => TRUE,
           ),
