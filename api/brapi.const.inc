@@ -1440,6 +1440,7 @@ function brapi_get_calls() {
               ),
               'api versions' => array('1.3'),
               'active version' => BRAPI_SERVICE_VERSION,
+              'callback versions' => array(
                   '1.3' => 'brapi_v1_methods_13_json',
               ),
               'arguments' => array(
