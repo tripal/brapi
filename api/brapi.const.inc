@@ -1612,9 +1612,9 @@ function brapi_get_data_mapping() {
             'biologicalStatusOfAccessionCode' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
 
                 // Caching status codes to avoid unnecessary calls to CVTerm table?
-                static status_codes_cache;
+                static $status_codes_cache;
                 if (!isset($brapi_data_mapping)) {
-                    status_codes_cache =  [];
+                    $status_codes_cache =  [];
                 }
 
                 // default to NULL value == empty string unlees proven otherwise
