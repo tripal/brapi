@@ -2455,7 +2455,6 @@ function brapi_get_data_mapping() {
           'description'        => 'definition',
           'name'               => 'name',
           'traitDbId'          => 'cvterm_id',
-          'traitName'          => 'name',
           'defaultValue'       => function ($data_type, $cvterm, $field_name, $op, $values = NULL) use ($cv_settings) {
             $default_value = NULL;
             switch ($op) {
