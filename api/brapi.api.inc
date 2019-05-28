@@ -3544,9 +3544,10 @@ function brapi_v1_get_cvterm_filter($cvterm_settings) {
  *   An array containing the CV term selection settings.
  *
  * @return array
- *   Returns a field selector that can be used by Tripal functions
- *   like @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x* chado_select_record() @endlink
- *   to select cvterms from the cvterm table.
+ *   Returns a field selector that can be used by Tripal functions like
+ *   chado_select_record() to select cvterms from the cvterm table.
+ *
+ * @link http://api.tripal.info/api/tripal/tripal_core!api!tripal_core.chado_query.api.inc/function/chado_select_record/2.x chado_select_record() @endlink
  */
 function brapi_v1_get_cvterm_selector($cvterm_settings) {
 

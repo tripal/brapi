@@ -797,7 +797,7 @@ function brapi_v1_authentication_json() {
 }
 
 /**
- * Call list/search call.
+ * Call list/search call for BrAPI v1.0-1.1.
  *
  * BRAPI: Call search
  * URL:  brapi/v1/calls
@@ -893,7 +893,7 @@ function brapi_v1_call_10_json($selected_call_name = NULL) {
 }
 
 /**
- * Call list/search call.
+ * Call list/search call for BrAPI v1.2.
  *
  * BRAPI: Call search
  * URL:  brapi/v1/calls
@@ -987,6 +987,24 @@ function brapi_v1_call_12_json($selected_call_name = NULL) {
       TRUE
     );
   }
+}
+
+/**
+ * Call list/search call for BrAPI v1.3.
+ *
+ * BRAPI: Call search
+ * URL:  brapi/v1/calls
+ * Displays the list of available calls.
+ *
+ * GET: search and returns the list of supported BrAPI calls.
+ *
+ * Supported GET parameters:
+ * - call (string)
+ *     The name of a call.
+ */
+function brapi_v1_call_13_json($selected_call_name = NULL) {
+  // Stub for BrAPI v1.3 delegates to v1.2.
+  brapi_v1_call_12_json($selected_call_name);
 }
 
 /**
@@ -2286,7 +2304,7 @@ function brapi_get_locations_details_11($geolocation) {
       brapi_get_field('location', $geolocation, $field_name);
   }
 
-  // Field name (a.k.a. 'description') must not be null
+  // Field name (a.k.a. 'description') must not be null.
   if (is_null($geolocation_data['name'])) {
     $geolocation_data['name'] = '';
   }
@@ -2450,6 +2468,19 @@ function brapi_v1_programs_search_11_json() {
 }
 
 /**
+ * Returns a JSON array containing a sample.
+ *
+ * @todo
+ * This function needs to merge the sample-search GET code from
+ *      'brapi_v1_samples_search_11_json'
+ * with the sample creation PUT code of
+ *       'brapi_v1_samples_11_json'.
+ */
+function brapi_v1_samples_13_json($sample_id = NULL) {
+  throw new BrapiException(501, "Not implemented!");
+}
+
+/**
  * Sample search call.
  *
  * BRAPI: Sample Search
@@ -2488,7 +2519,7 @@ function brapi_v1_samples_search_11_json() {
  * @return array
  *   a JSON structure. See official BrAPI documentation.
  *
- * @see https://github.com/plantbreeding/API/blob/master/Specification/Samples/Samples_GET.md
+ * @see https://github.com/plantbreeding/API/blob/v1.3/Specification/Samples/Samples_GET.md
  *
  * @ingroup brapi
  */
@@ -2771,6 +2802,56 @@ function brapi_v1_traits_11_json($trait = NULL) {
   );
 
   return brapi_process_crud('traits/{traitDbId}', $actions, 'trait', $trait);
+}
+
+/**
+ * Scale details call.
+ *
+ * BRAPI: Scale Details by DbId
+ * URL: brapi/v1/scales/\<id\>
+ * Displays details of a scale.
+ *
+ * GET: returns details of the given scale.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/scales/
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Scales
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_scales_13_json($trait = NULL) {
+  // Not implemented.
+  throw new BrapiException(501, "Not implemented!");
+}
+
+/**
+ * Method details call.
+ *
+ * BRAPI: Method Details by DbId
+ * URL: brapi/v1/methods/\<id\>
+ * Displays details of a method.
+ *
+ * GET: returns details of the given method.
+ *
+ * Example:
+ * - GET
+ *   brapi/v1/methods/
+ *
+ * @return array
+ *   a JSON structure. See official BrAPI documentation.
+ *
+ * @see https://github.com/plantbreeding/API/blob/master/Specification/Methods
+ *
+ * @ingroup brapi
+ */
+function brapi_v1_methods_13_json($trait = NULL) {
+  // Not implemented.
+  throw new BrapiException(501, "Not implemented!");
 }
 
 /**

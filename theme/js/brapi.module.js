@@ -46,7 +46,7 @@
           }
         }
         else {
-          new_values.push(current_value[field]);        
+          new_values.push(current_value[field]);
         }
       });
       // Last subfield?
@@ -125,7 +125,7 @@
               + '">BrAPI match</a>'
             );
           }
- 
+
           // Create an array of HTML lines with one line.
           var html_lines = [decodeURIComponent(output_html)];
           // Find placeholders.
@@ -142,8 +142,9 @@
           // *.germplasmName
           // *.donors.*.donorAccessionNumber
           // *.donors.*.donorInstituteCode
-          // 
+          //
           // will lead to the following grouped field path (placeholders):
+          // @code
           // {
           //   *: {
           //     germplasmName: null,
@@ -153,6 +154,7 @@
           //     }
           //   }
           // }
+          // @endcode
           var grouped_placeholders = {};
           function brapiStructurePlaceholders(
             grouping_node,
@@ -194,7 +196,7 @@
                 && (group_structure !== null)) {
               // Internal node.
               // Loop on each line for string replacement.
-              current_html_lines.forEach(function(current_line) {
+              current_html_lines.forEach(function (current_line) {
                 var updated_lines = [current_line];
                 // Loop on each field or group of fields to replace.
                 for (var subgroup in group_structure) {
@@ -208,7 +210,7 @@
                     // duplicate current lines for each subdata element to then
                     // process each of its grouped fields.
                     var new_updated_lines = [];
-                    values.forEach(function(current_value) {
+                    values.forEach(function (current_value) {
                         if (null == group_structure[subgroup]) {
                           // Leaf, no subfields, replace values.
                           var placeholder =
@@ -280,6 +282,7 @@
             html_lines
           );
 
+          // @code
           // for (placeholder in grouped_placeholders) {
           //   placeholders[placeholder] = Drupal.brapi.extractDataValues(
           //     output.result.data,
@@ -305,6 +308,7 @@
           //   // Update HTML lines.
           //   html_lines = new_html_lines;
           // }
+          // @endcode
           $brapi_form.html(html_lines.join('\n'));
         }
         else {
