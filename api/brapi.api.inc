@@ -2862,7 +2862,12 @@ function brapi_aggregate_call(
         }
       }
       // Add to metadata the list of caller URLs.
-      $metadata['aggregated_from'] = $aggregated_from_list;
+      foreach ($aggregated_from_list as $remote_url) {
+        $metadata['status'][] = array(
+          'messageType' => 'INFO',
+          'message' => 'aggregated_from: ' . $remote_url,
+        );
+      }
     }
   }
 
