@@ -278,6 +278,23 @@ function brapi_menu() {
   // Generate Drupal URL menu for supported BrAPI calls.
   foreach (brapi_get_calls() as $call_name => $call_data) {
     $call_url = $menu_call_mapping['call_to_menu'][$call_name];
+    // Check which permission to use. Note that the lowest permission should be
+    // used at the Drupal level here because we will check later for higher
+    // permissions anyway. That's why we start checking if GET is set and finish
+    // by DELETE.
+    $access_arguments = array(BRAPI_USE_PERMISSION);
+    if (isset($call_data['methods']['GET'])) {
+      $access_arguments = array($call_data['methods']['GET']);
+    }
+    elseif (isset($call_data['methods']['POST'])) {
+      $access_arguments = array($call_data['methods']['POST']);
+    }
+    elseif (isset($call_data['methods']['PUT'])) {
+      $access_arguments = array($call_data['methods']['PUT']);
+    }
+    elseif (isset($call_data['methods']['DELETE'])) {
+      $access_arguments = array($call_data['methods']['DELETE']);
+    }
     // Add call.
     $items[$call_url] = array(
       'title' => $call_data['title'],
@@ -289,7 +306,7 @@ function brapi_menu() {
         $call_name,
       ),
       'access callback' => 'user_access',
-      'access arguments' => array($call_data['methods']['GET']),
+      'access arguments' => $access_arguments,
       'type' => MENU_CALLBACK,
     );
     // Manage optional arguments.
