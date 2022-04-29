@@ -1,0 +1,39 @@
+brapi.main:
+  path: '/brapi'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::mainPage'
+    _title: 'Plant Breeding API'
+  requirements:
+    _access: 'TRUE'
+
+brapi.admin:
+  path: '/brapi/admin'
+  defaults:
+    _form: '\Drupal\brapi\Form\BrapiAdminForm'
+    _title: 'BrAPI Administration'
+  requirements:
+    _permission: 'administer site configuration'
+
+brapi.datatypes:
+  path: '/brapi/admin/datatypes'
+  defaults:
+    _form: '\Drupal\brapi\Form\BrapiDataTypesForm'
+    _title: 'BrAPI Data Types Administration'
+  requirements:
+    _permission: 'administer site configuration'
+
+brapi.calls:
+  path: '/brapi/admin/calls'
+  defaults:
+    _form: '\Drupal\brapi\Form\BrapiCallsForm'
+    _title: 'BrAPI Calls Administration'
+  requirements:
+    _permission: 'administer site configuration'
+
+brapi.test:
+  path: '/brapi/json'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::json'
+    _title: 'Export JSON'
+  requirements:
+    _permission: 'access content'

@@ -1,0 +1,15 @@
+brapi.settings:
+  type: config_object
+  mapping:
+    v1:
+      type: boolean
+      label: 'Enable v1 endpoint'
+    v1def:
+      type: string
+      label: 'v1 definition'
+    v2:
+      type: boolean
+      label: 'Enable v2 endpoint'
+    v2def:
+      type: string
+      label: 'v2 definition'

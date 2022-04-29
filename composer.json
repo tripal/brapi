@@ -1,0 +1,11 @@
+{
+    "name": "brapi",
+    "description": "Plant Breeding API server implementation for Drupal.",
+    "type": "drupal-module",
+    "homepage": "https://www.drupal.org/project/brapi",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/brapi",
+        "source": "http://cgit.drupalcode.org/brapi"
+    }
+}

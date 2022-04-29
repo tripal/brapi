@@ -1,0 +1,539 @@
+<?php
+
+/**
+ * @file
+ * Contains brapi.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function brapi_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the brapi module.
+    case 'help.page.brapi':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Plant Breeding API server implementation for Drupal.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function brapi_theme($existing, $type, $theme, $path) {
+  return array(
+    'brapi_main' => array(
+      // We use 'variables' when the item to be passed is an array whose
+      // structure must be described here.
+      'variables' => array(
+        'title' => NULL,
+      ),
+      'template' => 'brapi-main',
+    ),
+  );
+}
+
+/**
+ * Returns available BrAPI versions.
+ *
+ * @return array
+ *   An array which keys are BrAPI major versions (either 'v1' or 'v2') and
+ *   values are arrays which keys are subversions (ex. ['2.0', '2.1']) and
+ *   values are booleans (set to TRUE).
+ */
+function brapiAvailableVersions() :array {
+  static $versions = [];
+
+  if (empty($versions)) {
+    // Get version definition directory.
+    $module_handler = \Drupal::service('module_handler');
+    $module_path = $module_handler->getModule('brapi')->getPath();
+    $version_path = \Drupal::service('file_system')->realpath(
+      $module_path . '/versions'
+    );
+    $files = scandir($version_path);
+    // Process version files.
+    foreach ($files as $file) {
+      $file_path = "$version_path/$file";
+      // Limit to version files.
+      if (is_file($file_path)
+          && preg_match('#^brapi_(v[12])_([\w\.\-]+)\.json$#', $file, $matches)
+      ) {
+        $versions[$matches[1]] = $versions[$matches[1]] ?? [];
+        $versions[$matches[1]][$matches[2]] = TRUE;
+      }
+    }
+  }
+
+  return $versions;
+}
+
+/**
+ * Returns a BrAPI fields, data types and calls definition for a given version.
+ *
+ * @param string $version
+ *   BrAPI version. Currently either 'v1' or 'v2'
+ *
+ * @param string $subversion
+ *   BrAPI version with subversion number. Example: '2.0'.
+ *
+ * @return array
+ *   An array as described below or an empty array if the version definition is
+ *   not available:
+ *   ```
+ *   [
+ *     'modules' => [
+ *       "<MODULE NAME1>" => [
+ *         "<CATEGORY NAME1>" => [
+ *           "calls" => [
+ *             "<API CALL PATH1>" => TRUE,
+ *             "<API CALL PATH2>" => TRUE,
+ *             ...
+ *           ],
+ *           "data_types" => [
+ *             "<DATA TYPE NAME1>" => TRUE,
+ *             "<DATA TYPE NAME2>" => TRUE,
+ *             ...
+ *           ],
+ *         ],
+ *         "<CATEGORY NAME2>" => [
+ *           ...
+ *         ],
+ *         ...
+ *       ],
+ *       "<MODULE NAME2>" => [
+ *         ...
+ *       ],
+ *       ...
+ *     ],
+ *     'calls' => [
+ *       "<API CALL PATH1>" => [
+ *         "definition" => [
+ *           "<METHOD1>" => [
+ *             "summary" => "...",
+ *             "description" => "...",
+ *             "fields" => [
+ *               "<FIELD NAME1>" => [
+ *                 "description" => "...",
+ *                 "required" => TRUE/FALSE,
+ *                 "type" => "<TYPE>",
+ *                 "is_array" => TRUE/FALSE,
+ *               ],
+ *               ...
+ *             ],
+ *           ],
+ *           "<METHOD2>" => [
+ *             ...
+ *           ],
+ *           ...
+ *         ],
+ *         'data_types' => [
+ *           "<DATA TYPE NAME1>" => TRUE,
+ *           ...
+ *         ],
+ *       ],
+ *     ],
+ *     'data_types' => [
+ *       "<DATA TYPE NAME1>" => [
+ *         "description" => "...",
+ *         "fields" => [
+ *           "<FIELD NAME1>" => [
+ *             "required" => TRUE/FALSE,
+ *           ],
+ *           ...
+ *         ],
+ *         "as_field_in" => [
+ *           "<DATA TYPE NAME1>" => TRUE,
+ *           ...
+ *         ],
+ *         "calls" => [
+ *           "<API CALL PATH1>" => TRUE,
+ *           ...
+ *         ],
+ *       ],
+ *       "<DATA TYPE NAME2>" => [
+ *         ...
+ *       ],
+ *       ...
+ *     ],
+ *     'fields' => [
+ *       "<FIELD NAME1>" => [
+ *         "type" => "<TYPE>",
+ *         "description" => "...",
+ *         "example" => "...",
+ *         "calls" => [
+ *           "<API CALL PATH1>" => TRUE,
+ *           ...
+ *         ],
+ *         "data_types" => [
+ *           "<DATA TYPE NAME1>" => TRUE,
+ *           ...
+ *         ],
+ *       ],
+ *       "<FIELD NAME2>" => [
+ *         ...
+ *       ],
+ *       ...
+ *     ],
+ *   ];
+ *   ```
+ */
+function brapiGetDefinition(string $version, string $subversion) :array {
+  static $versions = [];
+
+  // Sanitize parameters.
+  $version = preg_replace('/[^\w\.\-]/', '', $version);
+  $subversion = preg_replace('/[^\w\.\-]/', '', $subversion);
+  // Generate a static cache key.
+  $version_key = $version . '#' . $subversion;
+  if (!array_key_exists($version_key, $versions)) {
+    // Default to empty definition.
+    $versions[$version_key] = [];
+
+    // Get definition directory.
+    $module_handler = \Drupal::service('module_handler');
+    $module_path = $module_handler->getModule('brapi')->getPath();
+    $definition_path = \Drupal::service('file_system')->realpath(
+      $module_path . '/definitions'
+    );
+    $file_path = "$definition_path/brapi_" . $version . '_' . $subversion . '.json';
+    // Limit to definition files.
+    if (is_file($file_path)) {
+      // Try to get file content.
+      $json_raw = file_get_contents($file_path);
+      if (empty($json_raw)) {
+        // Log error.
+        \Drupal::logger('brapi')->error("Unable to get JSON file content for file '$file_path'.");
+      }
+      else {
+        $definition = json_decode($json_raw, TRUE);
+        if (NULL == $definition) {
+          \Drupal::logger('brapi')->error(
+            "Failed to parse JSON file '$file_path': "
+            . json_last_error_msg()
+          );
+        }
+        $versions[$version_key] = $definition;
+      }
+    }
+  }
+
+  return $versions[$version_key];
+}
+
+
+/**
+ * Converts an Open API JSON into a definition.
+ *
+ * @param array $openapis
+ *   An array of Open API data structures.
+ *
+ * @return array
+ *   A definition array as describbed in brapiGetDefinition().
+ *
+ * @see brapiGetDefinition
+ * @see https://swagger.io/specification/
+ */
+function brapiOpenApiToDefinition(array $openapis) :array {
+  $definition = [
+    'modules'    => [],
+    'calls'      => [],
+    'data_types' => [],
+    'fields'     => [],
+  ];
+  
+  $ref_resolutions = [];
+
+  foreach ($openapis as $openapi_index => $openapi) {
+    // Init module data if needed.
+    $module = $openapi['info']['title'] ?? 'BrAPI';
+    $definition['modules'][$module] = $definition['modules'][$module] ?? [];
+    $module_definition =& $definition['modules'][$module];
+    // Add missing categories.
+    foreach ($openapi['tags'] as $category) {
+      $module_definition[$category['name']] =
+        $module_definition[$category['name']]
+        ?? []
+      ;
+    }
+    
+    // Process data types.
+    foreach ($openapi['components']['schemas'] as $datatype => $datatype_definition) {
+      $ref =
+        $datatype_definition['$ref']
+        ?? $datatype_definition['properties']['result']['$ref']
+        // ?? $datatype_definition['properties']['data']['$ref']
+        ?? $datatype_definition['properties']['data']['items']['$ref']
+        ?? ''
+      ;
+      if (!empty($ref)) {
+        // Check for reference.
+        if (preg_match('%^#/components/schemas/(\w+)$%', $ref, $matches)) {
+          $ref_resolutions[$datatype] = $matches[1];
+        }
+        else {
+          \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype: " . $ref . '.');
+        }
+        continue 1;
+      }
+
+      // Check for response wrapper.
+      if (!empty($datatype_definition['properties']['metadata'])
+          && !empty($datatype_definition['properties']['result'])
+      ) {
+        // Check for reference.
+        $ref =
+          $datatype_definition['properties']['result']['$ref']
+          ?? ''
+        ;
+        if (!empty($ref)) {
+          if (preg_match('%^#/components/schemas/(\w+)$%', $ref, $matches)) {
+            $ref_resolutions[$datatype] = $matches[1];
+          }
+          else {
+            \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype>properties>result: " . $ref . '.');
+          }
+        }
+        continue 1;
+      }
+
+      // Process data type fields.
+      $fields = [];
+      foreach ($datatype_definition['properties'] ?? [] as $field => $field_definition) {
+        $fields[$field] = $field_definition['type'] ?? '';
+        if (!empty($field_definition['$ref'])) {
+          // Get type from reference.
+          if (preg_match('%^#/components/schemas/(\w+)$%', $field_definition['$ref'], $matches)) {
+            $fields[$field] = $matches[1];
+          }
+          else {
+            \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype>properties>$field.");
+          }
+        }
+        // Check for array of values.
+        if (!empty($field_definition['items']['#ref'])) {
+          if ((!empty($fields[$field])) && ('array' != $fields[$field])) {
+            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field] . ").");
+          }
+          if (preg_match('%^#/components/schemas/(\w+)$%', $field_definition['items']['#ref'], $matches)) {
+            $fields[$field] = $matches[1] . '[]';
+          }
+          else {
+            \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype>properties>$field>items.");
+          }
+        }
+        elseif (!empty($field_definition['items']['type'])) {
+          if ((!empty($fields[$field])) && ('array' != $fields[$field])) {
+            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field] . ").");
+          }
+          $fields[$field] = $field_definition['items']['type'] . '[]';
+        }
+        // Fill field definitions.
+        if (empty($definition['fields'][$field])
+            || empty($definition['fields'][$field]['type'])
+        ) {
+          // New or incomplete field.
+          $definition['fields'][$field] = [
+            'type' => $fields[$field],
+            'description' => $field_definition['description'] ?? '',
+            'example' => $field_definition['example'] ?? '',
+            'calls' => $definition['fields'][$field]['calls'] ?? [],
+            'data_types' => [$datatype => TRUE],
+          ];
+        }
+        else {
+          // Field redefinition. Check for inconsistency.
+          // Get Field type.
+          $new_type = $field_definition['type'] ?? '';
+          if (!empty($field_definition['items']['type'])) {
+            $new_type = $field_definition['items']['type'] . '[]';
+          }
+          if (($fields[$field] != $new_type)
+              && !empty($fields[$field])
+              && !empty($new_type)
+          ) {
+            \Drupal::logger('brapi')->warning("components>schemas>$datatype>properties>$field: inconsistent field redefinition (" . $fields[$field] . ' vs ' . $new_type . ").");
+          }
+          // Register new data type dependency.
+          $definition['fields'][$field]['data_types'][$datatype] = TRUE;
+        }
+      }
+      $datatype_details = [
+        'type'          => $datatype_definition['type'] ?? '',
+        'description'   => $datatype_definition['description'] ?? '',
+        'fields'        => $fields,
+        'calls'         => [],
+        'as_field_in'   => [],
+      ];
+      if (!empty($definition['data_types'][$datatype])) {
+        \Drupal::logger('brapi')->warning("components>schemas>$datatype: data type already defined before. Completing definition.");
+        $definition['data_types'][$datatype]['type'] ?: $datatype_details['type'];
+        $definition['data_types'][$datatype]['description'] ?: $datatype_details['description'];
+        $definition['data_types'][$datatype]['fields'] += $datatype_details['fields'];
+      }
+      else {
+        $definition['data_types'][$datatype] = $datatype_details;
+      }
+    }
+    
+    // Process responses.
+    foreach ($openapi['components']['responses'] as $response => $response_definition) {
+      $ref = $response_definition['content']['application/json']['schema']['$ref'] ?? '';
+      if (preg_match('%^#/components/schemas/(\w+)$%', $ref, $matches)) {
+        $ref_resolutions['response>' . $response] = $matches[1];
+      }
+      elseif (!empty($ref)) {
+        \Drupal::logger('brapi')->warning("Unsupported response components>respones>$response.");
+      }
+    }
+    
+    // Process $ref_resolutions to update resolutions to final objects.
+    foreach ($ref_resolutions as $ref => $resolution) {
+      $circular_check = [];
+      while (
+        array_key_exists($resolution, $ref_resolutions)
+        && empty($circular_check[$ref_resolutions[$resolution]])
+      ) {
+        $circular_check[$resolution] = TRUE;
+        $resolution = $ref_resolutions[$resolution];
+      }
+      if (!empty($circular_check[$resolution])) {
+        \Drupal::logger('brapi')->warning("Unresolved circular references for $ref.");
+      }
+      if (empty($definition['data_types'][$resolution])) {
+        \Drupal::logger('brapi')->warning("Missing data type definition '$resolution' for $ref.");
+      }
+      $ref_resolutions[$ref] = $resolution;
+    }
+
+    // Fill 'as_field_in'.
+    foreach ($definition['data_types'] as $datatype => $datatype_definition) {
+      foreach ($datatype_definition['fields'] as $field => $type) {
+        // We don't care if it is an array, we just need the type name.
+        $type = rtrim($type, '[]');
+        if (array_key_exists($type, $definition['data_types'])) {
+          $definition['data_types'][$type]['as_field_in'][$datatype] = TRUE;
+        }
+      }
+    }
+
+    // Process calls.
+    foreach ($openapi['paths'] as $call => $call_definition) {
+      $call_details = [
+        'definition' => $call_definition,
+        'data_types'  => [],
+      ];
+      $categories = [];
+      if (!empty($call_definition['$ref'])) {
+        // @todo: Get methods from reference.
+        \Drupal::logger('brapi')->warning("Unsuppoted \$ref: paths>$call.");
+      }
+      foreach ($call_definition as $method => $method_definition) {
+        foreach ($method_definition['parameters'] ?? [] as $parameter) {
+          if (!empty($parameter['$ref'])) {
+            // @todo: Get schema from ref.
+            \Drupal::logger('brapi')->warning("Unsuppoted \$ref: paths>$call>$method>parameters.");
+          }
+          // Fill data type dependencies.
+          if (!empty($parameter['schema'])) {
+            if (!empty($parameter['schema']['$ref'])) {
+              if (preg_match('%^#/components/schemas/(\w+)$%', $parameter['schema']['$ref'], $matches)) {
+                // Resolve reference ro real data type name.
+                $datatype = $matches[1];
+                if (array_key_exists($datatype, $ref_resolutions)) {
+                  $datatype = $ref_resolutions[$datatype];
+                }
+                $call_details['data_types'][$datatype] = TRUE;
+              }
+              else {
+                \Drupal::logger('brapi')->warning("Unsuppoted \$ref: paths>$call>$method>parameters>schema.");
+              }
+            }
+            else {
+              $field = $parameter['name'] ?? '';
+              if (!array_key_exists($field, $definition['fields'])) {
+                $definition['fields'][$field] = [
+                  'type' => $parameter['type'] ?? '',
+                  'description' => $parameter['description'] ?? '',
+                  'example' => $parameter['example'] ?? '',
+                  'calls' => [$call => TRUE,],
+                  'data_types' => [],
+                ];
+                if (!empty($parameter['items'])) {
+                  $definition['fields'][$field]['type'] = $parameter['items']['type'] . '[]';
+                }
+              }
+              $definition['fields'][$field]['calls'][$call] = TRUE;
+            }
+          }
+        }
+        // Add response data type dependencies.
+        // Resolve references to a real data type name.
+        $ref =
+          $method_definition['responses']['200']['$ref']
+          ?? $method_definition['responses']['200']['content']['application/json']['schema']['$ref']
+          ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['$ref']
+          ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['$ref']
+          ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['items']['$ref']
+          ?? ''
+        ;
+        // Check if we have a reference.
+        if (!empty($ref)
+            && (preg_match('%^#/components/schemas/(\w+)$%', $ref, $matches))
+        ) {
+          // Resolve reference ro real data type name.
+          $datatype = $matches[1];
+          if (array_key_exists($datatype, $ref_resolutions)) {
+            $datatype = $ref_resolutions[$datatype];
+          }
+          $call_details['data_types'][$datatype] = TRUE;
+        }
+        else {
+          // No reference, maybe a simple type defined.
+          $type = 
+            $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['items']['type']
+            ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['type']
+            ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['status']['type']
+            ?? ''
+          ;
+          if (empty($type)) {
+            // No type either, report as warning.
+            \Drupal::logger('brapi')->warning("No response data type identified for paths>$call>$method>responses.");
+          }
+        }
+
+        // Add call to categories.
+        foreach ($method_definition['tags'] ?? [] as $category) {
+          $module_definition[$category]['calls'][$call] = TRUE;
+          $categories[$category] = TRUE;
+        }
+      }
+
+      // Add call details to BrAPI definition.
+      if (!empty($definition['calls'][$call])) {
+        \Drupal::logger('brapi')->warning("Redefinition of call $call in " . $module . '(array ' . $openapi_index . ').');
+      }
+      $definition['calls'][$call] = $call_details;
+      
+      // Add call to data types and data types to categories.
+      foreach (array_keys($call_details['data_types']) as $datatype) {
+        if (empty($definition['data_types'][$datatype])) {
+          \Drupal::logger('brapi')->warning("Missing data type '$datatype' definition for call $call in " . $module . '(array ' . $openapi_index . ') (note: it may be defined later in other modules).');
+        }
+        $definition['data_types'][$datatype]['calls'][$call] = TRUE;
+        foreach ($categories as $category) {
+          $module_definition[$category]['data_types'][$datatype] = TRUE;
+        }
+      }
+    }
+  }
+
+  return $definition;
+}
