@@ -56,7 +56,7 @@ function brapiAvailableVersions() :array {
     $module_handler = \Drupal::service('module_handler');
     $module_path = $module_handler->getModule('brapi')->getPath();
     $version_path = \Drupal::service('file_system')->realpath(
-      $module_path . '/versions'
+      $module_path . '/definitions'
     );
     $files = scandir($version_path);
     // Process version files.
