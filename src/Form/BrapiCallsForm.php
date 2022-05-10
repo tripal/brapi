@@ -40,8 +40,9 @@ class BrapiCallsForm extends FormBase {
     foreach ($active_definitions as $version => $active_def) {
       if (!empty($active_def) && !empty($brapi_versions[$version][$active_def])) {
         $form[$active_def] = [
-          '#type' => 'fieldset',
+          '#type' => 'details',
           '#title' => $this->t($version . ' (%def) call settings', ['%def' => $active_def]),
+          '#open' => FALSE,
           '#tree' => TRUE,
         ];
 

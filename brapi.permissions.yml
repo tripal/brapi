@@ -1,0 +1,6 @@
+'use brapi':
+  title: 'Use BrAPI'
+  description: Allows clients to use BrAPI calls an retrieve content.
+'edit brapi content':
+  title: 'Edit BrAPI content'
+  description: Allows clients to modify data through BrAPI.

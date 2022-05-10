@@ -22,6 +22,39 @@ brapi.datatypes:
   requirements:
     _permission: 'administer site configuration'
 
+entity.brapidatatype.list:
+  path: '/brapi/admin/datatypes/list'
+  defaults:
+    _entity_list: brapidatatype
+    _title: 'BrAPI Data Mapping'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.brapidatatype.add_form:
+  path: '/brapi/admin/datatypes/add/{mapping_id}'
+  defaults:
+    _title: 'Add BrAPI Datatype Mapping'
+    _entity_form: brapidatatype.add
+    mapping_id: ''
+  requirements:
+    _entity_create_access: brapidatatype
+
+entity.brapidatatype.edit_form:
+  path: '/brapi/admin/datatypes/manage/{brapidatatype}'
+  defaults:
+    _title: 'Edit BrAPI Datatype Mapping'
+    _entity_form: brapidatatype.edit
+  requirements:
+    _entity_access: brapidatatype.update
+
+entity.brapidatatype.delete_form:
+  path: '/brapi/admin/datatypes/manage/{brapidatatype}/delete'
+  defaults:
+    _title: 'Delete BrAPI Datatype Mapping'
+    _entity_form: brapidatatype.delete
+  requirements:
+    _entity_access: brapidatatype.delete
+
 brapi.calls:
   path: '/brapi/admin/calls'
   defaults:

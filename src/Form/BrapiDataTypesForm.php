@@ -36,12 +36,17 @@ class BrapiDataTypesForm extends FormBase {
         $active_definitions[$version] = $config->get($version . 'def');
       }
     }
+    
+    // Get data type mapping entities.
+    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+
 
     foreach ($active_definitions as $version => $active_def) {
       if (!empty($active_def) && !empty($brapi_versions[$version][$active_def])) {
         $form[$active_def] = [
-          '#type' => 'fieldset',
+          '#type' => 'details',
           '#title' => $this->t($version . ' (%def) data type settings', ['%def' => $active_def]),
+          '#open' => FALSE,
           '#tree' => TRUE,
         ];
 
@@ -50,23 +55,47 @@ class BrapiDataTypesForm extends FormBase {
         foreach ($brapi_definition['modules'] as $module => $categories) {
           foreach ($categories as $category => $elements) {
             foreach (array_keys($elements['data_types']) as $datatype) {
+              // Get definition.
               $datatype_definition = $brapi_definition['data_types'][$datatype];
               if (empty($datatype_definition['calls']) && empty($datatype_definition['as_field_in'])) {
                 continue 1;
               }
+              // Generate datatype machine name.
+              $datatype_id = $version . '-' . $active_def . '-' . $datatype;
               
               $form[$active_def][$datatype] = [
-                '#type' => 'fieldset',
+                '#type' => 'details',
                 '#title' => $datatype,
+                '#open' => FALSE,
               ];
-              $form[$active_def][$datatype]['test'] = [
+              // @todo: display mapping status: unampped, mapped to content...
+              $mapping = $mapping_loader->load($datatype_id);
+              if (empty($mapping)) {
+                $form[$active_def][$datatype]['action_link'] = [
+                  '#type' => 'link',
+                  '#title' => $this->t('Add mapping'),
+                  '#url' => \Drupal\Core\Url::fromRoute('entity.brapidatatype.add_form', ['mapping_id' => $datatype_id]),
+                ];
+              }
+              else {
+                $form[$active_def][$datatype]['action_link'] = [
+                  '#type' => 'link',
+                  '#title' => $this->t('Edit mapping'),
+                  '#url' => \Drupal\Core\Url::fromRoute('entity.brapidatatype.edit_form', ['brapidatatype' => $datatype_id]),
+                ];
+              }
+              // @todo: display "Map content" button.
+              $form[$active_def][$datatype]['details'] = [
                 '#type' => 'markup',
                 '#markup' =>
-                  'type: '
+                  '<br/>Id: '
+                  . $datatype_id
+                  . '<br/>Type: '
                   . $datatype_definition['type']
-                  . ', in calls ['
+                  . '<br/>Calls :'
                   . implode(', ', array_keys($datatype_definition['calls']))
-                  . ']'
+                  . '<br/>Fields: '
+                  . implode(', ', array_keys($datatype_definition['fields']))
                 ,
               ];
             }

@@ -228,9 +228,20 @@ function brapiGetDefinition(string $version, string $subversion) :array {
   return $versions[$version_key];
 }
 
-
 /**
  * Converts an Open API JSON into a definition.
+ *
+ * This function is used "manually" to parse OpenAPI output and generate
+ * definitions files stored in module's "definitions" directory.
+ * Example of use:
+ * ```
+ *   $f1 = file_get_contents('versions/openapi_brapi_1.2.json');
+ *   $def = brapiOpenApiToDefinition([json_decode($f1, TRUE),]);
+ *   $json = json_encode($def, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+ *   $fj = fopen('definitions/brapi_v1_1.2.json', 'w');
+ *   fwrite($fj, $json);
+ *   fclose($fj);
+ * ```
  *
  * @param array $openapis
  *   An array of Open API data structures.
@@ -257,7 +268,7 @@ function brapiOpenApiToDefinition(array $openapis) :array {
     $definition['modules'][$module] = $definition['modules'][$module] ?? [];
     $module_definition =& $definition['modules'][$module];
     // Add missing categories.
-    foreach ($openapi['tags'] as $category) {
+    foreach ($openapi['tags'] ?? [['name' => '']] as $category) {
       $module_definition[$category['name']] =
         $module_definition[$category['name']]
         ?? []
@@ -265,7 +276,7 @@ function brapiOpenApiToDefinition(array $openapis) :array {
     }
     
     // Process data types.
-    foreach ($openapi['components']['schemas'] as $datatype => $datatype_definition) {
+    foreach ($openapi['components']['schemas'] ?? [] as $datatype => $datatype_definition) {
       $ref =
         $datatype_definition['$ref']
         ?? $datatype_definition['properties']['result']['$ref']
@@ -384,7 +395,7 @@ function brapiOpenApiToDefinition(array $openapis) :array {
     }
     
     // Process responses.
-    foreach ($openapi['components']['responses'] as $response => $response_definition) {
+    foreach ($openapi['components']['responses'] ?? [] as $response => $response_definition) {
       $ref = $response_definition['content']['application/json']['schema']['$ref'] ?? '';
       if (preg_match('%^#/components/schemas/(\w+)$%', $ref, $matches)) {
         $ref_resolutions['response>' . $response] = $matches[1];
@@ -425,7 +436,7 @@ function brapiOpenApiToDefinition(array $openapis) :array {
     }
 
     // Process calls.
-    foreach ($openapi['paths'] as $call => $call_definition) {
+    foreach ($openapi['paths'] ?? [] as $call => $call_definition) {
       $call_details = [
         'definition' => $call_definition,
         'data_types'  => [],
@@ -510,7 +521,7 @@ function brapiOpenApiToDefinition(array $openapis) :array {
         }
 
         // Add call to categories.
-        foreach ($method_definition['tags'] ?? [] as $category) {
+        foreach ($method_definition['tags'] ?? [['name' => '']] as $category) {
           $module_definition[$category]['calls'][$call] = TRUE;
           $categories[$category] = TRUE;
         }
