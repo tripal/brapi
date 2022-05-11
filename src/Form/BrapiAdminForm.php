@@ -29,7 +29,7 @@ class BrapiAdminForm extends FormBase {
     $config = \Drupal::config('brapi.settings');
 
     // Get BrAPI versions.
-    $versions = brapiAvailableVersions();
+    $versions = brapi_available_versions();
     
     foreach ($versions as $version => $version_definition) {
       $version_options = array_keys($version_definition);
@@ -71,7 +71,7 @@ class BrapiAdminForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = \Drupal::service('config.factory')->getEditable('brapi.settings');
     
-    $versions = brapiAvailableVersions();
+    $versions = brapi_available_versions();
     foreach ($versions as $version => $version_definition) {
       $definition = $form_state->getValue($version . '_definition') ?? '';
       if (!empty($version_definition[$definition])) {

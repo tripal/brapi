@@ -7,6 +7,11 @@
 
 use Drupal\Core\Routing\RouteMatchInterface;
 
+
+const BRAPI_DEFAULT_PAGE_SIZE  = 40;
+const BRAPI_DATATYPE_ID_REGEXP = '/^(v[\d])-([^\-]+)-(.+)$/';
+
+
 /**
  * Implements hook_help().
  */
@@ -48,7 +53,7 @@ function brapi_theme($existing, $type, $theme, $path) {
  *   values are arrays which keys are subversions (ex. ['2.0', '2.1']) and
  *   values are booleans (set to TRUE).
  */
-function brapiAvailableVersions() :array {
+function brapi_available_versions() :array {
   static $versions = [];
 
   if (empty($versions)) {
@@ -73,6 +78,17 @@ function brapiAvailableVersions() :array {
   }
 
   return $versions;
+}
+
+/**
+ * Generates a data type identifier used in configs.
+ *
+ * @return string
+ *   A data type identifier.
+ */
+function brapi_generate_datatype_id($datatype_name, $version, $active_def) :string {
+  $datatype_id = $version . '-' . $active_def . '-' . $datatype_name;
+  return $datatype_id;
 }
 
 /**
@@ -185,7 +201,7 @@ function brapiAvailableVersions() :array {
  *   ];
  *   ```
  */
-function brapiGetDefinition(string $version, string $subversion) :array {
+function brapi_get_definition(string $version, string $subversion) :array {
   static $versions = [];
 
   // Sanitize parameters.
@@ -236,7 +252,7 @@ function brapiGetDefinition(string $version, string $subversion) :array {
  * Example of use:
  * ```
  *   $f1 = file_get_contents('versions/openapi_brapi_1.2.json');
- *   $def = brapiOpenApiToDefinition([json_decode($f1, TRUE),]);
+ *   $def = brapi_open_api_to_definition([json_decode($f1, TRUE),]);
  *   $json = json_encode($def, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
  *   $fj = fopen('definitions/brapi_v1_1.2.json', 'w');
  *   fwrite($fj, $json);
@@ -247,12 +263,12 @@ function brapiGetDefinition(string $version, string $subversion) :array {
  *   An array of Open API data structures.
  *
  * @return array
- *   A definition array as describbed in brapiGetDefinition().
+ *   A definition array as describbed in brapi_get_definition().
  *
- * @see brapiGetDefinition
+ * @see brapi_get_definition
  * @see https://swagger.io/specification/
  */
-function brapiOpenApiToDefinition(array $openapis) :array {
+function brapi_open_api_to_definition(array $openapis) :array {
   $definition = [
     'modules'    => [],
     'calls'      => [],

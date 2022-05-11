@@ -26,7 +26,7 @@ class BrapiDataTypesForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     // Get BrAPI versions.
-    $brapi_versions = brapiAvailableVersions();
+    $brapi_versions = brapi_available_versions();
 
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
@@ -40,7 +40,6 @@ class BrapiDataTypesForm extends FormBase {
     // Get data type mapping entities.
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
 
-
     foreach ($active_definitions as $version => $active_def) {
       if (!empty($active_def) && !empty($brapi_versions[$version][$active_def])) {
         $form[$active_def] = [
@@ -50,8 +49,7 @@ class BrapiDataTypesForm extends FormBase {
           '#tree' => TRUE,
         ];
 
-        $brapi_definition = brapiGetDefinition($version, $active_def);
-//\Drupal::messenger()->addMessage('DEBUG: ' . print_r($brapi_definition, TRUE)); //+debug
+        $brapi_definition = brapi_get_definition($version, $active_def);
         foreach ($brapi_definition['modules'] as $module => $categories) {
           foreach ($categories as $category => $elements) {
             foreach (array_keys($elements['data_types']) as $datatype) {
@@ -61,7 +59,7 @@ class BrapiDataTypesForm extends FormBase {
                 continue 1;
               }
               // Generate datatype machine name.
-              $datatype_id = $version . '-' . $active_def . '-' . $datatype;
+              $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
               
               $form[$active_def][$datatype] = [
                 '#type' => 'details',

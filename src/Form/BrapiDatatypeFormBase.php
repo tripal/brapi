@@ -49,9 +49,11 @@ class BrapiDatatypeFormBase extends EntityForm {
    * Constructs an BrapiDatatypeFormBase object.
    *
    * @param \Drupal\Core\Entity\EntityStorageInterface $entity_storage
-   *   The entity type manager.
+   *   The entity storage.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   *   The entity type bundle info.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The entity field manager.
    */
@@ -91,9 +93,9 @@ class BrapiDatatypeFormBase extends EntityForm {
     // Build the form.
     if (!empty($mapping_id)) {
       $mapping_name = $mapping_id;
-      if (preg_match('/^(v[\d])-([^\-]+)-(.+)$/', $mapping_id, $matches)) {
+      if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $mapping_id, $matches)) {
         list(, $version, $active_def, $datatype_name) = $matches;
-        // $brapi_definition = brapiGetDefinition($version, $active_def);
+        // $brapi_definition = brapi_get_definition($version, $active_def);
         $mapping_name = $datatype_name . ' for BrAPI v' . $active_def;
       }
 
@@ -212,12 +214,12 @@ class BrapiDatatypeFormBase extends EntityForm {
     if ($status == SAVED_UPDATED) {
       // If we edited an existing entity...
       $this->messenger()->addMessage($this->t('BrAPI Datatype Mapping %label has been updated.', ['%label' => $brapi_datatype->label()]));
-      $this->logger('contact')->notice('BrAPI Datatype Mapping %label has been updated.', ['%label' => $brapi_datatype->label(), 'link' => $edit_link]);
+      $this->logger('brapi')->notice('BrAPI Datatype Mapping %label has been updated.', ['%label' => $brapi_datatype->label(), 'link' => $edit_link]);
     }
     else {
       // If we created a new entity...
       $this->messenger()->addMessage($this->t('BrAPI Datatype Mapping %label has been added.', ['%label' => $brapi_datatype->label()]));
-      $this->logger('contact')->notice('BrAPI Datatype Mapping %label has been added.', ['%label' => $brapi_datatype->label(), 'link' => $edit_link]);
+      $this->logger('brapi')->notice('BrAPI Datatype Mapping %label has been added.', ['%label' => $brapi_datatype->label(), 'link' => $edit_link]);
     }
 
     // Redirect the user back to the data type management page.
@@ -303,10 +305,10 @@ class BrapiDatatypeFormBase extends EntityForm {
     }
 
     // Build BrAPI data type field list.
-    if (preg_match('/^(v[\d])-([^\-]+)-(.+)$/', $brapi_datatype->id, $matches)
+    if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $brapi_datatype->id, $matches)
     ) {
       list(, $version, $active_def, $datatype_name) = $matches;
-      $brapi_definition = brapiGetDefinition($version, $active_def);
+      $brapi_definition = brapi_get_definition($version, $active_def);
       foreach ($brapi_definition['data_types'][$datatype_name]['fields'] ?? [] as $field_name => $field_type) {
         $required = FALSE;
         if (($field_name == $datatype_name . 'Id')

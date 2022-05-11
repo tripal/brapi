@@ -63,10 +63,5 @@ brapi.calls:
   requirements:
     _permission: 'administer site configuration'
 
-brapi.test:
-  path: '/brapi/json'
-  defaults:
-    _controller: '\Drupal\brapi\Controller\BrapiController::json'
-    _title: 'Export JSON'
-  requirements:
-    _permission: 'access content'
+route_callbacks:
+  - '\Drupal\brapi\Routing\BrapiRoutes::routes'
