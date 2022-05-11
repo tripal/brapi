@@ -64,14 +64,6 @@ class BrapiController extends ControllerBase {
     $version = $matches[1];
     $call = $matches[2];
     $variables = $request->attributes->get('_raw_variables')->all();
-    $page = $request->query->get('page');
-    if (!empty($page)) {
-      $variables['#page'] = $page;
-    }
-    $page_size = $request->query->get('pageSize');
-    if (!empty($page_size)) {
-      $variables['#pageSize'] = $page_size;
-    }
     
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
@@ -91,7 +83,25 @@ class BrapiController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
+    $single_datatype = FALSE;
     if (1 == count($brapi_def['calls'][$call]['data_types'])) {
+      $total_count = 1;
+      $total_pages = 1;
+      if (!empty($variables)) {
+        $single_datatype = TRUE;
+        $page = 0;
+        $page_size = 1;
+      }
+      else {
+        $page = $request->query->get('page');
+        if (!empty($page)) {
+          $variables['#page'] = $page;
+        }
+        $page_size = $request->query->get('pageSize');
+        if (!empty($page_size)) {
+          $variables['#pageSize'] = $page_size;
+        }
+      }
       // Get associated content.
       $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
       $datatype_id = brapi_generate_datatype_id(array_keys($brapi_def['calls'][$call]['data_types'])[0], $version, $active_def);
@@ -111,7 +121,6 @@ class BrapiController extends ControllerBase {
     // -check methods for the call
     //   -get: get array of parameters for GET
     //   -post: get array of parameters for POST
-    
 
     // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
     // https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
@@ -120,14 +129,29 @@ class BrapiController extends ControllerBase {
     // $value = $request->request->get('param');
     // GET values:
     // $value = $request->query->get('param');
+    if (!empty($variables)) {
+      $result = ['data' => $entities[0]];
+    }
+    else {
+      $result = ['data' => $entities];
+    }
+
     $json_array = [
-      'result' => [
-        'version' => $active_def,
-        'call'   => $call,
-        'method' => $method ?? 'not set',
-        'data' => $entities,
-        // 'x' => print_r($variables, TRUE),
+      'metadata' => [
+          'status' => [],
+          'pagination' => [
+              'pageSize' => $page_size,
+              'currentPage' => $page,
+              'totalCount' => $total_count,
+              'totalPages' => $total_pages,
+          ],
+          'datafiles' => [],
       ],
+      'result' => $result,
+      // 'version' => $active_def,
+      // 'call'   => $call,
+      // 'method' => $method ?? 'not set',
+      // 'x' => print_r($route, TRUE),
     ];
     return new JsonResponse($json_array);
   }
