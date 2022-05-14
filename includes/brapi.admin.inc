@@ -120,15 +120,41 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#required' => TRUE,
     '#multiple' => FALSE,
   );
-  // Crop list storage.
+  // Crop list storage. Naming method selection, and manual override list.
+  $crop_naming_method_options = array(
+    'nameBySpecies' => t('Use species as crop name'),
+    'nameByAbbreviation' => t('Use organism abbreviation as crop name'),
+    'nameByCommonName' => t('Use organism common name as crop name'),
+    'nameByTaxon' => t('Use full taxon as crop name'),
+  );
+  $crop_naming_method = isset($storage_options['crop_naming_method']) ?
+    $storage_options['crop_naming_method']
+    : '';
+  if (!$crop_naming_method
+      || (($crop_naming_method != 'nameBySpecies')
+          && ($crop_naming_method != 'nameByAbbreviation')
+          && ($crop_naming_method != 'nameByCommonName')
+          && ($crop_naming_method != 'nameByTaxon'))) {
+    $crop_naming_method = 'nameBySpecies';
+  }
+  $form['storage_options']['crop_naming_method'] = array(
+    '#type' => 'select',
+    '#description' => t('Select the way a crop name is generated for each organism. If the selected method returns no value for an organism, the full taxon will then be used.'),
+    '#options' => $crop_naming_method_options,
+    '#default_value' => $crop_naming_method,
+    '#title' => t('Crop naming method'),
+    '#title_display' => 'before',
+    '#required' => TRUE,
+    '#multiple' => FALSE,
+  );
   $crop_list_storage = isset($storage_options['crop_list']) ?
     $storage_options['crop_list']
     : '';
   $form['storage_options']['crop_list'] = array(
     '#type' => 'textfield',
-    '#description' => t('Enter the list of (no space coma-separated) supported crops here or leave this field empty to use the Chado organism.species field values.'),
+    '#description' => t('Enter the list of (no space, comma-separated) supported crops here. If blank, the "Crop naming method" selected above will be used.'),
     '#default_value' => $crop_list_storage,
-    '#title' => t('List of supported crops ("crops" call)'),
+    '#title' => t('Manual entry of list of supported crops ("crops" call)'),
     '#title_display' => 'before',
     '#required' => FALSE,
     '#size' => 80,
@@ -843,7 +869,10 @@ function brapi_admin_form_submit($form_id, &$form_state) {
   if ($form_state['values']['germplasm_pui']) {
     $storage_options['germplasm_pui'] = $form_state['values']['germplasm_pui'];
   }
-  // Crop list storage.
+  // Crop list storage method and override list.
+  if ($form_state['values']['crop_naming_method']) {
+    $storage_options['crop_naming_method'] = $form_state['values']['crop_naming_method'];
+  }
   if ($form_state['values']['crop_list']) {
     $storage_options['crop_list'] = $form_state['values']['crop_list'];
   }

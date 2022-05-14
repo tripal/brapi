@@ -2094,20 +2094,66 @@ function brapi_v1_crops_10_json() {
   $crop_list = array();
 
   $storage_options = variable_get(BRAPI_STORAGE_OPTIONS, array());
+  $naming_method = 'nameBySpecies';
+  if (isset($storage_options['crop_naming_method'])) {
+    $naming_method = $storage_options['crop_naming_method'];
+  }
+
   if (isset($storage_options['crop_list'])
       && !empty($storage_options['crop_list'])) {
     $crop_list = explode(',', $storage_options['crop_list']);
   }
   else {
-    $sql_query = "
-      SELECT species
-      FROM {organism} o
-      WHERE EXISTS
-        (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
-      ORDER BY species;";
+    if ($naming_method == 'nameByAbbreviation') {
+      $sql_query = "
+        SELECT abbreviation AS name, CONCAT_WS(' ', genus, species) AS altname, organism_id
+        FROM {organism} o
+        WHERE EXISTS
+          (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
+        ORDER BY abbreviation;";
+    }
+    else if ($naming_method == 'nameByCommonName') {
+      $sql_query = "
+        SELECT common_name AS name, CONCAT_WS(' ', genus, species) AS altname, organism_id
+        FROM {organism} o
+        WHERE EXISTS
+          (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
+        ORDER BY common_name;";
+    }
+    else if ($naming_method == 'nameByTaxon') {
+      $sql_query = "
+        SELECT NULL AS name, CONCAT_WS(' ', genus, species) AS altname, organism_id
+        FROM {organism} o
+        WHERE EXISTS
+          (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
+        ORDER BY genus, species;";
+    }
+    else {
+      $sql_query = "
+        SELECT species AS name, NULL AS altname
+        FROM {organism} o
+        WHERE EXISTS
+          (SELECT TRUE FROM {stock} s WHERE s.organism_id = o.organism_id LIMIT 1)
+        ORDER BY species;";
+    }
+
     $crop_result = chado_query($sql_query);
+    // Determine if we can lookup infraspecific nomenclature (chado>=1.3).
+    $can_lookup_taxon = function_exists('chado_get_organism_scientific_name');
     while ($crop = $crop_result->fetchAssoc()) {
-      $crop_list[] = $crop['species'];
+      $name = $crop['name'];
+      $altname = $crop['altname'];
+      // SQL ensures that if $name is missing for common_name or abbreviation, $altname will have a value.
+      if (!$name) {
+        if ($can_lookup_taxon) {
+          $organism_id = $crop['organism_id'];
+          $name = chado_get_organism_scientific_name(chado_get_organism(['organism_id' => $organism_id], []));
+        }
+        else {
+          $name = $altname;
+        }
+      }
+      $crop_list[] = $name;
     }
   }
   $data = array('result' => array('data' => $crop_list));
