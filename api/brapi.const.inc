@@ -2450,6 +2450,22 @@ function brapi_get_data_mapping() {
       }
       return $data;
     };
+    $subtaxon_info_func = function ($data_type, $stock, $field_name, $op, $values = NULL) {
+      $data = '';
+      switch ($op) {
+        case NULL:
+          $data = array('read' => TRUE);
+          break;
+
+        case 'read':
+          $organism_info = brapi_get_subtaxon_info($stock->organism_id->organism_id);
+          $data = $organism_info[$field_name];
+          break;
+
+        default:
+      }
+      return $data;
+    };
 
     $brapi_data_mapping = array(
       'germplasm'      => array(
@@ -2741,6 +2757,15 @@ function brapi_get_data_mapping() {
             'selector' => [],
             'field_type' => 'string',
           ],
+          'speciesInfra' => [
+            // Species and subspecies from chado.organism.
+            'table' => 'organism',
+            'foreign_key' => 'organism_id',
+            'object_key' => 'organism_id',
+            'column' => 'species',
+            'selector' => [],
+            'field_type' => 'string',
+          ],
           'speciesProp' => [
             // Species from MCPD.
             'table' => 'stockprop',
@@ -2974,6 +2999,10 @@ function brapi_get_data_mapping() {
           'speciesAuthorityFunc' => $organism_info_func,
           'subtaxaFunc' => $organism_info_func,
           'subtaxaAuthorityFunc' => $organism_info_func,
+          'speciesInfraFunc' => $subtaxon_info_func,
+          'speciesInfraAuthorityFunc' => $subtaxon_info_func,
+          'subtaxaInfraFunc' => $subtaxon_info_func,
+          'subtaxaInfraAuthorityFunc' => $subtaxon_info_func,
           'taxonId' => function ($data_type, $stock, $field_name, $op, $values = NULL) {
             $taxon_id = NULL;
             switch ($op) {
@@ -3901,6 +3930,13 @@ function brapi_get_data_mapping() {
           $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesAuthorityProp';
           $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaProp';
           $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaAuthorityProp';
+          break;
+
+        case 'speciesInfraFunc':
+          $germplasm_fields['species']['alias_for'] = 'speciesInfraFunc';
+          $germplasm_fields['speciesAuthority']['alias_for'] = 'speciesInfraAuthorityFunc';
+          $germplasm_fields['subtaxa']['alias_for'] = 'subtaxaInfraFunc';
+          $germplasm_fields['subtaxaAuthority']['alias_for'] = 'subtaxaInfraAuthorityFunc';
           break;
 
         default:
