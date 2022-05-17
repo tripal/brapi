@@ -3670,7 +3670,7 @@ function brapi_get_data_mapping() {
                 $sql_query = '
                   SELECT c.name
                   FROM {contact} c
-                    JOIN {project_contact pc USING (contact_id)
+                    JOIN {project_contact} pc USING (contact_id)
                   WHERE
                     pc.project_id = :project_id
                     AND c.type_id = :lead_person_type_id
