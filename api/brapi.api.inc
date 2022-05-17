@@ -3486,7 +3486,7 @@ function brapi_get_subtaxon_info($organism_id) {
       SELECT
         o.species AS "species",
         sop.value AS "speciesAuthority",
-        REPLACE(CONCAT_WS(\' \', cv.name, o.infraspecific_name), \' no_rank\', \'\') AS "subtaxa",
+        CONCAT_WS(\' \', REPLACE(cv.name, \'no_rank\', \'\'), o.infraspecific_name) AS "subtaxa",
         ssop.value AS "subtaxaAuthority"
       FROM {organism} o
       LEFT JOIN {cvterm} cv ON (
