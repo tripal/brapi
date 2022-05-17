@@ -352,7 +352,7 @@ function brapi_cleanup_cvterms($remove = FALSE) {
     $t = get_t();
     drupal_set_message(
       $t(
-        'Obsolete BrAPI CV terms were not removed. To remove them manually, use the following SQL command: "DELETE FROM cvterm WHERE cvterm_id IN (%cvterm_ids);"',
+        'Obsolete BrAPI CV terms were not removed. To remove them manually, use the following SQL command: "DELETE FROM chado.cvterm WHERE cvterm_id IN (%cvterm_ids);"',
         array('%cvterm_ids' => implode(',', $cvterm_to_remove))
       ),
       'warning'

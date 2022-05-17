@@ -3468,9 +3468,9 @@ function brapi_get_data_mapping() {
               case 'read':
                 $sql_query = '
                   SELECT db.name || \':\' || dbx.accession AS "trait_id"
-                  FROM cvterm cvt
-                    JOIN dbxref dbx USING (dbxref_id)
-                    JOIN db USING (db_id)
+                  FROM {cvterm} cvt
+                    JOIN {dbxref} dbx USING (dbxref_id)
+                    JOIN {db} USING (db_id)
                   WHERE cvterm_id = :cvterm_id
                 ;';
                 $filter_values = array(
