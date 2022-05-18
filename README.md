@@ -12,7 +12,7 @@ state, so now is the time for potential participants to help shape the
 specifications to ensure their needs are addressed. The listserve for
 discussions and announcements is at [Cornell University][1]. Additional
 documentation is in the [Github wiki][2]. The latest up-to-date specifications
-and discussions can be found on the git repository [3] and the issue queue [4].
+and discussions can be found on the [git repository][3] and the [issue queue][4].
 
 [1]: http://mail2.sgn.cornell.edu/cgi-bin/mailman/listinfo/plant-breeding-api
 [2]: https://github.com/plantbreeding/documentation
@@ -68,7 +68,7 @@ as admin, you will have an additional checkbox which can enable debug mode.
 **Javascript & Dynamic HTML**
 
 If you want to add BrAPI fields on your pages that should be automatically and
-dynamically populated using external BrAPI site, you can use the following HTML
+dynamically populated using external BrAPI sites, you can use the following HTML
 snippet:
 
 ```
@@ -77,8 +77,6 @@ snippet:
     <input type="hidden" name="brapi_html" value="URL_ENCODED_HTML_STRING"/>
     <input type="submit" name="submit" value="Get BrAPI data"/>
   </form>
-```
-
 ```
 
 where "BRAPI_SERVER" is the BrAPI server name, "SERVICE?PARAMETERS..." is the
