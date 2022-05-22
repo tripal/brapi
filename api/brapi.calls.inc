@@ -2422,7 +2422,7 @@ function brapi_get_programs_details_11($project) {
     $project_data[$field_name] =
       brapi_get_field('program', $project, $field_name);
   }
-  // Lead person must not be null bu empty.
+  // Lead person must not be null.
   if (is_null($project_data['leadPerson'])) {
     $project_data['leadPerson'] = '';
   }
