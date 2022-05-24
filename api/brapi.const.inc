@@ -336,7 +336,7 @@ function brapi_get_calls() {
 
       // Replaces /crops as of v1.2.
       'commonCropNames' => array(
-        'title' => 'Cmmon Crop Names',
+        'title' => 'Common Crop Names',
         'description' => 'List the common crop names for the crops available in the database server.',
         'datatypes' => array('json'),
         'methods' => array(

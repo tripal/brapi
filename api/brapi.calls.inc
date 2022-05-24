@@ -1837,8 +1837,8 @@ function brapi_v1_attributes_11_json() {
           // We replace escaped quotes by the hex code so they won't interfere
           // in the regexp matching. All will be replaced by stripcslashes().
           $attr_values = preg_replace('/\\\\"/', '\\x22', $attr_values);
-          // We match all double quoted and unquoted strings followed by comas.
-          // Note: we append a coma to the value string to match last value
+          // We match all double quoted and unquoted strings followed by commas.
+          // Note: we append a comma to the value string to match last value
           // with the regexp.
           if (!preg_match_all(
             '/(?:(?:"([^"]+)")|([^",][^,]*)),/',
@@ -2468,7 +2468,7 @@ function brapi_get_programs_details_11($project) {
     $project_data[$field_name] =
       brapi_get_field('program', $project, $field_name);
   }
-  // Lead person must not be null bu empty.
+  // Lead person must not be null.
   if (is_null($project_data['leadPerson'])) {
     $project_data['leadPerson'] = '';
   }

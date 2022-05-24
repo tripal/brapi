@@ -329,7 +329,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
   $form['storage_options']['custom_date_format'] = array(
     '#type' => 'textfield',
     '#id' => 'brapi_custom_date_format',
-    '#description' => t('If you use a custom format, specify the way dates are stored in database using the format describbed at <a href="http://php.net/manual/en/datetime.createfromformat.php">DateTime::createFromFormat PHP documentation</a>.'),
+    '#description' => t('If you use a custom format, specify the way dates are stored in database using the format described at <a href="http://php.net/manual/en/datetime.createfromformat.php">DateTime::createFromFormat PHP documentation</a>.'),
     '#default_value' => variable_get(BRAPI_CUSTOM_DATE_FORMAT, ''),
     '#title' => t('Custom date format specification'),
     '#title_display' => 'before',
@@ -365,7 +365,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
     '#description' => t(
       'Specify a list of cv.cv_id. If you include CV names in the list, only
       the numeric identifier cv_id (last number for each CV) will be used by
-      the system. You can specify multiple CV with comas. All the terms of
+      the system. You can specify multiple CV with commas. All the terms of
       those CV can be used as traits.
     '),
     '#default_value' => $trait_cvs,
@@ -681,7 +681,7 @@ function brapi_admin_form($form, &$form_state, $no_js_use = FALSE) {
       '#description' => t(
         'Specify a list of cv.cv_id. If you include CV names in the list, only
         the numeric identifier cv_id (last number for each CV) will be used by
-        the system. You can specify multiple CV with comas. All the terms of
+        the system. You can specify multiple CV with commas. All the terms of
         those CV will be used to match attributes.
       '),
       '#default_value' => $germplasm_attributes[$i]['cvs'],
