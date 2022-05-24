@@ -3644,8 +3644,8 @@ function brapi_v1_get_cvterm_selector($cvterm_settings) {
     if (!empty($parent_cvterm_ids)) {
       $sql_query = "
         SELECT DISTINCT subject_id
-        FROM cvterm_relationship
-          JOIN cvterm ON (cvterm_id = type_id AND name IN ('is_a', 'isa'))
+        FROM {cvterm_relationship}
+          JOIN {cvterm} ON (cvterm_id = type_id AND name IN ('is_a', 'isa'))
         WHERE
           object_id IN (:values)
       ;";
