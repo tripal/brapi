@@ -3468,6 +3468,68 @@ function brapi_get_organism_info($organism_id) {
 }
 
 /**
+ * Returns information about an organism.
+ * This version uses the chado 1.3 type_id and infraspecific_name columns
+ * in the organism table to generate the subtaxa name.
+ *
+ * @param int $organism_id
+ *   Value of organism.organism_id of the organism of interest.
+ *
+ * @return array
+ *   An array with the following keys:
+ *   - "species": name of the species/group or NULL;
+ *   - "speciesAuthority": species authority or NULL;
+ *   - "subtaxa": name of the subspecies or subgroup or NULL;
+ *   - "subtaxaAuthority": subtaxa authority or NULL.
+ */
+function brapi_get_subtaxon_info($organism_id) {
+  static $organism_data = array();
+  $cv_settings = brapi_get_cv_settings();
+
+  if (!array_key_exists($organism_id, $organism_data)) {
+    $sql_query = '
+      SELECT
+        o.species AS "species",
+        sop.value AS "speciesAuthority",
+        CONCAT_WS(\' \', REPLACE(cv.name, \'no_rank\', \'\'), o.infraspecific_name) AS "subtaxa",
+        ssop.value AS "subtaxaAuthority"
+      FROM {organism} o
+      LEFT JOIN {cvterm} cv ON (
+        o.type_id = cv.cvterm_id
+      )
+      LEFT JOIN {organismprop} sop ON (
+        o.organism_id = sop.organism_id
+        AND sop.type_id IN (:species_authority)
+      )
+      LEFT JOIN {organismprop} ssop ON (
+        o.organism_id = ssop.organism_id
+        AND ssop.type_id IN (:subtaxa_authority)
+      )
+      WHERE
+        o.organism_id = :organism_id
+      ;';
+    $filter_values = array(
+      ':organism_id' => $organism_id,
+      ':species_authority' => $cv_settings['speciesAuthority'],
+      ':subtaxa_authority' => $cv_settings['subtaxaAuthority'],
+    );
+    $species_result = chado_query($sql_query, $filter_values);
+    if ($species_result) {
+      $organism_data[$organism_id] = $species_result->fetchAssoc();
+    }
+    else {
+      $organism_data[$organism_id] = array(
+        'species' => NULL,
+        'speciesAuthority' => NULL,
+        'subtaxa' => NULL,
+        'subtaxaAuthority' => NULL,
+      );
+    }
+  }
+  return $organism_data[$organism_id];
+}
+
+/**
  * Helper function that returns CV/CV term filter for CV terms.
  *
  * @param array $cvterm_settings
