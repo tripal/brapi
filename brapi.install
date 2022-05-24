@@ -28,7 +28,27 @@ function brapi_requirements($phase) {
   $requirements = array();
   // Check Tripal 2 or 3 requirements.
   $meets_tripal_requirements = FALSE;
-  if (module_exists('tripal_core')) {
+  if (module_exists('tripal')) {
+    // Tripal 3.
+    if (!module_exists('tripal_chado')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal Chado must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else if (!module_exists('tripal_chado_views')) {
+      $requirements['brapi'] = array(
+        'title' => 'Breeding API',
+        'value' => $t('ERROR: Tripal Chado Views must be enabled!'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else {
+      $meets_tripal_requirements = TRUE;
+    }
+  }
+  else if (module_exists('tripal_core')) {
     // Tripal 2.
     if (!module_exists('tripal_views')) {
       $requirements['brapi'] = array(
@@ -48,26 +68,6 @@ function brapi_requirements($phase) {
       $requirements['brapi'] = array(
         'title' => 'Breeding API',
         'value' => $t('ERROR: Tripal CV must be enabled!'),
-        'severity' => REQUIREMENT_ERROR,
-      );
-    }
-    else {
-      $meets_tripal_requirements = TRUE;
-    }
-  }
-  else if (module_exists('tripal')) {
-    // Tripal 3.
-    if (!module_exists('tripal_chado')) {
-      $requirements['brapi'] = array(
-        'title' => 'Breeding API',
-        'value' => $t('ERROR: Tripal Chado must be enabled!'),
-        'severity' => REQUIREMENT_ERROR,
-      );
-    }
-    else if (!module_exists('tripal_chado_views')) {
-      $requirements['brapi'] = array(
-        'title' => 'Breeding API',
-        'value' => $t('ERROR: Tripal Chado Views must be enabled!'),
         'severity' => REQUIREMENT_ERROR,
       );
     }
