@@ -57,6 +57,8 @@ class BrapiAdminForm extends FormBase {
         ];
       }
     }
+    
+    // @todo: Add default page size setting.
 
     $form['submit'] = [
       '#type' => 'submit',

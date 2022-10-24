@@ -93,11 +93,11 @@ class BrapiController extends ControllerBase {
         $page_size = 1;
       }
       else {
-        $page = $request->query->get('page');
+        $page = $request->query->get('page') ?? 0;
         if (!empty($page)) {
           $variables['#page'] = $page;
         }
-        $page_size = $request->query->get('pageSize');
+        $page_size = $request->query->get('pageSize') ?? BRAPI_DEFAULT_PAGE_SIZE;
         if (!empty($page_size)) {
           $variables['#pageSize'] = $page_size;
         }
