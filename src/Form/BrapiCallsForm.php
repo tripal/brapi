@@ -82,7 +82,10 @@ class BrapiCallsForm extends FormBase {
         $brapi_definition = brapi_get_definition($version, $active_def);
         foreach ($brapi_definition['modules'] as $module => $categories) {
           foreach ($categories as $category => $elements) {
-            // @todo: see why we have sometimes empty $elements['calls'].
+            if (is_numeric($category)) {
+              // Skip category details.
+              continue 1;
+            }
             foreach (array_keys($elements['calls'] ?? []) as $call) {
               $call_definition = $brapi_definition['calls'][$call];
               $form[$version][$call] = [
@@ -92,6 +95,18 @@ class BrapiCallsForm extends FormBase {
               foreach ($call_definition['definition'] as $method => $method_def) {
                 $missing_mappings = [];
                 foreach ($call_definition['data_types'] ?? [] as $datatype => $enabled) {
+                  // Skip special datatypes managed internally.
+                  // Always allows the use of calls: v1/calls, v2/serverinfo.
+                  if (
+                    (('v2' == $version)
+                      && (in_array($datatype,['WSMIMEDataTypes', 'ServerInfo']))
+                    )
+                    || (('v1' == $version)
+                      && (in_array($datatype,['WSMIMEDataTypes', 'call']))
+                    )
+                  ) {
+                    continue 1;
+                  }
                   // Check if data type is mapped.
                   $mapping_id = brapi_generate_datatype_id($datatype, $version, $active_def);
                   $mapping = $this->entityStorage->load($mapping_id);
@@ -101,6 +116,9 @@ class BrapiCallsForm extends FormBase {
                 }
                 
                 if (empty($missing_mappings)) {
+                  $description = preg_replace(
+                    "/\\n+/", "<br/>\n", $method_def['description']
+                  );
                   $form[$version][$call][$method] = [
                     '#type' => 'checkbox',
                     '#title' =>
@@ -109,16 +127,22 @@ class BrapiCallsForm extends FormBase {
                       . '">'
                       . strtoupper($method)
                       . '</b>: '
-                      . $method_def['description']
+                      . $description
                     ,
                     '#default_value' => !empty($call_settings[$version][$call][$method]),
+                  ];
+                  $form[$version][$call][$method . '_datatypes'] = [
+                    '#type' => 'markup',
+                    '#markup' =>
+                      $this->t("Used datatypes: %datatypes<br/>\n", ['%datatypes' => implode(', ', array_keys($call_definition['data_types']))])
+                    ,
                   ];
                 }
                 else {
                   $form[$version][$call][$method] = [
                     '#type' => 'markup',
                     '#markup' =>
-                      $this->t('Missing data type mapping for: %datatypes', ['%datatypes' => implode(', ', $missing_mappings)])
+                      $this->t("Method %method: missing data type mapping for: %datatypes<br/>\n", ['%datatypes' => implode(', ', $missing_mappings), '%method' => strtoupper($method), ])
                     ,
                   ];
                 }
@@ -153,6 +177,7 @@ class BrapiCallsForm extends FormBase {
       }
     }
 
+    // Get the list of active calls.
     $calls = [];
     foreach ($active_definitions as $version => $active_def) {
       $call_values = $form_state->getValue($version);
