@@ -161,6 +161,7 @@ function brapi_generate_datatype_id($datatype_name, $version, $active_def) :stri
  *         "description" => "...",
  *         "fields" => [
  *           "<FIELD NAME1>" => [
+ *             "type"     => <DATA TYPE NAME or basic type name followed by '[]' if array>
  *             "required" => TRUE/FALSE,
  *           ],
  *           ...
@@ -334,41 +335,46 @@ function brapi_open_api_to_definition(array $openapis) :array {
       // Process data type fields.
       $fields = [];
       foreach ($datatype_definition['properties'] ?? [] as $field => $field_definition) {
-        $fields[$field] = $field_definition['type'] ?? '';
+        $fields[$field] = ['type' => $field_definition['type'] ?? ''];
         if (!empty($field_definition['$ref'])) {
           // Get type from reference.
           if (preg_match('%^#/components/schemas/(\w+)$%', $field_definition['$ref'], $matches)) {
-            $fields[$field] = $matches[1];
+            $fields[$field] = ['type' => $matches[1]];
           }
           else {
             \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype>properties>$field.");
           }
         }
         // Check for array of values.
-        if (!empty($field_definition['items']['#ref'])) {
-          if ((!empty($fields[$field])) && ('array' != $fields[$field])) {
-            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field] . ").");
+        if (!empty($field_definition['items']['$ref'])) {
+          if ((!empty($fields[$field]['type'])) && ('array' != $fields[$field]['type'])) {
+            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field]['type'] . ").");
           }
-          if (preg_match('%^#/components/schemas/(\w+)$%', $field_definition['items']['#ref'], $matches)) {
-            $fields[$field] = $matches[1] . '[]';
+          if (preg_match('%^#/components/schemas/(\w+)$%', $field_definition['items']['$ref'], $matches)) {
+            $fields[$field] = ['type' => $matches[1] . '[]'];
           }
           else {
             \Drupal::logger('brapi')->warning("Unsuppoted \$ref: components>schemas>$datatype>properties>$field>items.");
           }
         }
         elseif (!empty($field_definition['items']['type'])) {
-          if ((!empty($fields[$field])) && ('array' != $fields[$field])) {
-            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field] . ").");
+          if ((!empty($fields[$field]['type'])) && ('array' != $fields[$field]['type'])) {
+            \Drupal::logger('brapi')->warning("Check components>schemas>$datatype>properties>$field definition (invalid type: " . $fields[$field]['type'] . ").");
           }
-          $fields[$field] = $field_definition['items']['type'] . '[]';
+          $fields[$field] = ['type' => $field_definition['items']['type'] . '[]'];
         }
+        // Check if field is required by datatype.
+        $fields[$field]['required'] = in_array(
+          $field, $datatype_definition['required'] ?? []
+        );
+        
         // Fill field definitions.
         if (empty($definition['fields'][$field])
             || empty($definition['fields'][$field]['type'])
         ) {
           // New or incomplete field.
           $definition['fields'][$field] = [
-            'type' => $fields[$field],
+            'type' => $fields[$field]['type'],
             'description' => $field_definition['description'] ?? '',
             'example' => $field_definition['example'] ?? '',
             'calls' => $definition['fields'][$field]['calls'] ?? [],
@@ -377,16 +383,13 @@ function brapi_open_api_to_definition(array $openapis) :array {
         }
         else {
           // Field redefinition. Check for inconsistency.
-          // Get Field type.
-          $new_type = $field_definition['type'] ?? '';
-          if (!empty($field_definition['items']['type'])) {
-            $new_type = $field_definition['items']['type'] . '[]';
-          }
-          if (($fields[$field] != $new_type)
-              && !empty($fields[$field])
+          $current_type = $definition['fields'][$field]['type'];
+          $new_type = $fields[$field]['type'];
+          if (!empty($current_type)
               && !empty($new_type)
+              && ($current_type != $new_type)
           ) {
-            \Drupal::logger('brapi')->warning("components>schemas>$datatype>properties>$field: inconsistent field redefinition (" . $fields[$field] . ' vs ' . $new_type . ").");
+            \Drupal::logger('brapi')->warning("components>schemas>$datatype>properties>$field: inconsistent field redefinition (" . $current_type . ' vs ' . $new_type . ").");
           }
           // Register new data type dependency.
           $definition['fields'][$field]['data_types'][$datatype] = TRUE;
@@ -403,7 +406,9 @@ function brapi_open_api_to_definition(array $openapis) :array {
         \Drupal::logger('brapi')->warning("components>schemas>$datatype: data type already defined before. Completing definition.");
         $definition['data_types'][$datatype]['type'] ?: $datatype_details['type'];
         $definition['data_types'][$datatype]['description'] ?: $datatype_details['description'];
-        $definition['data_types'][$datatype]['fields'] += $datatype_details['fields'];
+        foreach ($datatype_details['fields'] as $field_name => $field_def) {
+          $definition['data_types'][$datatype]['fields'][$field_name] ??= $field_def;
+        }
       }
       else {
         $definition['data_types'][$datatype] = $datatype_details;
@@ -442,7 +447,8 @@ function brapi_open_api_to_definition(array $openapis) :array {
 
     // Fill 'as_field_in'.
     foreach ($definition['data_types'] as $datatype => $datatype_definition) {
-      foreach ($datatype_definition['fields'] as $field => $type) {
+      foreach ($datatype_definition['fields'] as $field => $def) {
+        $type = $def['type'];
         // We don't care if it is an array, we just need the type name.
         $type = rtrim($type, '[]');
         if (array_key_exists($type, $definition['data_types'])) {
