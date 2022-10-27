@@ -6,6 +6,14 @@ brapi.main:
   requirements:
     _access: 'TRUE'
 
+brapi.documentation:
+  path: '/brapi/doc'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::documentationPage'
+    _title: 'Plant Breeding API Documentation'
+  requirements:
+    _access: 'TRUE'
+
 brapi.admin:
   path: '/brapi/admin'
   defaults:

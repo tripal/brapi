@@ -35,16 +35,14 @@ function brapi_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function brapi_theme($existing, $type, $theme, $path) {
-  return array(
-    'brapi_main' => array(
-      // We use 'variables' when the item to be passed is an array whose
-      // structure must be described here.
-      'variables' => array(
-        'title' => NULL,
-      ),
+  return [
+    'brapi_main' => [
       'template' => 'brapi-main',
-    ),
-  );
+    ],
+    'brapi_documentation' => [
+      'template' => 'brapi-documentation',
+    ],
+  ];
 }
 
 /**

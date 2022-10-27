@@ -96,7 +96,10 @@ class BrapiAdminForm extends FormBase {
     $form['server_info']['documentation_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Documentation URL'),
-      '#default_value' => $config->get('documentation_url'), // ?: $url = Url::fromRoute('brapi.documentation'),
+      '#default_value' =>
+        $config->get('documentation_url')
+        ?: Url::fromRoute('brapi.documentation')
+      ,
     ];
     $form['server_info']['location'] = [
       '#type' => 'textfield',

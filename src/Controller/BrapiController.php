@@ -15,15 +15,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class BrapiController extends ControllerBase {
 
   /**
-   * Initial landing page explaining the use of the module.
-   *
-   * We create a render array and specify the theme to be used through the use
-   * of #theme_wrappers. With all output, we aim to leave the content as a
-   * render array just as long as possible, so that other modules (or the theme)
-   * can alter it.
-   *
-   * @see render_example.module
-   * @see form_example_elements.inc
+   * Main BrAPI page with basic informations.
    */
   public function mainPage() {
     // $links = [];
@@ -47,7 +39,25 @@ class BrapiController extends ControllerBase {
   }
 
   /**
-   * Export test as JSON.
+   * Displays BrAPI documentation.
+   */
+  public function documentationPage() {
+    $content = [
+      '#theme' => 'brapi_documentation',
+      '#title' => t('BrAPI Documentation.'),
+    ];
+
+    return $content;
+  }
+
+  /**
+   * Export BrAPI call results as JSON.
+   *
+   * Useful documentation:
+   *
+   *   - https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
+   *   - https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
+   *   - https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
    */
   public function brapiCall() {
     // Get intended HTTP method.
@@ -259,12 +269,9 @@ class BrapiController extends ControllerBase {
 
       // Get expiration time.
       $maxlifetime = ini_get("session.gc_maxlifetime");
-      
+
       // Get user info.
-      $user =
-        User::load(\Drupal::currentUser()->id())
-        ?? User::load(0)
-      ;
+      $user = User::load(\Drupal::currentUser()->id()) ?? User::load(0);
       $account_name = $user->getAccountName();
       $display_name = $user->getDisplayName();
 
@@ -284,8 +291,6 @@ class BrapiController extends ControllerBase {
     }
 
     // @todo: Manage call cases.
-    // -special calls (like v1/calls or v2/serverinfo, login/logout)
-    
     // -search calls
     // -manage special output formats (eg. /phenotypes-search/csv)
     // -check methods for the call
