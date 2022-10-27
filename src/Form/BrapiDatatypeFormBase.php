@@ -132,7 +132,7 @@ class BrapiDatatypeFormBase extends EntityForm {
         '#disabled' => !$brapi_datatype->isNew(),
       ];
     }
-    
+
     // Display the list of selectable content types.
     $content_options = $this->getEntityTypeIdOptions($form, $form_state);
     $form['contentType'] = [
@@ -291,46 +291,75 @@ class BrapiDatatypeFormBase extends EntityForm {
     $brapi_datatype = $this->entity;
 
     // Get data type mapping entities.
-    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+    $mapping_loader = \Drupal::service('entity_type.manager')
+      ->getStorage('brapidatatype')
+    ;
 
     // Get mapped content field list.
-    $content_type = $form_state->getValue('contentType') ?? $brapi_datatype->contentType;
+    $content_type =
+      $form_state->getValue('contentType')
+      ?? $brapi_datatype->contentType
+    ;
     $string_field_options = [];
     $entityref_field_options = [];
     if (preg_match('/^(.+):(.+)$/', $content_type, $matches)) {
       list(, $entity_type_id, $bundle_id) = $matches;
       if ($entity_type_id && $bundle_id) {
-        $fields = $this->entityFieldManager->getFieldDefinitions($entity_type_id, $bundle_id);
+        $fields = $this->entityFieldManager->getFieldDefinitions(
+          $entity_type_id,
+          $bundle_id
+        );
         foreach ($fields as $field_id => $field) {
-          if ($field->getType() === 'entity_reference') {
-            $entityref_field_options['object'][$field_id] = $field->getLabel() . ' (' . $field->getName() . ' referencing ' . $field->getSetting('target_type') . ')';
-            $entityref_field_options[$field->getSetting('target_type')][$field_id] = $field->getLabel() . ' (' . $field->getName() . ' referencing ' . $field->getSetting('target_type') . ')';
+          if ($field->getType() == 'entity_reference') {
+            $entityref_field_options['object'][$field_id] =
+              $field->getLabel()
+              . ' ('
+              . $field->getName()
+              . ' referencing '
+              . $field->getSetting('target_type')
+              . ')'
+            ;
+            $entityref_field_options[$field->getSetting('target_type')][$field_id] =
+              $field->getLabel()
+              . ' ('
+              . $field->getName()
+              . ' referencing '
+              . $field->getSetting('target_type')
+              . ')'
+            ;
           }
           else {
-            $string_field_options[$field_id] = $field->getLabel() . ' (' . $field->getName() . ')';
+            $string_field_options[$field_id] =
+              $field->getLabel() . ' (' . $field->getName() . ')'
+            ;
           }
         }
       }
     }
-    //@todo: arrange field options by data type to match field data types.
 
     // Build BrAPI data type field list.
     if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $brapi_datatype->id, $matches)
     ) {
       list(, $version, $active_def, $datatype_name) = $matches;
       $brapi_definition = brapi_get_definition($version, $active_def);
-      foreach ($brapi_definition['data_types'][$datatype_name]['fields'] ?? [] as $field_name => $field_def) {
+      $brapi_fields =
+        $brapi_definition['data_types'][$datatype_name]['fields']
+        ?? []
+      ;
+      foreach ($brapi_fields as $field_name => $field_def) {
         $field_type = $field_def['type'];
         $required = $field_def['required'];
         //@todo: check the number of values (ie. array versus single values).
-        //@todo: check if field is required from the specifications.
         $base_datatype = $type = rtrim($field_type, '[]');
         if (in_array($base_datatype, ['string'])) {
           // Generate select box for field mapping.
           // @todo: allow the use of static values.
           $mapping_form[$field_name] = [
             '#type' => 'select',
-            '#title' => $this->t('Map BrAPI field %field_name to field (%field_type)', ['%field_name' => $field_name, '%field_type' => $field_type]),
+            '#title' => $this->t(
+              'Map BrAPI field %field_name to field (%field_type)',
+              ['%field_name' => $field_name, '%field_type' => $field_type]
+            ),
             '#options' => $string_field_options,
             '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
             '#required' => $required,
@@ -347,10 +376,18 @@ class BrapiDatatypeFormBase extends EntityForm {
             // Check if we got a field that can reference that content type.
             if (array_key_exists($mapping->getMappedEntityTypeId(), $entityref_field_options)) {
               // We have one or more field referencing that content type.
-              $options = $entityref_field_options[$mapping->getMappedEntityTypeId()];
+              $options = [
+                $this->t('References') =>
+                  $entityref_field_options[$mapping->getMappedEntityTypeId()],
+                $this->t('Local fields (turned into objects)') =>
+                  $string_field_options,
+              ];
               $mapping_form[$field_name] = [
                 '#type' => 'select',
-                '#title' => $this->t('Map BrAPI field %field_name to field (%field_type)', ['%field_name' => $field_name, '%field_type' => $field_type]),
+                '#title' => $this->t(
+                  'Map BrAPI field %field_name to field (%field_type)',
+                  ['%field_name' => $field_name, '%field_type' => $field_type]
+                ),
                 '#options' => $options,
                 '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
                 '#required' => $required,
@@ -361,14 +398,19 @@ class BrapiDatatypeFormBase extends EntityForm {
               // No field is referencing that content type.
               $mapping_form[$field_name] = [
                 '#type' => 'select',
-                '#title' => $this->t('Map BrAPI field %field_name to field (%field_type)', ['%field_name' => $field_name, '%field_type' => $field_type]),
+                '#title' => $this->t(
+                  'Map BrAPI field %field_name to field (%field_type)',
+                  ['%field_name' => $field_name, '%field_type' => $field_type]
+                ),
                 '#options' => [],
-                '#empty_option' => $this->t('No related reference field available'),
+                '#empty_option' => $this->t(
+                  'No related reference field available'
+                ),
                 '#default_value' => '',
                 '#required' => $required,
                 '#empty_value' => '',
                 '#disabled' => TRUE,
-              ];              
+              ];
             }
           }
           else {
@@ -377,8 +419,16 @@ class BrapiDatatypeFormBase extends EntityForm {
               // If it is "object", it is ok as the data structure is "free".
               $mapping_form[$field_name] = [
                 '#type' => 'select',
-                '#title' => $this->t('Map BrAPI field %field_name to field (%field_type)', ['%field_name' => $field_name, '%field_type' => $field_type]),
-                '#options' => $entityref_field_options['object'],
+                '#title' => $this->t(
+                  'Map BrAPI field %field_name to field (%field_type)',
+                  ['%field_name' => $field_name, '%field_type' => $field_type]
+                ),
+                '#options' => [
+                  $this->t('References') =>
+                    $entityref_field_options['object'],
+                  $this->t('Local fields (turned into objects)') =>
+                    $string_field_options,
+                ],
                 '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
                 '#required' => $required,
                 '#empty_value' => '',
@@ -388,14 +438,20 @@ class BrapiDatatypeFormBase extends EntityForm {
               // Otherwise, no field can be used.
               $mapping_form[$field_name] = [
                 '#type' => 'select',
-                '#title' => $this->t('Map BrAPI field %field_name to field (%field_type)', ['%field_name' => $field_name, '%field_type' => $field_type]),
+                '#title' => $this->t(
+                  'Map BrAPI field %field_name to field (%field_type)',
+                  ['%field_name' => $field_name, '%field_type' => $field_type]
+                ),
                 '#options' => [],
-                '#empty_option' => $this->t('BrAPI data type "%base_datatype" currently not mapped', ['%base_datatype' => $base_datatype]),
+                '#empty_option' => $this->t(
+                  'BrAPI data type "%base_datatype" currently not mapped',
+                  ['%base_datatype' => $base_datatype]
+                ),
                 '#default_value' => '',
                 '#required' => $required,
                 '#empty_value' => '',
                 '#disabled' => TRUE,
-              ];              
+              ];
             }
           }
         }

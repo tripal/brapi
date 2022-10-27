@@ -151,6 +151,7 @@ class BrapiCallsForm extends FormBase {
           }
         }
       }
+      ksort($form[$version]);
     }
 
     $form['submit'] = [
