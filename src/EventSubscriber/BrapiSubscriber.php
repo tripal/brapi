@@ -8,18 +8,7 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Subscribe to IncidentEvents::NEW_REPORT events and react to new reports.
  *
- * In this example we subscribe to all IncidentEvents::NEW_REPORT events and
- * point to two different methods to execute when the event is triggered. In
- * each method we have some custom logic that determines if we want to react to
- * the event by examining the event object, and the displaying a message to the
- * user indicating whether or not that method reacted to the event.
- *
- * By convention, classes subscribing to an event live in the
- * Drupal/{module_name}/EventSubscriber namespace.
- *
- * @ingroup events_example
  */
 class BrapiSubscriber implements EventSubscriberInterface {
 
@@ -39,25 +28,25 @@ class BrapiSubscriber implements EventSubscriberInterface {
    * BrAPI-compliant clients are not supposed to support cookies but rather
    * support "bearer" token instead. Drupal does not work with bearer token and
    * uses session cookies.
-   * This hook implementation is used to convert the "bearer" token provided by
-   * BrAPI-compliant clients into a Drupal session cookie.
-   * The initial bearer token is provided by this BrAPI implementation when the
-   * client uses the login service (POST /brapi/v1/token). The bearer token is
-   * generated using Drupal login system that creates a session object. The
-   * session cookie is serialized in a string ("name=id") and provided as token
-   * to the client application that will use it for the next calls that
-   * requires authentication.
+   * This hook implementation uses the "bearer" token provided by
+   * BrAPI-compliant clients to login clients.
    *
-   * BrAPI-compliant clients provide this kind of bearer token in the HTTP header:
-   * Authorization: Bearer SESS13cd44e3aa3714d0cc373e81c4e33f5b=JoAO7C2aGrSkteEtoy
+   * To generate a token:
    *
-   * The bearer value is break into 2 pieces that correspond to the session name
-   * and the session ID.
-   * 
+   *   // $token_id is the user token.
+   *   $token_id = bin2hex(random_bytes(16));
+   *   $cid = 'brapi:' . $token_id;
+   *   // 'mgis' should be a valid user name.
+   *   $data = ['username' => 'mgis'];
+   *   // The token will expire in 1 day (=86400sec).
+   *   // Other possibility for permanent token: Cache::PERMANENT.
+   *   $expiration = time() + 86400;
+   *   \Drupal::cache('brapi_token')->set($cid, $data, $expiration);
+   *
    * @see Symfony\Component\HttpKernel\KernelEvents for details
    *
    * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
-   *   The Event to process.
+   *   The response event to process.
    */
   public function BrapiLoad(GetResponseEvent $event) {
     $request = \Drupal::request();
@@ -69,50 +58,28 @@ class BrapiSubscriber implements EventSubscriberInterface {
     }
     $version = $matches[1];
     $call = $matches[2];
-    
+
     // Tries to get a bearer (ie. the authorization token).
     $bearer = $this->getBearer();
 
     // Only allow authentication through HTTPS chanel.
     // Get session id from bearer token (HTTP header provided by the client).
     if ($request->isSecure() && !empty($bearer)) {
-      $session = $request->getSession();
-      // Parses bearer to extract session name and ID.
-      $got_authentication = preg_match(
-        "/^([^\s=]+)=(\S+)$/i",
-        $bearer,
-        $matches
-      );
-      if ($got_authentication) {
-        // $session_bag = $session->getBag();
-        // Update client cookies.
-        $request->cookies->set('cookie-agreed-version', '1.0.0');
-        $request->cookies->set('cookie-agreed', '1');
-        $request->cookies->set($matches[1], $matches[2]);
-        // Set HTTP header cookies for others from the bearer token.
-        // $http_cookie = $request->headers->get('COOKIE');
-        // if ($http_cookie) {
-        //   $cookie_already_set =
-        //       (FALSE !== strpos($http_cookie, $matches[1]));
-        // }
-        // 
-        // if (empty($cookie_already_set)) {
-          $request->headers->set(
-            'COOKIE',
-            "cookie-agreed-version=1.0.0; cookie-agreed=1; " . $matches[1] . "=" . $matches[2]
-            //$http_cookie . "; " . $matches[1] . "=" . $matches[2]
-          );
-        //}
+      $name = '';
+      // Try to get the token.
+      $cid = 'brapi:' . $bearer;
+      if ($cache = \Drupal::cache('brapi_token')->get($cid)) {
+        $name = $cache->data['username'];
+      }
 
-        // Update PHP session info.
-        // $session->setName($matches[1]);
-        $session->setId($matches[2]);
-        // Restart session system with new infos.
-        $session->migrate();
-        // // Restore previous session data.
-        // if (!empty($session_bag)) {
-        //   $session->registerBag($session_bag)
-        // }
+      // Make sure we got a user to login.
+      if (!empty($name)) {
+        // Get user account.
+        $account = user_load_by_name($name);
+        // Try to login user.
+        if ($account) {
+          user_login_finalize($account);
+        }
       }
     }
     elseif (!empty($bearer)) {
@@ -124,6 +91,8 @@ class BrapiSubscriber implements EventSubscriberInterface {
   /** 
    * Get HTTP Bearer.
    *
+   * @return string
+   *   Returns the bearer content (without a "Bearer " prefix).
    */
   function getBearer() {
     $request = \Drupal::request();
@@ -134,7 +103,7 @@ class BrapiSubscriber implements EventSubscriberInterface {
       ?? $request->server->get('AUTHORIZATION')
       ?? ''
     );
-    // If not found, tries the "apache" way.
+    // If still not found, tries the "apache" way.
     if (empty($headers) && function_exists('apache_request_headers')) {
       $request_headers = apache_request_headers();
       // Server-side fix for bug in old Android versions (a nice side-effect of
@@ -148,13 +117,13 @@ class BrapiSubscriber implements EventSubscriberInterface {
       }
     }
     // Tries to parse the bearer.
-    $got_authentication = preg_match(
-      "/\s*Bearer\s+([^\s=]+=\S+)/i",
+    $got_bearer = preg_match(
+      "/(?:^|\s)Bearer\s+([^\s;]+)/i",
       $headers,
       $matches
     );
-    if ($got_authentication) {
-      // Got the bearer with the expected format.
+    if ($got_bearer) {
+      // Got the bearer.
       $bearer = $matches[1];
     }
     else {

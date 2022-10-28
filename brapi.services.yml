@@ -3,3 +3,21 @@ services:
     class: Drupal\brapi\EventSubscriber\BrapiSubscriber
     tags:
       - { name: 'event_subscriber' }
+  cache.brapi_token:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.brapi }
+    factory:
+      - '@cache_factory'
+      - get
+    arguments:
+      - brapi_token
+  cache.brapi_search:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.brapi }
+    factory:
+      - '@cache_factory'
+      - get
+    arguments:
+      - brapi_search

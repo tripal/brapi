@@ -209,6 +209,14 @@ class BrapiController extends ControllerBase {
       $total_count = 1;
       $total_pages = 1;
 
+      // Default.
+      $result = [
+        'access_token'    => '',
+        'expires_in'      => -1,
+        'userDisplayName' => \Drupal::currentUser()->getDisplayName(),
+        'client_id'       => \Drupal::currentUser()->getAccountName(),
+      ];
+
       // Check for log in request.
       if ('post' == $method) {
         // Get user log in data.
@@ -261,28 +269,25 @@ class BrapiController extends ControllerBase {
         }
         if (!empty($uid)) {
           user_login_finalize($account);
+          // Generate a new token.
+          $token_id = bin2hex(random_bytes(16));
+          $cid = 'brapi:' . $token_id;
+          $data = ['username' => $name];
+          $maxlifetime = 86400;
+          $expiration = time() + $maxlifetime;
+          \Drupal::cache('brapi_token')->set($cid, $data, $expiration);
+          $result = [
+            'access_token'    => $token_id,
+            'expires_in'      => $maxlifetime,
+            'userDisplayName' => $account->getDisplayName(),
+            'client_id'       => $account->getAccountName(),
+          ];
         }
         elseif (\Drupal::currentUser()->id()) {
           // Logout as the login try failed.
-          // user_logout();
+          user_logout();
         }
       }
-
-      // Get expiration time.
-      $maxlifetime = ini_get("session.gc_maxlifetime");
-
-      // Get user info.
-      $user = User::load(\Drupal::currentUser()->id()) ?? User::load(0);
-      $account_name = $user->getAccountName();
-      $display_name = $user->getDisplayName();
-      $session = $request->getSession();
-
-      $result = [
-        'access_token'    => $session->getName() . '=' . $session->getId(),
-        'expires_in'      => $maxlifetime,
-        'userDisplayName' => $display_name,
-        'client_id'       => $account_name,
-      ];
     }
     elseif (('v1' == $version) && ('/logout' == $call)) {
       user_logout();
