@@ -276,7 +276,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
     'data_types' => [],
     'fields'     => [],
   ];
-  
+
   $ref_resolutions = [];
 
   foreach ($openapis as $openapi_index => $openapi) {
@@ -291,7 +291,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         ?? []
       ;
     }
-    
+
     // Process data types.
     foreach ($openapi['components']['schemas'] ?? [] as $datatype => $datatype_definition) {
       $ref =
@@ -367,7 +367,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         $fields[$field]['required'] = in_array(
           $field, $datatype_definition['required'] ?? []
         );
-        
+
         // Fill field definitions.
         if (empty($definition['fields'][$field])
             || empty($definition['fields'][$field]['type'])
@@ -414,7 +414,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         $definition['data_types'][$datatype] = $datatype_details;
       }
     }
-    
+
     // Process responses.
     foreach ($openapi['components']['responses'] ?? [] as $response => $response_definition) {
       $ref = $response_definition['content']['application/json']['schema']['$ref'] ?? '';
@@ -425,7 +425,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         \Drupal::logger('brapi')->warning("Unsupported response components>respones>$response.");
       }
     }
-    
+
     // Process $ref_resolutions to update resolutions to final objects.
     foreach ($ref_resolutions as $ref => $resolution) {
       $circular_check = [];
@@ -530,7 +530,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         }
         else {
           // No reference, maybe a simple type defined.
-          $type = 
+          $type =
             $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['items']['type']
             ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['data']['type']
             ?? $method_definition['responses']['200']['content']['application/json']['schema']['properties']['result']['properties']['status']['type']
@@ -554,7 +554,7 @@ function brapi_open_api_to_definition(array $openapis) :array {
         \Drupal::logger('brapi')->warning("Redefinition of call $call in " . $module . '(array ' . $openapi_index . ').');
       }
       $definition['calls'][$call] = $call_details;
-      
+
       // Add call to data types and data types to categories.
       foreach (array_keys($call_details['data_types']) as $datatype) {
         if (empty($definition['data_types'][$datatype])) {

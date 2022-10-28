@@ -212,7 +212,7 @@ class BrapiController extends ControllerBase {
       // Check for log in request.
       if ('post' == $method) {
         // Get user log in data.
-        $password = trim($json_input['password']) ?? '';
+        $password = trim($json_input['password'] ?? '');
         $name = trim($json_input['username'] ?? $json_input['client_id'] ?? '');
 
         if (!empty($name) && strlen($password) > 0) {
@@ -259,11 +259,12 @@ class BrapiController extends ControllerBase {
           // We are not limited by flood control, so try to authenticate.
           $uid = \Drupal::service('user.auth')->authenticate($name, $password);
         }
-        if ($uid && $account) {
+        if (!empty($uid)) {
           user_login_finalize($account);
         }
-        else {
-          user_logout();
+        elseif (\Drupal::currentUser()->id()) {
+          // Logout as the login try failed.
+          // user_logout();
         }
       }
 
@@ -274,9 +275,10 @@ class BrapiController extends ControllerBase {
       $user = User::load(\Drupal::currentUser()->id()) ?? User::load(0);
       $account_name = $user->getAccountName();
       $display_name = $user->getDisplayName();
+      $session = $request->getSession();
 
       $result = [
-        'access_token'    => session_name() . '=' . session_id(),
+        'access_token'    => $session->getName() . '=' . $session->getId(),
         'expires_in'      => $maxlifetime,
         'userDisplayName' => $display_name,
         'client_id'       => $account_name,

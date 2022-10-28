@@ -1,0 +1,5 @@
+services:
+  brapi.brapi_subscriber:
+    class: Drupal\brapi\EventSubscriber\BrapiSubscriber
+    tags:
+      - { name: 'event_subscriber' }

@@ -4,7 +4,7 @@ namespace Drupal\brapi\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use \Drupal\Core\Url;
+use Drupal\Core\Url;
 
 /**
  * A simple form that displays a select box and submit button.
@@ -98,7 +98,7 @@ class BrapiAdminForm extends FormBase {
       '#title' => $this->t('Documentation URL'),
       '#default_value' =>
         $config->get('documentation_url')
-        ?: Url::fromRoute('brapi.documentation')
+        ?: Url::fromRoute('brapi.documentation', [], ['absolute' => TRUE])->toString()
       ,
     ];
     $form['server_info']['location'] = [

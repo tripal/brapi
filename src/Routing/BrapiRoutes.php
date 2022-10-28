@@ -24,8 +24,10 @@ class BrapiRoutes {
     foreach ($version_settings as $version => $calls) {
       foreach ($calls as $call => $call_settings) {
         $permission = ['_permission'  => BRAPI_USE_PERMISSION,];
-        // Special case of v1 login.
-        if (('v1' == $version) && ('/login' == $call)) {
+        // Special case of v1 login and logout.
+        if (('v1' == $version)
+            && (('/login' == $call) || ('/logout' == $call))
+        ) {
           $permission = ['_access' => 'TRUE',];
         }
         $route = new Route(
