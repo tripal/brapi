@@ -6,6 +6,7 @@
 
 namespace Drupal\brapi\Controller;
 
+use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
@@ -94,10 +95,10 @@ class BrapiController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
-    //@todo: first manages calls: /v*/search, /v2/lists,
-    // Check if call works with one data type.
-    if (1 == count($brapi_def['calls'][$call]['data_types'])) {
-      $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
+    //@todo: first manages calls: /v2/lists
+    // Manage call cases.
+    if (0 === strpos($call, '/search/')) {
+      $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
     }
     elseif (('v2' == $version) && ('/serverinfo' == $call)) {
       $json_array = $this->processV2ServerInfoCall($request, $config);
@@ -111,33 +112,21 @@ class BrapiController extends ControllerBase {
     elseif (('v1' == $version) && ('/logout' == $call)) {
       $json_array = $this->processV1LogoutCall($request, $config);
     }
+    elseif (1 == count($brapi_def['calls'][$call]['data_types'])) {
+      // Call works with one data type: a regular BrAPI object call.
+      $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
+    }
     else {
       $this->logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
     }
 
-    // @todo: Manage call cases.
-    // -search calls
-    //  Use Drupal cache to save search results \Drupal::cache('brapi_search')
-    //  On search calls, generate a token based on the call name and a
-    //  normalized structure of the search arguments (same order, etc.) in order
-    //  to use a same cache token for as same query issued multiple times with
-    //  the same arguments but in any order. Use MD5?
-    //  An empty cache element must be created with the token_id.
-    //  The search process must be launch in background with the token_id and
-    //  the search arguments.
-    //  When done, the search process should fill the cache using the token_id.
-    //  On the "get results" part, the cache is fetched. If no cache found, it
-    //  means the results are lost, if cache found but empty, it means still
-    //  computing and if found with results, it's done.
+    // @todo: Manage other special call cases.
+    // -manage /v2/list calls
     // -manage special output formats (eg. /phenotypes-search/csv)
 
     // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
     // https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
     // https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
-    // POST values:
-    // $value = $request->request->get('param');
-    // GET values:
-    // $value = $request->query->get('param');
 
     // Check if the whole response is not specific and has not been set already.
     if (!isset($json_array)) {
@@ -178,7 +167,7 @@ class BrapiController extends ControllerBase {
    */
   function generateMetadata(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config,
+    ImmutableConfig $config,
     array $parameters = []
   ) {
     $status      = $parameters['status'] ?? [];
@@ -239,7 +228,7 @@ class BrapiController extends ControllerBase {
    */
   function processV2ServerInfoCall(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config
+    ImmutableConfig $config
   ) {
     // Get verssions supporting each call through BrAPI definitions.
     // $brapi_def = brapi_get_definition($version, $active_def);
@@ -286,7 +275,7 @@ class BrapiController extends ControllerBase {
    */
   function processV1CallsCall(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config
+    ImmutableConfig $config
   ) {
     // Get verssions supporting each call through BrAPI definitions.
     // $brapi_def = brapi_get_definition($version, $active_def);
@@ -324,7 +313,7 @@ class BrapiController extends ControllerBase {
    */
   function processV1LoginCall(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config
+    ImmutableConfig $config
   ) {
     // Enforce HTTPS use.
     if (!$request->isSecure()) {
@@ -401,7 +390,7 @@ class BrapiController extends ControllerBase {
         $data = ['username' => $name];
         $maxlifetime = 86400;
         $expiration = time() + $maxlifetime;
-        \Drupal::cache('brapi_token')->set($cid, $data, $expiration);
+        \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid]);
         $result = [
           'access_token'    => $token_id,
           'expires_in'      => $maxlifetime,
@@ -432,16 +421,97 @@ class BrapiController extends ControllerBase {
    */
   function processV1LogoutCall(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config
+    ImmutableConfig $config
   ) {
     user_logout();
     return [];
   }
 
   /**
+   * Manage search calls.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
+   * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   BrAPI config.
+   * @return array
+   *   The response data structure.
+   */
+  function processSearchCalls(
+    Request $request,
+    ImmutableConfig $config,
+    $version,
+    $call,
+    $method
+  ) {
+    $page_size   = 1;
+    $page        = 0;
+    $total_count = 1;
+
+    // @todo
+    // Check if the search call should use differed result.
+    // If so {
+    //   // Check if a search result identifier has been provided.
+    //   // If so, check if the result is available.
+    //   // If not provided or not available, generate a search process
+    //
+    //   // Get a normalized search parameter array.
+    //   $json_input = $this->getPostData($request);
+    //   function filter_array_recursive(&$array) {
+    //     foreach ($array as $key => $item) {
+    //       if (is_array($item)) {
+    //         $array[$key] = filter_array_recursive($item);
+    //         if (0 == count($array[$key])) {
+    //           unset($array[$key]);
+    //         }
+    //       }
+    //       elseif (!isset($array[$key]) || ('' === $array[$key])) {
+    //         unset($array[$key]);
+    //       }
+    //     }
+    //     ksort($array);
+    //     return $array;
+    //   }
+    //   $json_input = filter_array_recursive($json_input);
+    //
+    //   // Generate a normalized cache identifier (unique for a given search call
+    //   // with a given set of parameter values).
+    //   $search_id = md5($call . serialize($json_input));
+    //   $cid = 'brapi:' . $search_id;
+    //   if (!\Drupal::cache('brapi_search')->get($cid)) {
+    //     //@todo: provide a setting for search result lifetime. Default to 1 day.
+    //     $expiration = time() + 86400;
+    //     \Drupal::cache('brapi_search')->set($cid, [], $expiration);
+    //   }
+    //   // Return 202 HTTP code.
+    //   $result = ['searchResultsDbId' => $search_id, ];
+    //   // @todo: launch the search in background.
+    //   $status = [
+    //     "message"     => "Request accepted, response successful",
+    //     "messageType" => "INFO",
+    //   ];
+    //
+    //   $parameters = [
+    //     'page_size'   =>  $page_size,
+    //     'page'        =>  $page,
+    //     'total_count' =>  $total_count,
+    //     'status'      => $status,
+    //   ];
+    //
+    //   $metadata = $this->generateMetadata($request, $config, $parameters);
+    //   return $metadata + $result;
+    // }
+    // else {
+       // ... direct execution, code below ...
+    return $this->processObjectCalls($request, $config, $version, $call, $method);
+    // }
+    // @todo: recheck results and the filter application? refilter manually?
+  }
+
+  /**
    * Data object request call.
    *
-   * Manages single object and object list callls.
+   * Manages single object and object list calls.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The HTTP request object.
@@ -452,7 +522,7 @@ class BrapiController extends ControllerBase {
    */
   function processObjectCalls(
     Request $request,
-    \Drupal\Core\Config\ImmutableConfig $config,
+    ImmutableConfig $config,
     $version,
     $call,
     $method
@@ -468,7 +538,8 @@ class BrapiController extends ControllerBase {
     // Get URL parameter from route placeholder (object identifier).
     $filters = $request->attributes->get('_raw_variables')->all();
     $single_record = FALSE;
-    // @todo: also check for sub-calls (ex. /seedlots/{seedLotDbId}/transactions).
+    // @todo: also check for sub-calls that may have an identifier in the filter
+    // but return multiple results (ex. /seedlots/{seedLotDbId}/transactions).
     if (!empty($filters)) {
       // An identifier has been provided, will return 1 record at most.
       $single_record = TRUE;
@@ -488,7 +559,7 @@ class BrapiController extends ControllerBase {
       }
     }
 
-    // Get associated content.
+    // Get associated data type.
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype_id = brapi_generate_datatype_id(array_keys($brapi_def['calls'][$call]['data_types'])[0], $version, $active_def);
     $datatype_mapping = $mapping_loader->load($datatype_id);
@@ -497,18 +568,38 @@ class BrapiController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
     // Process query filters.
-    foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] as $filter_param) {
-      $param_name = $filter_param['name'];
-      // Only take into account parameters in URL query string and skip
-      // output control parameters.
-      if (('query' != $filter_param['in'])
-          || (in_array($param_name, ['page', 'pageSize', 'Authorization']))
-      ) {
-        continue 1;
+    // Manage old /v1/*-search calls and /v*/search/* calls.
+    if (str_contains($call, 'search')) {
+      $json_input = $this->getPostData($request);
+      $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+      $fields = array_keys($brapi_def['data_types'][$datatype]['fields']);
+      foreach ($fields as $field_name) {
+        // Try from GET parameters.
+        $param_value = $request->query->get($field_name);
+        if ((NULL != $param_value) && ('' != $param_value)) {
+          $filters[$field_name] = $param_value;
+        }
+        // Try from POST parameters.
+        $param_value = $json_input[$field_name] ?? NULL;
+        if ((NULL != $param_value) && ('' != $param_value)) {
+          $filters[$field_name] = $param_value;
+        }
       }
-      $param_value = $request->query->get($param_name);
-      if ((NULL != $param_value) && ($param_value != '')) {
-        $filters[$param_name] = $param_value;
+    }
+    else {
+      foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] as $filter_param) {
+        $param_name = $filter_param['name'];
+        // Only take into account parameters in URL query string and skip
+        // output control parameters.
+        if (('query' != $filter_param['in'])
+            || (in_array($param_name, ['page', 'pageSize', 'Authorization']))
+        ) {
+          continue 1;
+        }
+        $param_value = $request->query->get($param_name);
+        if ((NULL != $param_value) && ('' != $param_value)) {
+          $filters[$param_name] = $param_value;
+        }
       }
     }
 
