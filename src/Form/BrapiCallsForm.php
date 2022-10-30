@@ -57,6 +57,20 @@ class BrapiCallsForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    // V1 internal types.
+    $v1_internal_types = [
+      'WSMIMEDataTypes',
+      'call',
+      'successfulSearchResponse_result',
+    ];
+    // V2 internal types.
+    $v2_internal_types = [
+      'WSMIMEDataTypes',
+      'ServerInfo',
+      'ListTypes',
+      'ListSummary',
+    ];
+    
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
 
@@ -96,13 +110,14 @@ class BrapiCallsForm extends FormBase {
                 $missing_mappings = [];
                 foreach ($call_definition['data_types'] ?? [] as $datatype => $enabled) {
                   // Skip special datatypes managed internally.
-                  // Always allows the use of calls: v1/calls, v2/serverinfo.
+                  // Always allows the use of calls: v1/calls, v2/serverinfo,
+                  // v1 search calls, v2/lists.
                   if (
                     (('v2' == $version)
-                      && (in_array($datatype,['WSMIMEDataTypes', 'ServerInfo']))
+                      && (in_array($datatype, $v2_internal_types))
                     )
                     || (('v1' == $version)
-                      && (in_array($datatype,['WSMIMEDataTypes', 'call']))
+                      && (in_array($datatype, $v1_internal_types))
                     )
                   ) {
                     continue 1;

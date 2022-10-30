@@ -64,6 +64,27 @@ class BrapiAdminForm extends FormBase {
       '#type' => 'number',
       '#title' => $this->t('Default number of result in pages'),
       '#default_value' => $config->get('page_size') ?: BRAPI_DEFAULT_PAGE_SIZE,
+      '#min' => 1,
+      '#required' => TRUE,
+    ];
+
+    // Token.
+    $form['token_default_lifetime'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default token lifetime'),
+      '#description' => $this->t('Maximum lifetime in seconds.'),
+      '#default_value' => $config->get('token_default_lifetime') ?? BRAPI_DEFAULT_TOKEN_LIFETIME,
+      '#min' => 1,
+      '#required' => TRUE,
+    ];
+
+    // Search.
+    $form['search_default_lifetime'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default search lifetime'),
+      '#description' => $this->t('Minimum lifetime in seconds.'),
+      '#default_value' => $config->get('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME,
+      '#min' => 1,
       '#required' => TRUE,
     ];
 
@@ -154,6 +175,8 @@ class BrapiAdminForm extends FormBase {
       ->set('location', $form_state->getValue('location') ?? '')
       ->set('organization_name', $form_state->getValue('organization_name') ?? '')
       ->set('organization_url', $form_state->getValue('organization_url') ?? '')
+      ->set('token_default_lifetime', $form_state->getValue('token_default_lifetime') ?? BRAPI_DEFAULT_TOKEN_LIFETIME)
+      ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
     ;
     $config->save();
   }

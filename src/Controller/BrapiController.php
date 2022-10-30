@@ -95,11 +95,14 @@ class BrapiController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
-    //@todo: first manages calls: /v2/lists
     // Manage call cases.
     if (0 === strpos($call, '/search/')) {
       $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
     }
+    // elseif (0 === strpos($call, '/lists/')) {
+    //   //@todo: implement...
+    //   // $json_array = $this->processListCalls($request, $config, $version, $call, $method);
+    // }
     elseif (('v2' == $version) && ('/serverinfo' == $call)) {
       $json_array = $this->processV2ServerInfoCall($request, $config);
     }
@@ -121,7 +124,6 @@ class BrapiController extends ControllerBase {
     }
 
     // @todo: Manage other special call cases.
-    // -manage /v2/list calls
     // -manage special output formats (eg. /phenotypes-search/csv)
 
     // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
@@ -131,7 +133,14 @@ class BrapiController extends ControllerBase {
     // Check if the whole response is not specific and has not been set already.
     if (!isset($json_array)) {
       // @todo: Add error and debug info.
-      $json_array = $this->generateMetadata($request, $config);
+      $parameters = [
+        "status" => [
+          "message"     => "Not implemented",
+          "messageType" => "ERROR",
+        ],
+      ];
+      $metadata = $this->generateMetadata($request, $config, $parameters);
+      $json_array = $metadata;
     }
     return new JsonResponse($json_array);
   }
@@ -170,7 +179,10 @@ class BrapiController extends ControllerBase {
     ImmutableConfig $config,
     array $parameters = []
   ) {
-    $status      = $parameters['status'] ?? [];
+    $status = $parameters['status'] ?? [
+      'message'     => 'Request accepted, response successful',
+      'messageType' => 'INFO',
+    ];
     $datafiles   = $parameters['datafiles'] ?? [];
     $page_size   = $parameters['page_size'] ?? BRAPI_DEFAULT_PAGE_SIZE;
     $page        = $parameters['page'] ?? 0;
@@ -388,7 +400,11 @@ class BrapiController extends ControllerBase {
         $token_id = bin2hex(random_bytes(16));
         $cid = 'brapi:' . $token_id;
         $data = ['username' => $name];
-        $maxlifetime = 86400;
+        $config = \Drupal::config('brapi.settings');
+        $maxlifetime =
+          $config->get('token_default_lifetime')
+          ?? BRAPI_DEFAULT_TOKEN_LIFETIME
+        ;
         $expiration = time() + $maxlifetime;
         \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid]);
         $result = [
@@ -568,6 +584,10 @@ class BrapiController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
     // Process query filters.
+    // @todo: manage PUT calls and record data.
+    if ('put' == $method) {
+      
+    }
     // Manage old /v1/*-search calls and /v*/search/* calls.
     if (str_contains($call, 'search')) {
       $json_input = $this->getPostData($request);

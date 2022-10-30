@@ -300,7 +300,9 @@ class BrapiDatatypeFormBase extends EntityForm {
       $form_state->getValue('contentType')
       ?? $brapi_datatype->contentType
     ;
-    $string_field_options = [];
+    $string_field_options = [
+      '_static' => $this->t('Static value'),
+    ];
     $entityref_field_options = [];
     if (preg_match('/^(.+):(.+)$/', $content_type, $matches)) {
       list(, $entity_type_id, $bundle_id) = $matches;
@@ -357,14 +359,27 @@ class BrapiDatatypeFormBase extends EntityForm {
           $mapping_form[$field_name] = [
             '#type' => 'select',
             '#title' => $this->t(
-              'Map BrAPI field %field_name to field (%field_type)',
+              'Map BrAPI field %field_name (%field_type) to field',
               ['%field_name' => $field_name, '%field_type' => $field_type]
             ),
             '#options' => $string_field_options,
             '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
             '#required' => $required,
             '#empty_value' => '',
+            '#attributes' => [
+              'name' => $field_name,
+            ],
           ];
+          $mapping_form['_static_' . $field_name] = [
+            '#type' => 'textfield',
+            '#size' => '60',
+            '#placeholder' => $this->t('Enter a static value'),
+            '#states' => [
+              'visible' => [
+                ':input[name="' . $field_name . '"]' => ['value' => '_static'],
+              ],
+            ],
+          ];          
         }
         else {
           // Generate select box for entity reference mapping if available...

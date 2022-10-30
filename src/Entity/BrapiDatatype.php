@@ -90,7 +90,7 @@ class BrapiDatatype extends ConfigEntityBase {
     $query = $storage->getQuery();
     $count_query = $storage->getQuery()->count();
     // We manage access permission on BrAPI entities.
-    // @todo: document with restricted content would be accessible if mapped to BrAPI entities.
+    // @todo: documents with restricted content would be accessible if mapped to BrAPI entities.
     $query->accessCheck(FALSE);
     $count_query->accessCheck(FALSE);
     foreach ($filters as $name => $value) {
@@ -164,7 +164,14 @@ class BrapiDatatype extends ConfigEntityBase {
             }
           }
           catch (InvalidArgumentException $e) {
-            // @todo: warn for invalid mapping.
+            // Warn for invalid mapping.
+            \Drupal::logger('brapi')->warning(
+              'Invalid datatype field mapping for BrAPI object field "%brapi_field" to Drupal entity field "%drupal_field".',
+              [
+                '%brapi_field'  => $drupal_field,
+                '%drupal_field' => $drupal_field,
+              ]
+            );
           }
         }
         else {
