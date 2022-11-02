@@ -10,6 +10,7 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -94,15 +95,22 @@ class BrapiDatatypeFormBase extends EntityForm {
     if (!empty($mapping_id)) {
       $mapping_name = $mapping_id;
       if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $mapping_id, $matches)) {
-        list(, $version, $active_def, $datatype_name) = $matches;
+        list(, $version, $active_def, $datatype_name, $subfields) = $matches;
         // $brapi_definition = brapi_get_definition($version, $active_def);
         $mapping_name = $datatype_name . ' for BrAPI v' . $active_def;
       }
-
-      $form['title'] = [
-        '#type' => 'markup',
-        '#markup' => $this->t('Data Mapping for BrAPI Data Type %datatype_name', ['%datatype_name' => $datatype_name]),
-      ];
+      if (!empty($subfields)) {
+        $form['title'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('Data Mapping for BrAPI Data Type %datatype_name subfields %subfields', ['%datatype_name' => $datatype_name, '%subfields' => implode(', ', explode('-', $subfields))]),
+        ];
+      }
+      else {
+        $form['title'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('Data Mapping for BrAPI Data Type %datatype_name', ['%datatype_name' => $datatype_name]),
+        ];
+      }
       $form['label'] = [
         '#type' => 'hidden',
         '#value' => $mapping_name,
@@ -120,17 +128,19 @@ class BrapiDatatypeFormBase extends EntityForm {
         '#default_value' => $brapi_datatype->label(),
         '#required' => TRUE,
       ];
-      $form['id'] = [
-        '#type' => 'machine_name',
-        '#title' => $this->t('Machine name'),
-        '#default_value' => $brapi_datatype->id(),
-        '#machine_name' => [
-          'exists' => [$this, 'exists'],
-          'replace_pattern' => '([^a-z0-9_\-\.]+)',
-          'error' => 'The machine-readable name must be unique, and can only contain lowercase letters, numbers, underscores, dashes and dots.',
-        ],
-        '#disabled' => !$brapi_datatype->isNew(),
-      ];
+      if ($brapi_datatype->isNew()) {
+        $form['id'] = [
+          '#type' => 'machine_name',
+          '#title' => $this->t('Machine name'),
+          '#default_value' => $brapi_datatype->id(),
+          '#machine_name' => [
+            'exists' => [$this, 'exists'],
+            'replace_pattern' => '([^a-z0-9_\-\.]+)',
+            'error' => 'The machine-readable name must be unique, and can only contain lowercase letters, numbers, underscores, dashes and dots.',
+          ],
+          '#description' => $this->t('The machine-readable name must be unique, and can only contain lowercase letters, numbers, underscores, dashes and dots.'),
+        ];
+      }
     }
 
     // Display the list of selectable content types.
@@ -189,7 +199,7 @@ class BrapiDatatypeFormBase extends EntityForm {
       ->condition('id', $element['#field_prefix'] . $entity_id)
       ->execute()
     ;
-    return (bool) $result;
+    return (bool) count($result);
   }
 
   /**
@@ -287,6 +297,7 @@ class BrapiDatatypeFormBase extends EntityForm {
    *   A form array.
    */
   public function getFieldMappingForm(array $form, FormStateInterface $form_state) {
+    $base_types = ['string', 'integer', 'boolean', 'number', ];
     $mapping_form = [];
     $brapi_datatype = $this->entity;
 
@@ -300,10 +311,9 @@ class BrapiDatatypeFormBase extends EntityForm {
       $form_state->getValue('contentType')
       ?? $brapi_datatype->contentType
     ;
-    $string_field_options = [
-      '_static' => $this->t('Static value'),
-    ];
+    $string_field_options = [];
     $entityref_field_options = [];
+    $static_field_option = ['_static' => '[Static value]',];
     if (preg_match('/^(.+):(.+)$/', $content_type, $matches)) {
       list(, $entity_type_id, $bundle_id) = $matches;
       if ($entity_type_id && $bundle_id) {
@@ -313,6 +323,14 @@ class BrapiDatatypeFormBase extends EntityForm {
         );
         foreach ($fields as $field_id => $field) {
           if ($field->getType() == 'entity_reference') {
+            $string_field_options['References'][$field_id] =
+              $field->getLabel()
+              . ' ('
+              . $field->getName()
+              . ' referencing '
+              . $field->getSetting('target_type')
+              . ')'
+            ;
             $entityref_field_options['object'][$field_id] =
               $field->getLabel()
               . ' ('
@@ -331,19 +349,39 @@ class BrapiDatatypeFormBase extends EntityForm {
             ;
           }
           else {
-            $string_field_options[$field_id] =
+            $string_field_options['Fields'][$field_id] =
               $field->getLabel() . ' (' . $field->getName() . ')'
             ;
           }
         }
       }
     }
+    ksort($string_field_options);
 
     // Build BrAPI data type field list.
-    if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $brapi_datatype->id, $matches)
-    ) {
-      list(, $version, $active_def, $datatype_name) = $matches;
+    list($version, $active_def, $datatype_name, $subfields) =
+      $brapi_datatype->parseId();
+    if (!empty($datatype_name)) {
       $brapi_definition = brapi_get_definition($version, $active_def);
+      // Loop on subfields.
+      while (!empty($subfields)) {
+        $subfield = array_shift($subfields);
+        if (empty($brapi_definition['data_types'][$datatype_name]['fields'][$subfield])) {
+          $this->logger('brapi')->error('Invalid sub-mapping identifier: %id. Stopping at sub-field "%field" of data type "%datatype_name".', ['%id' => $brapi_datatype->id(), '%field' => $subfield, '%datatype_name' => $datatype_name, ]);
+          return [
+            $field_name => [
+              '#type' => 'markup',
+              '#markup' => $this->t(
+                'DEBUG: ' . print_r($brapi_definition['data_types'][$datatype_name]['fields'], TRUE)  .
+                'ERROR: Invalid sub-mapping identifier "@id"!',
+                ['@id' => $brapi_datatype->id]
+              ),
+            ],
+          ];
+        }
+        $datatype_name = $brapi_definition['data_types'][$datatype_name]['fields'][$subfield]['type'];
+        $datatype_name = rtrim($datatype_name, '[]');
+      }
       $brapi_fields =
         $brapi_definition['data_types'][$datatype_name]['fields']
         ?? []
@@ -351,129 +389,153 @@ class BrapiDatatypeFormBase extends EntityForm {
       foreach ($brapi_fields as $field_name => $field_def) {
         $field_type = $field_def['type'];
         $required = $field_def['required'];
-        //@todo: check the number of values (ie. array versus single values).
         $base_datatype = $type = rtrim($field_type, '[]');
-        if (in_array($base_datatype, ['string'])) {
-          // Generate select box for field mapping.
-          // @todo: allow the use of static values.
-          $mapping_form[$field_name] = [
-            '#type' => 'select',
-            '#title' => $this->t(
-              'Map BrAPI field %field_name (%field_type) to field',
-              ['%field_name' => $field_name, '%field_type' => $field_type]
-            ),
-            '#options' => $string_field_options,
-            '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
-            '#required' => $required,
-            '#empty_value' => '',
-            '#attributes' => [
-              'name' => $field_name,
-            ],
-          ];
-          $mapping_form['_static_' . $field_name] = [
-            '#type' => 'textfield',
-            '#size' => '60',
-            '#placeholder' => $this->t('Enter a static value'),
-            '#states' => [
-              'visible' => [
-                ':input[name="' . $field_name . '"]' => ['value' => '_static'],
-              ],
-            ],
-          ];          
+        $mapping_form[$field_name] = [
+          '#type' => 'details',
+          '#title' => $this->t(
+            'BrAPI field %field_name mapping',
+            ['%field_name' => $field_name,]
+          ),
+          '#open' => !empty($brapi_datatype->mapping[$field_name]['field']),
+          '#tree' => TRUE,
+        ];
+
+        // Generate select box for field mapping.
+        $mapping_form[$field_name]['field'] = [
+          '#type' => 'select',
+          '#title' => $this->t(
+            'Map BrAPI field %field_name (%field_type) to field',
+            ['%field_name' => $field_name, '%field_type' => $field_type]
+          ),
+          '#options' => [],
+          '#default_value' => $brapi_datatype->mapping[$field_name]['field'] ?? '',
+          '#required' => $required,
+          '#empty_value' => '',
+          '#attributes' => [
+            'id' => 'edit-mapping-' . $field_name . '-field',
+          ],
+        ];
+
+        // Check for simple values (string, integers, etc.)
+        if (in_array($base_datatype, $base_types)) {
+          $mapping_form[$field_name]['field']['#options'] =
+            $string_field_options
+            + $static_field_option
+          ;
         }
         else {
-          // Generate select box for entity reference mapping if available...
-          // Generate datatype machine name and fetch mapping.
-          $target_datatype_id = brapi_generate_datatype_id($base_datatype, $version, $active_def);
-          $mapping = $mapping_loader->load($target_datatype_id);
-          if (!empty($mapping)) {
-            // The datatype is mapped to a content type.
-            // Check if we got a field that can reference that content type.
-            if (array_key_exists($mapping->getMappedEntityTypeId(), $entityref_field_options)) {
-              // We have one or more field referencing that content type.
-              $options = [
-                $this->t('References') =>
-                  $entityref_field_options[$mapping->getMappedEntityTypeId()],
-                $this->t('Local fields (turned into objects)') =>
-                  $string_field_options,
-              ];
-              $mapping_form[$field_name] = [
-                '#type' => 'select',
-                '#title' => $this->t(
-                  'Map BrAPI field %field_name to field (%field_type)',
-                  ['%field_name' => $field_name, '%field_type' => $field_type]
-                ),
-                '#options' => $options,
-                '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
-                '#required' => $required,
-                '#empty_value' => '',
-              ];
+          // Complex types, objects and BrAPI datatypes.
+          // Generate a select box for entity reference mapping and sub-mapping.
+          $options =
+            [
+              '_submapping' => '[Sub-mapping]',
+              'References' =>
+                ($entityref_field_options['object'] ?? []),
+              'Local fields (turned into objects)' =>
+                $string_field_options,
+            ]
+            + $static_field_option
+          ;
+          // Offer sub-mapping.
+          if ('object' != $base_datatype) {
+            // Not a generic object, offer more options.
+
+            // Check if a BrAPI datatype-specific mapping is available i Drupal entity fields.
+            $target_datatype_id = brapi_generate_datatype_id($base_datatype, $version, $active_def);
+            $mapping = $mapping_loader->load($target_datatype_id);
+            if (!empty($mapping)) {
+              // The datatype is mapped to a content type.
+              // Check if we got an entity field that can reference that content type.
+              if (!empty($entityref_field_options[$mapping->getMappedEntityTypeId()])) {
+                // We have one or more field referencing that content type.
+                $options =
+                  ['_brapi_mapping' => '[Existing BrAPI-mapping]',]
+                  + $options
+                ;
+                $mapping_form[$field_name]['brapi_mapping'] = [
+                  '#type' => 'select',
+                  '#title' => $this->t('Use existing BrAPI-mapped field'),
+                  '#options' => 
+                    $entityref_field_options[$mapping->getMappedEntityTypeId()],
+                  '#default_value' => $brapi_datatype->mapping[$field_name]['brapi_mapping'] ?? '',
+                  '#empty_value' => '',
+                  '#states' => [
+                    'visible' => [
+                      ':input[id="edit-mapping-' . $field_name . '-field"]' => ['value' => '_brapi_mapping'],
+                    ],
+                  ],
+                ];
+              }
             }
-            else {
-              // No field is referencing that content type.
-              $mapping_form[$field_name] = [
-                '#type' => 'select',
-                '#title' => $this->t(
-                  'Map BrAPI field %field_name to field (%field_type)',
-                  ['%field_name' => $field_name, '%field_type' => $field_type]
-                ),
-                '#options' => [],
-                '#empty_option' => $this->t(
-                  'No related reference field available'
-                ),
-                '#default_value' => '',
-                '#required' => $required,
-                '#empty_value' => '',
-                '#disabled' => TRUE,
-              ];
-            }
-          }
-          else {
-            // There is no mapping for that datatype.
-            if ('object' == $base_datatype) {
-              // If it is "object", it is ok as the data structure is "free".
-              $mapping_form[$field_name] = [
-                '#type' => 'select',
-                '#title' => $this->t(
-                  'Map BrAPI field %field_name to field (%field_type)',
-                  ['%field_name' => $field_name, '%field_type' => $field_type]
-                ),
-                '#options' => [
-                  $this->t('References') =>
-                    $entityref_field_options['object'],
-                  $this->t('Local fields (turned into objects)') =>
-                    $string_field_options,
+
+            // Check if a sub-mnapping mapping is available.
+            $submapping_datatype_id = $brapi_datatype->id . '-' . $field_name;
+            $submapping = $mapping_loader->load($submapping_datatype_id);
+            if (!empty($submapping)) {
+              // There is a sub-mapping, add link for sub-mapping editing.
+              // Can't use '#states' in  'link' element due to issue:
+              // https://www.drupal.org/project/drupal/issues/2820586
+              $mapping_form[$field_name]['submapping'] = [
+                '#type' => 'fieldset',
+                '#states' => [
+                  'visible' => [
+                    ':input[id="edit-mapping-' . $field_name . '-field"]' => ['value' => '_submapping'],
+                  ],
                 ],
-                '#default_value' => $brapi_datatype->mapping[$field_name] ?? '',
-                '#required' => $required,
-                '#empty_value' => '',
+              ];
+              $mapping_form[$field_name]['submapping']['smlink'] = [
+                '#type' => 'link',
+                '#title' => $this->t('Edit sub-mapping'),
+                '#url' => Url::fromRoute('entity.brapidatatype.add_form', ['mapping_id' => $submapping_datatype_id]),
               ];
             }
             else {
-              // Otherwise, no field can be used.
-              $mapping_form[$field_name] = [
-                '#type' => 'select',
-                '#title' => $this->t(
-                  'Map BrAPI field %field_name to field (%field_type)',
-                  ['%field_name' => $field_name, '%field_type' => $field_type]
-                ),
-                '#options' => [],
-                '#empty_option' => $this->t(
-                  'BrAPI data type "%base_datatype" currently not mapped',
-                  ['%base_datatype' => $base_datatype]
-                ),
-                '#default_value' => '',
-                '#required' => $required,
-                '#empty_value' => '',
-                '#disabled' => TRUE,
+              // Add link to create sub-mapping.
+              // Can't use '#states' in  'link' element due to issue:
+              // https://www.drupal.org/project/drupal/issues/2820586
+              $mapping_form[$field_name]['submapping'] = [
+                '#type' => 'fieldset',
+                '#states' => [
+                  'visible' => [
+                    ':input[id="edit-mapping-' . $field_name . '-field"]' => ['value' => '_submapping'],
+                  ],
+                ],
+              ];
+              $mapping_form[$field_name]['submapping']['smlink'] = [
+                '#type' => 'link',
+                '#title' => $this->t('Add sub-mapping'),
+                '#url' => Url::fromRoute('entity.brapidatatype.add_form', ['mapping_id' => $submapping_datatype_id]),
               ];
             }
           }
+          $mapping_form[$field_name]['field']['#options'] = $options;
         }
+
+        // Static value field.
+        $mapping_form[$field_name]['static'] = [
+          '#type' => 'textfield',
+          '#size' => '60',
+          '#placeholder' => $this->t('Enter the static value to use'),
+          '#default_value' => $brapi_datatype->mapping[$field_name]['static'] ?? '',
+          '#states' => [
+            'visible' => [
+              ':input[id="edit-mapping-' . $field_name . '-field"]' => ['value' => '_static'],
+            ],
+          ],
+        ];          
+
+        // Sub-mapping.
+        $mapping_form[$field_name]['subfield'] = [
+          '#type' => 'textfield',
+          '#size' => '60',
+          '#title' => $this->t('JSON Path sub-field specification (if needed)'),
+          '#description' => $this->t('If the selected mapped field is an object, you can specify a <a href="https://goessner.net/articles/JsonPath/">JSON path</a> to select the sub-value(s) to use.'),
+          '#default_value' => $brapi_datatype->mapping[$field_name]['subfield'] ?? '',
+        ];          
+
       }
     }
 
     return $mapping_form;
   }
-
 }

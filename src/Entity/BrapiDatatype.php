@@ -3,6 +3,7 @@
 namespace Drupal\brapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use JsonPath\JsonObject;
 
 /**
  * Defines BrAPI Datatype Mapping entity.
@@ -42,6 +43,85 @@ class BrapiDatatype extends ConfigEntityBase {
 
 
   /**
+   * Parse BrAPI datatype identifier into version, release, datatype and fields.
+   *
+   * @return array
+   *  Returns BrAPI version (v1 or v2), the release supported by this datatype
+   * (ex. 2.0), the datatype name and an optional array of sub-fields path on
+   * wich the dataype maps.
+   */
+  public function parseId() {
+    if (!isset($this->brapiVersion)) {
+      if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $this->id, $matches)) {
+          $this->brapiVersion = $matches[1];
+          $this->brapiRelease = $matches[2];
+          $this->brapiDatatype = $matches[3];
+          $this->brapiFields = array_filter(explode('-', $matches[4]));
+      }
+    }
+    return [
+      $this->brapiVersion,
+      $this->brapiRelease,
+      $this->brapiDatatype,
+      $this->brapiFields,
+    ];
+  }
+
+  /**
+   * Returns associated BrAPI main version.
+   *
+   * @return string
+   *   The BrAPI version (v1 or v2).
+   */
+  public function getBrapiVersion() :string {
+    if (!isset($this->brapiVersion)) {
+      $this->parseId();
+    }
+    return $this->brapiVersion;
+  }
+
+  /**
+   * Returns associated BrAPI release.
+   *
+   * @return string
+   *   The BrAPI release name (ex. 2.1).
+   */
+  public function getBrapiRelease() :string {
+    if (!isset($this->brapiVersion)) {
+      $this->parseId();
+    }
+    return $this->brapiRelease;
+  }
+
+  /**
+   * Returns associated BrAPI datatype.
+   *
+   * @return string
+   *   The BrAPI datatype name (ex. Germplasm).
+   */
+  public function getBrapiDatatype() :string {
+    if (!isset($this->brapiVersion)) {
+      $this->parseId();
+    }
+    return $this->brapiDatatype;
+  }
+
+  /**
+   * Returns associated BrAPI datatype sub-field path.
+   *
+   * The last sub-field is the one on wich this datatype maps.
+   *
+   * @return array
+   *   The BrAPI datatype sub-field list.
+   */
+  public function getBrapiFields() :array {
+    if (!isset($this->brapiVersion)) {
+      $this->parseId();
+    }
+    return $this->brapiFields;
+  }
+
+  /**
    * Returns associated Drupal content type machine name.
    *
    * @return string
@@ -52,10 +132,10 @@ class BrapiDatatype extends ConfigEntityBase {
   }
 
   /**
-   * Returns associated Drupal content type machine name.
+   * Returns associated Drupal content bundle machine name.
    *
    * @return string
-   *   The Drupal content type machine name.
+   *   The Drupal content bundle machine name.
    */
   public function getMappedEntityBundleId() :string {
     return substr($this->contentType, strpos($this->contentType, ':') + 1);
@@ -74,88 +154,115 @@ class BrapiDatatype extends ConfigEntityBase {
    */
   public function getBrapiData(array $parameters) :array {
     
-    $storage = \Drupal::service('entity_type.manager')->getStorage($this->getMappedEntityTypeId());
+    $storage = \Drupal::service('entity_type.manager')
+      ->getStorage($this->getMappedEntityTypeId())
+    ;
     if (empty($storage)) {
-      \Drupal::logger('brapi')->error("No storage available for content type '" . $this->contentType . "'.");
+      \Drupal::logger('brapi')->error(
+        "No storage available for content type '" . $this->contentType . "'."
+      );
       return [];
     }
 
-    $filters = [];
-    foreach ($parameters as $parameter => $value) {
-      $field_name = $this->getDrupalMappedField($parameter);
-      if (!empty($field_name)) {
-        $filters[$field_name] = $value;
+    // Check if an entity has already been provided (for sub-field mapping).
+    if (!empty($parameters['#entity'])) {
+      $entities = [$parameters['#entity']->id => $parameters['#entity']];
+      $item_count = 1;
+    }
+    else {
+      // Load associated Drupal entity matching filter parameters.
+      $filters = [];
+      foreach ($parameters as $parameter => $value) {
+        $field_name = $this->getDrupalMappedField($parameter);
+        if (!empty($field_name)) {
+          $filters[$field_name] = $value;
+        }
+      }
+      $query = $storage->getQuery();
+      $count_query = $storage->getQuery();
+      // We manage access permission on BrAPI entities, not on Drupal associated
+      // entities. A restricted Drupal entity mays be accessible if mapped to a
+      // BrAPI datatype without restrictions.
+      $query->accessCheck(FALSE);
+      $count_query->accessCheck(FALSE);
+      foreach ($filters as $name => $value) {
+        $query->condition($name, (array) $value, 'IN');
+        $count_query->condition($name, (array) $value, 'IN');
+      }
+      // Range (paggination) is not applied on the total count.
+      $query->range(
+        empty($parameters['#page']) ? 0 : $parameters['#page'],
+        empty($parameters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $parameters['#pageSize']
+      );
+      // Get total number of entities matching filters.
+      $item_count = intval($count_query->count()->execute());
+      // Get IDs of selected entity range.
+      $ids = $query->execute();
+      // Load entity instances.
+      $entities = $storage->loadMultiple($ids);
+    }
+
+    // Initialize result array.
+    $result = [];
+    // Check wich fields are arrays.
+    $array_fields = [];
+    list($version, $active_def, $datatype_name) = $this->parseId();
+    $brapi_definition = brapi_get_definition($version, $active_def);
+    $brapi_fields =
+      $brapi_definition['data_types'][$datatype_name]['fields']
+      ?? []
+    ;
+    foreach ($brapi_fields as $field_name => $field_def) {
+      if (FALSE !== strrpos($field_def['type'], '[]')) {
+        $array_fields[$field_name] = TRUE;
       }
     }
-    $query = $storage->getQuery();
-    $count_query = $storage->getQuery()->count();
-    // We manage access permission on BrAPI entities.
-    // @todo: documents with restricted content would be accessible if mapped to BrAPI entities.
-    $query->accessCheck(FALSE);
-    $count_query->accessCheck(FALSE);
-    foreach ($filters as $name => $value) {
-      $query->condition($name, (array) $value, 'IN');
-      $count_query->condition($name, (array) $value, 'IN');
-    }
-    $query->range(
-      empty($parameters['#page']) ? 0 : $parameters['#page'],
-      empty($parameters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $parameters['#pageSize']
-    );
-    $item_count = intval($count_query->execute());
-    $ids = $query->execute();
 
-    $entities = $storage->loadMultiple($ids);
-    $result = [];
+    // Now translate each Drupal entity into a BrAPI datatype.
     foreach ($entities as $id => $entity) {
       $brapi_data = [];
-      foreach ($this->mapping as $brapi_field => $drupal_field) {
-        if (!empty($drupal_field)) {
-          //@todo: Check for entity reference and sub-mapping.
-          /*
-  -un champ string normal vers un champ d'une entity référencée (ex.: collection name)
-    on détecte l'external entity sur le formulaire de mapping et on ajoute en
-    ajax le choix des champs de l'entité référencée.
-    collection.field (BrAPI) => field_institute (champ Drupal vers entity ref "collection")
-    collection.mapping (BrAPI) => field_institute_name (champ Drupal de "collection")
-  -un champ "object" (ou plusieurs) vers une entity référencée convertie en array (ex. additionalInfo)
-    mapping normal, pas de "-mapping" donc utilisation de "toArray()".
-    additionalInfo => field_infos (entiy ref.)
-  -un champ "object" (ou plusieurs) vers un champ classique (ex. additionalInfo)
-    ajout de cases à sélectionner "pas de parsing", "parser comme du JSON"
-    additionalInfo.field => field_infos (string)
-    additionalInfo.parse => 'JSON'
-  -une liste d'objets typés BrAPI à mapper vers des entities référencées déjà mappés (ex. donors)
-    on détecte l'external entity sur le formulaire de mapping et on ajoute en
-    ajax le choix des champs de l'entité référencée.
-    donors.field (BrAPI) => field_donors (entity ref. vers "Donors", mappé pour Germplasm_donors)
-    donors.mapping => id (récupéré par le champ texte)
-    donors.brapi   => v2-2.0-Germplasm_donors (récupéré automatiquement)
-  -un object à partir des valeurs de l'objet en cours (ex. geo-location, storageTypes)
-    on ajoute un mapping v2-2.0-Germplasm-storageTypes
-    storageTypes.brapi => v2-2.0-Germplasm-storageTypes
-
-          */
+      foreach ($this->mapping as $brapi_field => $drupal_mapping) {
+        if (!empty($drupal_mapping) && !empty($drupal_mapping['field'])) {
           try {
-            // Check if there is a sub-mapping.
-            if (is_array($drupal_field)) {
-              // @todo: get BrapiData from referenced entity mapping if one...
-              // $brapi_datatype contains the BrAPI datatype sub-mapping machine name.
-              // if $drupal_ref_field is empy, it means the sub-mapping uses current Drupal entity ID.
-              // if $drupal_ref_field is not empty, it contains the field name containing the entity ID to use.
-              // -Load the corresponding BrAPI datatype sub-mapping from $brapi_datatype.
-              // -call getBrapiData
+            // Check mapping type.
+            if ('_brapi_datatype' == $drupal_mapping['field']) {
+              // There is a sub-mapping of current entity.
+              // @todo: Load BrAPI datatype $this->id . '-' . $brapi_field
+              // Provide the entity $id to extract mapped BrAPI data.
               $brapi_data[$brapi_field] = [];
             }
+            elseif ('_static' == $drupal_mapping['field']) {
+              // Static value.
+              // @todo: manage JSON data in a static string.
+              $brapi_data[$brapi_field] = $drupal_mapping['static'];
+            }
             else {
-              $field = $entity->get($drupal_field);
+              // BrAPI field mapped to an entity field, get its value.
+              $field = $entity->get($drupal_mapping['field']);
+              // Check if field is an entity reference.
               if ($field->getFieldDefinition()->getType() == 'entity_reference') {
                 // We got referenced entities.
                 $brapi_data[$brapi_field] = [];
-                // Add all of them as arrays.
-                $brapi_data[$brapi_field] = array_map(
-                  function ($ref_entity) { return $ref_entity->toArray(); },
-                  $field->referencedEntities()
-                );
+                // Check for a BrAPI-mapped entity.
+                if (!empty($drupal_mapping['brapi_datatype'])) {
+                  // Drupal referenced entities are BrAPI-mapped.
+                  // @todo: get BrAPI mapping and load each entity.
+                }
+                else {
+                  // Not mapped, add all referenced entities as arrays.
+                  $brapi_data[$brapi_field] = array_map(
+                    function ($ref_entity) { return $ref_entity->toArray(); },
+                    $field->referencedEntities()
+                  );
+                }
+                // Check if only a subfield should be returned.
+                if (!empty($drupal_mapping['subfield'])) {
+                  $subfield = $drupal_mapping['subfield'];
+                  // Process JSONPath mapping.
+                  // @see https://github.com/Galbar/JsonPath-PHP
+                  $json_object = new JsonObject($brapi_data[$brapi_field]);
+                  $brapi_data[$brapi_field] = $json_object->get($subfield);
+                }
               }
               else {
                 // Regular field, get it as string.
@@ -173,13 +280,29 @@ class BrapiDatatype extends ConfigEntityBase {
               ]
             );
           }
+          
+          if (!$array_fields[$brapi_field]
+              && (is_array($brapi_data[$brapi_field]))
+          ) {
+            if (empty($brapi_data[$brapi_field])) {
+              $brapi_data[$brapi_field] = NULL;
+            }
+            else {
+              // Should not return an array, get first array value.
+              $brapi_data[$brapi_field] = reset($brapi_data[$brapi_field]);
+            }
+          }
         }
         else {
+          // No mapping for that field.
           $brapi_data[$brapi_field] = NULL;
         }
       }
       $result[] = $brapi_data;
     }
+    
+    // @todo: if BrAPI filtering is enabled for the call, filter.
+    
     return ['total_count' => $item_count, 'entities' => $result];
   }
 
@@ -197,7 +320,12 @@ class BrapiDatatype extends ConfigEntityBase {
    *   set.
    */
   public function getDrupalMappedField(string $brapi_field_name) :string {
-    return $this->mapping[$brapi_field_name] ?? '';
+    $mapped_field = $this->mapping[$brapi_field_name]['field'] ?? '';
+    // Take into account special mappings.
+    if (!empty($mapped_field) && ('_static' == $mapped_field)) {
+      $mapped_field = '';
+    }
+    return $mapped_field;
   }
 
   /**
@@ -209,6 +337,34 @@ class BrapiDatatype extends ConfigEntityBase {
    * @var string
    */
   public $id;
+
+  /**
+   * The .
+   *
+   * @var string
+   */
+  protected $brapiVersion;
+
+  /**
+   * The .
+   *
+   * @var string
+   */
+  protected $brapiRelease;
+
+  /**
+   * The .
+   *
+   * @var string
+   */
+  protected $brapiDatatype;
+
+  /**
+   * The .
+   *
+   * @var array
+   */
+  protected $brapiFields;
 
   /**
    * The UUID.

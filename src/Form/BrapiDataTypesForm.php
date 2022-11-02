@@ -55,7 +55,7 @@ class BrapiDataTypesForm extends FormBase {
               && empty($datatype_definition['as_field_in'])
           ) {
             // Skip datatypes not used in calls or other datatypes.
-            $this->logger('brapi')->notice('Skipping datatype "%datatype" has it does not seem to be used.', ['%datatype' => $datatype, ]);
+            // $this->logger('brapi')->notice('Skipping datatype "%datatype" (v%version) has it does not seem to be used.', ['%datatype' => $datatype, '%version' => $active_def]);
             continue 1;
           }
 

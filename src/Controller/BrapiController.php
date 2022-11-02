@@ -521,7 +521,6 @@ class BrapiController extends ControllerBase {
        // ... direct execution, code below ...
     return $this->processObjectCalls($request, $config, $version, $call, $method);
     // }
-    // @todo: recheck results and the filter application? refilter manually?
   }
 
   /**
