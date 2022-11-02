@@ -154,6 +154,11 @@ class BrapiDatatype extends ConfigEntityBase {
    */
   public function getBrapiData(array $parameters) :array {
     
+    // Get data type mapping entities.
+    $mapping_loader = \Drupal::service('entity_type.manager')
+      ->getStorage('brapidatatype')
+    ;
+
     $storage = \Drupal::service('entity_type.manager')
       ->getStorage($this->getMappedEntityTypeId())
     ;
@@ -166,7 +171,9 @@ class BrapiDatatype extends ConfigEntityBase {
 
     // Check if an entity has already been provided (for sub-field mapping).
     if (!empty($parameters['#entity'])) {
-      $entities = [$parameters['#entity']->id => $parameters['#entity']];
+      $entities = [
+        $parameters['#entity']->id() => $parameters['#entity'],
+      ];
       $item_count = 1;
     }
     else {
@@ -213,7 +220,7 @@ class BrapiDatatype extends ConfigEntityBase {
       ?? []
     ;
     foreach ($brapi_fields as $field_name => $field_def) {
-      if (FALSE !== strrpos($field_def['type'], '[]')) {
+      if (substr($field_def['type'], -2) === '[]') {
         $array_fields[$field_name] = TRUE;
       }
     }
@@ -225,11 +232,32 @@ class BrapiDatatype extends ConfigEntityBase {
         if (!empty($drupal_mapping) && !empty($drupal_mapping['field'])) {
           try {
             // Check mapping type.
-            if ('_brapi_datatype' == $drupal_mapping['field']) {
-              // There is a sub-mapping of current entity.
-              // @todo: Load BrAPI datatype $this->id . '-' . $brapi_field
-              // Provide the entity $id to extract mapped BrAPI data.
+            if ('_submapping' == $drupal_mapping['field']) {
+              // There is a sub-mapping of current entity, load datatype entity.
+              $sub_datatype_id = $this->id . '-' . $brapi_field;
+              $sub_datatype = $mapping_loader->load($sub_datatype_id);
+              # Get data from sub-mapping.
+              if (!empty($sub_datatype)) {
+                $brapi_data[$brapi_field] = $sub_datatype->getBrapiData(['#entity' => $entity])['entities'];
+              }
+              else {
+                $brapi_data[$brapi_field] = NULL;
+              }
+            }
+            elseif ('_brapi_datatype' == $drupal_mapping['field']) {
+              // Field is mapped to a matching BrAPI datatype.
+              $brapi_field_datatype = $brapi_definition['data_types'][$datatype_name]['fields'][$brapi_field]['type'];
+              $brapi_field_datatype = rtrim($brapi_field_datatype, '[]');
+              $sub_datatype_id = brapi_generate_datatype_id($brapi_field_datatype, $version, $active_def);
+              $sub_datatype = $mapping_loader->load($sub_datatype_id);
+              # Get data from sub-mapping.
+              $field_entities = $field->referencedEntities();
               $brapi_data[$brapi_field] = [];
+              foreach ($field_entities as $field_entity) {
+                foreach ($sub_datatype->getBrapiData(['#entity' => $field_entity])['entities'] as $translated_entity) {
+                  $brapi_data[$brapi_field][] = $translated_entity;
+                }
+              }
             }
             elseif ('_static' == $drupal_mapping['field']) {
               // Static value.
@@ -243,26 +271,11 @@ class BrapiDatatype extends ConfigEntityBase {
               if ($field->getFieldDefinition()->getType() == 'entity_reference') {
                 // We got referenced entities.
                 $brapi_data[$brapi_field] = [];
-                // Check for a BrAPI-mapped entity.
-                if (!empty($drupal_mapping['brapi_datatype'])) {
-                  // Drupal referenced entities are BrAPI-mapped.
-                  // @todo: get BrAPI mapping and load each entity.
-                }
-                else {
-                  // Not mapped, add all referenced entities as arrays.
-                  $brapi_data[$brapi_field] = array_map(
-                    function ($ref_entity) { return $ref_entity->toArray(); },
-                    $field->referencedEntities()
-                  );
-                }
-                // Check if only a subfield should be returned.
-                if (!empty($drupal_mapping['subfield'])) {
-                  $subfield = $drupal_mapping['subfield'];
-                  // Process JSONPath mapping.
-                  // @see https://github.com/Galbar/JsonPath-PHP
-                  $json_object = new JsonObject($brapi_data[$brapi_field]);
-                  $brapi_data[$brapi_field] = $json_object->get($subfield);
-                }
+                // Add all referenced entities as arrays.
+                $brapi_data[$brapi_field] = array_map(
+                  function ($ref_entity) { return $ref_entity->toArray(); },
+                  $field->referencedEntities()
+                );
               }
               else {
                 // Regular field, get it as string.
@@ -281,15 +294,40 @@ class BrapiDatatype extends ConfigEntityBase {
             );
           }
           
-          if (!$array_fields[$brapi_field]
+          // Check expected structure: array or not?
+          if (!empty($array_fields[$brapi_field])
+              && (!is_array($brapi_data[$brapi_field]))
+              && isset($brapi_data[$brapi_field])
+          ) {
+            // Should return an array.
+            $brapi_data[$brapi_field] = [$brapi_data[$brapi_field]];
+          }
+          elseif (empty($array_fields[$brapi_field])
               && (is_array($brapi_data[$brapi_field]))
           ) {
+            // Should return a single value.
             if (empty($brapi_data[$brapi_field])) {
+              // Got nothing anyway.
               $brapi_data[$brapi_field] = NULL;
             }
             else {
-              // Should not return an array, get first array value.
-              $brapi_data[$brapi_field] = reset($brapi_data[$brapi_field]);
+              // Should not return an array, make sure it is a sequencial array.
+              if (array_keys($brapi_data[$brapi_field]) === range(0, count($brapi_data[$brapi_field]) - 1)) {
+                // Get first array value.
+                $brapi_data[$brapi_field] = reset($brapi_data[$brapi_field]);
+              }
+            }
+          }
+
+          // Check if only a subfield should be returned.
+          if (!empty($drupal_mapping['subfield'])) {
+            $subfield = $drupal_mapping['subfield'];
+            // Process JSONPath mapping.
+            // @see https://github.com/Galbar/JsonPath-PHP
+            $json_object = new JsonObject($brapi_data[$brapi_field]);
+            $value = $json_object->get($subfield);
+            if (FALSE !== $value) {
+              $brapi_data[$brapi_field] = $value[0];
             }
           }
         }

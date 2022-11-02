@@ -96,19 +96,21 @@ class BrapiDatatypeFormBase extends EntityForm {
       $mapping_name = $mapping_id;
       if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $mapping_id, $matches)) {
         list(, $version, $active_def, $datatype_name, $subfields) = $matches;
+        $subfields = explode('-', $subfields);
         // $brapi_definition = brapi_get_definition($version, $active_def);
         $mapping_name = $datatype_name . ' for BrAPI v' . $active_def;
       }
       if (!empty($subfields)) {
         $form['title'] = [
           '#type' => 'markup',
-          '#markup' => $this->t('Data Mapping for BrAPI Data Type %datatype_name subfields %subfields', ['%datatype_name' => $datatype_name, '%subfields' => implode(', ', explode('-', $subfields))]),
+          '#markup' => $this->t('Data sub-mapping for BrAPI data type %datatype_name subfields %subfields', ['%datatype_name' => $datatype_name, '%subfields' => implode(', ', $subfields)]),
         ];
+        $mapping_name = $datatype_name . '.' . implode('.', explode('-', $subfields)) . ' for BrAPI v' . $active_def;
       }
       else {
         $form['title'] = [
           '#type' => 'markup',
-          '#markup' => $this->t('Data Mapping for BrAPI Data Type %datatype_name', ['%datatype_name' => $datatype_name]),
+          '#markup' => $this->t('Data mapping for BrAPI data type %datatype_name', ['%datatype_name' => $datatype_name]),
         ];
       }
       $form['label'] = [
@@ -121,6 +123,20 @@ class BrapiDatatypeFormBase extends EntityForm {
       ];
     }
     else {
+      list($version, $active_def, $datatype_name, $subfields) = $brapi_datatype->parseId();
+      if (!empty($subfields)) {
+        $form['title'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('Data sub-mapping for BrAPI data type %datatype_name subfields %subfields', ['%datatype_name' => $datatype_name, '%subfields' => implode(', ', $subfields)]),
+        ];
+      }
+      else {
+        $form['title'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('Data mapping for BrAPI data type %datatype_name', ['%datatype_name' => $datatype_name]),
+        ];
+      }
+
       $form['label'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Label'),
@@ -143,21 +159,37 @@ class BrapiDatatypeFormBase extends EntityForm {
       }
     }
 
-    // Display the list of selectable content types.
-    $content_options = $this->getEntityTypeIdOptions($form, $form_state);
-    $form['contentType'] = [
-      '#type' => 'select',
-      '#options' => $content_options,
-      '#title' => $this->t('Select the associated Drupal content type'),
-      '#default_value' => $form_state->getValue('contentType') ?? $brapi_datatype->contentType ?? '',
-      '#required' => TRUE,
-      '#ajax' => [
-        'callback' => [get_class($this), 'buildAjaxFieldMappingForm'],
-        'wrapper' => 'brapi-field-mapping-form',
-        'method' => 'replace',
-        'effect' => 'fade',
-      ],
-    ];
+    // Check for sub-mapping.
+    if (!empty($subfields)) {
+      // Get parent mapping datatype.
+      $mapping_loader = \Drupal::service('entity_type.manager')
+        ->getStorage('brapidatatype')
+      ;
+      $parent_datatype_id = substr($mapping_id, 0, strrpos($mapping_id, '-'));
+      $parent_datatype = $mapping_loader->load($parent_datatype_id);
+      $form['contentType'] = [
+        '#type' => 'hidden',
+        '#value' => $parent_datatype->contentType,
+      ];
+    }
+    else
+    {
+      // Display the list of selectable content types.
+      $content_options = $this->getEntityTypeIdOptions($form, $form_state);
+      $form['contentType'] = [
+        '#type' => 'select',
+        '#options' => $content_options,
+        '#title' => $this->t('Select the associated Drupal content type'),
+        '#default_value' => $form_state->getValue('contentType') ?? $brapi_datatype->contentType ?? '',
+        '#required' => TRUE,
+        '#ajax' => [
+          'callback' => [get_class($this), 'buildAjaxFieldMappingForm'],
+          'wrapper' => 'brapi-field-mapping-form',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ],
+      ];
+    }
 
     $form['mapping'] = [
       '#type' => 'fieldset',
@@ -356,7 +388,8 @@ class BrapiDatatypeFormBase extends EntityForm {
         }
       }
     }
-    ksort($string_field_options);
+    // ksort($string_field_options['Fields']);
+    // ksort($string_field_options['References']);
 
     // Build BrAPI data type field list.
     list($version, $active_def, $datatype_name, $subfields) =
@@ -372,7 +405,6 @@ class BrapiDatatypeFormBase extends EntityForm {
             $field_name => [
               '#type' => 'markup',
               '#markup' => $this->t(
-                'DEBUG: ' . print_r($brapi_definition['data_types'][$datatype_name]['fields'], TRUE)  .
                 'ERROR: Invalid sub-mapping identifier "@id"!',
                 ['@id' => $brapi_datatype->id]
               ),
@@ -429,11 +461,8 @@ class BrapiDatatypeFormBase extends EntityForm {
           $options =
             [
               '_submapping' => '[Sub-mapping]',
-              'References' =>
-                ($entityref_field_options['object'] ?? []),
-              'Local fields (turned into objects)' =>
-                $string_field_options,
             ]
+            + $string_field_options
             + $static_field_option
           ;
           // Offer sub-mapping.
@@ -486,7 +515,7 @@ class BrapiDatatypeFormBase extends EntityForm {
               $mapping_form[$field_name]['submapping']['smlink'] = [
                 '#type' => 'link',
                 '#title' => $this->t('Edit sub-mapping'),
-                '#url' => Url::fromRoute('entity.brapidatatype.add_form', ['mapping_id' => $submapping_datatype_id]),
+                '#url' => Url::fromRoute('entity.brapidatatype.edit_form', ['brapidatatype' => $submapping_datatype_id]),
               ];
             }
             else {
