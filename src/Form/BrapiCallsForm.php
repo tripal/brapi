@@ -168,11 +168,14 @@ class BrapiCallsForm extends FormBase {
 
                   // Check if current method has query parameters.
                   $has_filtering_parameters = FALSE;
-                  foreach ($method_def['parameters'] as $parameter) {
-                    if (('query' == $parameter['in'])
-                        && (!in_array($parameter['in'], $global_query_parameters))
-                    ) {
-                      $has_filtering_parameters = TRUE;
+                  if (!empty($method_def['parameters'])) {
+                    foreach ($method_def['parameters'] as $parameter) {
+                      if (!empty($parameter['in'])
+                          && ('query' == $parameter['in'])
+                          && (!in_array($parameter['in'], $global_query_parameters))
+                      ) {
+                        $has_filtering_parameters = TRUE;
+                      }
                     }
                   }
                   // Add filtering options for listing and search calls.
@@ -182,11 +185,14 @@ class BrapiCallsForm extends FormBase {
                   if ((!empty($mapped_datatypes) && $has_filtering_parameters)
                       || (str_starts_with($call, '/search'))
                   ) {
-                    $filtering_default = 
-                      isset($call_settings[$version][$call]['filtering'])
-                      ? $call_settings[$version][$call]['filtering']
-                      : 'drupal'
-                    ;
+                    if (isset($call_settings[$version][$call]['filtering'])
+                        && (in_array('' . $call_settings[$version][$call]['filtering'], ['drupal', 'brapi']))
+                    ) {
+                      $filtering_default = $call_settings[$version][$call]['filtering'];
+                    }
+                    else {
+                      $filtering_default = 'drupal';
+                    }
                     $form[$version][$call]['filtering'] = [
                       '#type' => 'radios',
                       '#title' => $this->t('Result filtering'),
@@ -198,7 +204,9 @@ class BrapiCallsForm extends FormBase {
                     ];
                   }
                   // Add deferred result option for search-* calls.
-                  if (str_starts_with($call, '/search')) {
+                  if (str_starts_with($call, '/search')
+                      && !str_contains($call, 'searchResultsDbId')
+                  ) {
                     $form[$version][$call]['deferred'] = [
                       '#type' => 'checkbox',
                       '#title' => $this->t('Use background search (provide a "searchResultsDbId" and deferred results)'),

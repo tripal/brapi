@@ -338,9 +338,7 @@ class BrapiDatatype extends ConfigEntityBase {
       }
       $result[] = $brapi_data;
     }
-    
-    // @todo: if BrAPI filtering is enabled for the call, filter.
-    
+
     return ['total_count' => $item_count, 'entities' => $result];
   }
 

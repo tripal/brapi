@@ -68,7 +68,7 @@ class BrapiDataTypesForm extends FormBase {
             '#open' => FALSE,
           ];
 
-          // @todo: display mapping status: unampped, mapped to content...
+          // Display mapping list.
           $mapping = $mapping_loader->load($datatype_id);
           if (empty($mapping)) {
             $form[$active_def][$datatype]['action_link'] = [
@@ -83,8 +83,10 @@ class BrapiDataTypesForm extends FormBase {
               '#title' => $this->t('Edit mapping'),
               '#url' => \Drupal\Core\Url::fromRoute('entity.brapidatatype.edit_form', ['brapidatatype' => $datatype_id]),
             ];
+            $form[$active_def][$datatype]['#open'] = TRUE;
           }
-          // @todo: display "Map content" button.
+          // @todo: add sub-mapping list.
+
           $form[$active_def][$datatype]['details'] = [
             '#type' => 'markup',
             '#markup' =>

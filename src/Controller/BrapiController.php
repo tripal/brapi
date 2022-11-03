@@ -547,8 +547,16 @@ class BrapiController extends ControllerBase {
     $total_count = 1;
     $result = [];
 
+    $call_settings = $config->get('calls');
     $active_def = $config->get($version . 'def');
     $brapi_def = brapi_get_definition($version, $active_def);
+
+    $internal_filtering = FALSE;
+    if (!empty($call_settings[$version][$call]['filtering'])
+        && ('brapi' == $call_settings[$version][$call]['filtering'])
+    ) {
+      $internal_filtering = TRUE;
+    }
 
     // Get URL parameter from route placeholder (object identifier).
     $filters = $request->attributes->get('_raw_variables')->all();
@@ -622,9 +630,70 @@ class BrapiController extends ControllerBase {
       }
     }
 
-    // Fetch BrAPI object(s).
-    $brapi_data = $datatype_mapping->getBrapiData($filters);
-    $entities = $brapi_data['entities'];
+    // Check if BrAPI filtering is enabled for the call.
+    if (!$internal_filtering) {
+      // Fetch BrAPI object(s).
+      $brapi_data = $datatype_mapping->getBrapiData($filters);
+    }
+    else {
+      // Fetch BrAPI object(s).
+      // @todo: use cache.
+      $brapi_data = $datatype_mapping->getBrapiData([]);
+      // @todo: pagination is not handled here yet.
+      // Proceed to entity filtering.
+      $entities = [];
+      foreach ($brapi_data['entities'] as $entity) {
+        // Proceed filters.
+        foreach ($filters as $field => $value) {
+          // Make sure entity has this field.
+          if (!array_key_exists($field, $entity)) {
+            continue 1;
+          }          
+          if (is_array($value)) {
+            if (empty(($value))) {
+              // Empty filter, skip.
+              continue 1;
+            }
+            // Filter value is a non-empty array.
+            if (is_array($entity[$field])) {
+              // Entity field contains an array of values.
+              foreach ($entity[$field] as $entity_value) {
+                if (in_array($entity_value, $value)) {
+                  // Matched a value, process next filter.
+                  continue 1;
+                }
+              }
+            }
+            elseif (!in_array($entity[$field], $value)) {
+              // Filter value is an array and entity value is a single value not
+              // in that array. Unmatched value, skip that entity.
+              continue 2;
+            }
+          }
+          elseif (isset($value) && ('' != $value)) {
+            // Filter value is a single non-empty (NULL and empty string) value.
+            if (!is_array($entity[$field])) {
+              if ($value != $entity[$field]) {
+                // Filter value and entity value are single values but are
+                // different. Unmatched value, skip that entity.
+                continue 2;
+              }
+            }
+            elseif (!in_array($value, $entity[$field])) {
+              // Entity field contains an array of values.
+              // Filter value does not match any of the entity values (array).
+              // Unmatched value, skip that entity.
+              continue 2;
+            }
+          }
+        }
+        $entities[] = $entity;
+      }
+      $brapi_data['total_count'] = count($entities);
+    }
+    else {
+      $entities = $brapi_data['entities'];
+    }
 
     // $result not set: regular data call.
     if ($single_record) {

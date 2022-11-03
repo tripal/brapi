@@ -516,6 +516,7 @@ class BrapiDatatypeFormBase extends EntityForm {
                 '#type' => 'link',
                 '#title' => $this->t('Edit sub-mapping'),
                 '#url' => Url::fromRoute('entity.brapidatatype.edit_form', ['brapidatatype' => $submapping_datatype_id]),
+                '#attributes' => ['target' => ['_blank',],],
               ];
             }
             else {
@@ -534,6 +535,7 @@ class BrapiDatatypeFormBase extends EntityForm {
                 '#type' => 'link',
                 '#title' => $this->t('Add sub-mapping'),
                 '#url' => Url::fromRoute('entity.brapidatatype.add_form', ['mapping_id' => $submapping_datatype_id]),
+                '#attributes' => ['target' => ['_blank',],],
               ];
             }
           }
