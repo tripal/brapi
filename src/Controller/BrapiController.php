@@ -633,10 +633,6 @@ class BrapiController extends ControllerBase {
     // Check if BrAPI filtering is enabled for the call.
     if (!$internal_filtering) {
       // Fetch BrAPI object(s).
-      $brapi_data = $datatype_mapping->getBrapiData($filters);
-    }
-    else {
-      // Fetch BrAPI object(s).
       // @todo: use cache.
       $brapi_data = $datatype_mapping->getBrapiData([]);
       // @todo: pagination is not handled here yet.
@@ -692,6 +688,8 @@ class BrapiController extends ControllerBase {
       $brapi_data['total_count'] = count($entities);
     }
     else {
+      // Fetch BrAPI object(s).
+      $brapi_data = $datatype_mapping->getBrapiData($filters);
       $entities = $brapi_data['entities'];
     }
 

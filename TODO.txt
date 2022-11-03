@@ -34,6 +34,10 @@ Support for PUT/POST request to edit/create new objects.
 
 Add and manage permission for editing.
 
+Add setting for max page size.
+
+Documentation.
+
 Add debug info for all calls.
   BrapiController.php, in brapiCall() and generateMetadata(), line 135 and ...
 
