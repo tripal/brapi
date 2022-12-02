@@ -134,15 +134,20 @@ class BrapiController extends ControllerBase {
     if (!isset($json_array)) {
       // @todo: Add error and debug info.
       $parameters = [
-        "status" => [
-          "message"     => "Not implemented",
-          "messageType" => "ERROR",
+        'status' => [
+          'message'     => 'Not implemented',
+          'messageType' => 'ERROR',
         ],
       ];
       $metadata = $this->generateMetadata($request, $config, $parameters);
       $json_array = $metadata;
     }
-    return new JsonResponse($json_array);
+    $response = new JsonResponse($json_array);
+    // Check for specified status code.
+    if (!empty($json_array['metadata']['status']['code'])) {
+      $response->setStatusCode($json_array['metadata']['status']['code']);
+    }
+    return $response;
   }
 
   /**
@@ -486,67 +491,152 @@ class BrapiController extends ControllerBase {
     $call,
     $method
   ) {
+    // Prepare pagger.
     $page_size   = 1;
     $page        = 0;
     $total_count = 1;
 
-    // @todo
     // Check if the search call should use differed result.
-    // If so {
-    //   // Check if a search result identifier has been provided.
-    //   // If so, check if the result is available.
-    //   // If not provided or not available, generate a search process
-    //
-    //   // Get a normalized search parameter array.
-    //   $json_input = $this->getPostData($request);
-    //   function filter_array_recursive(&$array) {
-    //     foreach ($array as $key => $item) {
-    //       if (is_array($item)) {
-    //         $array[$key] = filter_array_recursive($item);
-    //         if (0 == count($array[$key])) {
-    //           unset($array[$key]);
-    //         }
-    //       }
-    //       elseif (!isset($array[$key]) || ('' === $array[$key])) {
-    //         unset($array[$key]);
-    //       }
-    //     }
-    //     ksort($array);
-    //     return $array;
-    //   }
-    //   $json_input = filter_array_recursive($json_input);
-    //
-    //   // Generate a normalized cache identifier (unique for a given search call
-    //   // with a given set of parameter values).
-    //   $search_id = md5($call . serialize($json_input));
-    //   $cid = 'brapi:' . $search_id;
-    //   if (!\Drupal::cache('brapi_search')->get($cid)) {
-    //     //@todo: provide a setting for search result lifetime. Default to 1 day.
-    //     $expiration = time() + 86400;
-    //     \Drupal::cache('brapi_search')->set($cid, [], $expiration);
-    //   }
-    //   // Return 202 HTTP code.
-    //   $result = ['searchResultsDbId' => $search_id, ];
-    //   // @todo: launch the search in background.
-    //   $status = [
-    //     "message"     => "Request accepted, response successful",
-    //     "messageType" => "INFO",
-    //   ];
-    //
-    //   $parameters = [
-    //     'page_size'   =>  $page_size,
-    //     'page'        =>  $page,
-    //     'total_count' =>  $total_count,
-    //     'status'      => $status,
-    //   ];
-    //
-    //   $metadata = $this->generateMetadata($request, $config, $parameters);
-    //   return $metadata + $result;
-    // }
-    // else {
-       // ... direct execution, code below ...
-    return $this->processObjectCalls($request, $config, $version, $call, $method);
-    // }
+    $call_settings = $config->get('calls');
+    if (!empty($call_settings[$version][$call]['deferred'])
+        || str_contains($call, 'searchResultsDbId')
+    ) {
+      // Deferred.
+      $status = [
+        'message'     => 'Request accepted, response successful',
+        'messageType' => 'INFO',
+      ];
+      
+      // Check if a search identifier has been provided.
+      $filters = $request->attributes->get('_raw_variables')->all();
+      // Check call consistency.
+      if (('get' == $method) && empty($filters['searchResultsDbId'])) {
+        // Missing search identifier!
+        \Drupal::logger('brapi')->error("No search identifier provided for call $call ($version).");
+        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+      }
+      elseif (('get' != $method) && !empty($filters['searchResultsDbId'])) {
+        // Using a search identifier with a POST method.
+        \Drupal::logger('brapi')->error("A search identifier has provided for call $call ($version) while not using the GET method.");
+        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+      }
+      
+      if (!empty($filters['searchResultsDbId'])) {
+        $new_search = FALSE;
+        // Try to fetch a search result.
+        $search_id = $filters['searchResultsDbId'];
+      }
+      else {
+        // Process a new search.
+        $new_search = TRUE;
+        // Get a normalized search parameter array.
+        // It will be used to generate a search identifier.
+        $json_input = $this->getPostData($request);
+        if (!isset($json_input)) {
+          // @todo: should return a 400 code.
+          \Drupal::logger('brapi')->error("Invalid JSON data for search call $call ($version).");
+          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        }
+        $filter_array_recursive = 'throw';
+        $filter_array_recursive = function (&$array)
+          use ($filter_array_recursive)
+        {
+          foreach ($array as $key => $item) {
+            if (is_array($item)) {
+              $array[$key] = $filter_array_recursive($item);
+              if (0 == count($array[$key])) {
+                unset($array[$key]);
+              }
+            }
+            elseif (!isset($array[$key]) || ('' === $array[$key])) {
+              unset($array[$key]);
+            }
+          }
+          ksort($array);
+          return $array;
+        };
+        $json_input = $filter_array_recursive($json_input);
+        // Generate a normalized cache identifier (unique for a given search call
+        // with a given set of parameter values).
+        $search_id = md5($call . serialize($json_input));
+      }
+      $cid = 'brapi:' . $search_id;
+
+      // Check if the search has already run.
+      $cache_data = \Drupal::cache('brapi_search')->get($cid);
+      if (!$cache_data) {
+        if ($new_search) {
+          // No such search in the cache, generate a new one and return the
+          // corresponding search identifier.
+          // Set search result lifetime.
+          $max_life_time =
+            $config->get('search_default_lifetime')
+            ?? BRAPI_DEFAULT_SEARCH_LIFETIME
+          ;
+          $expiration = time() + $max_life_time;
+          // Set a string as temporary value to be replaced by a result array.
+          \Drupal::cache('brapi_search')->set($cid, 'searching', $expiration);
+          // Return 202 HTTP code.
+          $status['code'] = 202;
+          $result = ['searchResultsDbId' => $search_id, ];
+          // @todo: launch the search in background.
+          // $process_id = shell_exec(sprintf(
+          //   '%s > %s 2>&1 & echo $!',
+          //   $command,
+          //   $outputFile
+          // ));
+// test code:
+//@todo: clear pager data
+$search_result = $this->processObjectCalls(
+  $request, $config, $version, $call, $method
+);
+\Drupal::cache('brapi_search')->set($cid, $search_result, $expiration);
+        }
+        else {
+          // Search expired or invalid search identifier.
+          \Drupal::logger('brapi')->error("Invalid search identifier for call $call ($version).");
+          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        }
+      }
+      else {
+        // Check cache content.
+        if (is_array($cache_data->data)) {
+          // Search ended and we got something to return.
+          //@todo: manage search behavior: save query filters or save result set?
+          $result = ['result' => $cache_data->data['result']];
+          //@todo: Manage pager.
+          $page_size = $this->getCleanPageSize(
+            $config,
+            $request->query->get('pageSize')
+          );
+        }
+        else {
+          // Still searching.
+          $page_size = 1;
+          $status['code'] = 202;
+          $result = ['searchResultsDbId' => $search_id, ];
+        }
+      }
+
+      $parameters = [
+        'page_size'   => $page_size,
+        'page'        => $page,
+        'total_count' => $total_count,
+        'status'      => $status,
+      ];
+
+      $metadata = $this->generateMetadata($request, $config, $parameters);
+      return $metadata + $result;
+    }
+    elseif ('post' == $method) {
+      // Direct execution.
+      return $this->processObjectCalls($request, $config, $version, $call, $method);
+    }
+    else {
+      // Using 'get' method on a non-deferred search call. 
+      \Drupal::logger('brapi')->error("Non-deferred search call must use POST method.");
+      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+    }
   }
 
   /**
@@ -602,7 +692,10 @@ class BrapiController extends ControllerBase {
       if (!empty($page)) {
         $filters['#page'] = $page;
       }
-      $page_size = $this->getCleanPageSize($config, $request->query->get('pageSize'));
+      $page_size = $this->getCleanPageSize(
+        $config,
+        $request->query->get('pageSize')
+      );
       if (!empty($page_size)) {
         $filters['#pageSize'] = $page_size;
       }
