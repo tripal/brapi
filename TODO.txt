@@ -1,6 +1,8 @@
 To Do List
 ==========
 
+Add MaxPagesize parameter on admin page.
+
 Manage search/load cache.
   BrapiController.php, in processObjectCalls(), line 640.
   $brapi_data = $datatype_mapping->getBrapiData([]);
@@ -54,3 +56,11 @@ Add automated tests.
   /tests directory.
 
 Manual tests to check BrAPI specifications compliance.
+
+Support Drupal config export.
+
+Auto-generate s content type fields to match a BrAPI object model.
+
+Add permission by-call management.
+
+Drupal 10 compatibility.
