@@ -163,6 +163,35 @@ class BrapiController extends ControllerBase {
   }
 
   /**
+   * Check given pageSize parameter and return an allowed pageSize value.
+   *
+   * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   BrAPI config.
+   * @param ?string $page_size_param
+   *   The pageSize parameter value to check.
+   * @return int
+   *   A valid pageSize value.
+   */
+  function getCleanPageSize(
+    ImmutableConfig $config,
+    ?string $page_size_param = NULL
+  ) :int {
+    $page_size = $page_size_param ?? $config->get('page_size') ?? BRAPI_DEFAULT_PAGE_SIZE;
+    // Ajust pagination.
+    if (1 > $page_size) {
+      // Null or negative page size, use default.
+      $page_size = $config->get('page_size') ?? BRAPI_DEFAULT_PAGE_SIZE;
+    }
+    elseif (!empty($config->get('page_size_max'))
+      && ($config->get('page_size_max') < $page_size)
+    ) {
+      // Limit to max (specified by the settings).
+      $page_size = $config->get('page_size_max');
+    }
+    return intval($page_size);
+  }
+
+  /**
    * Generates metadata structure.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
@@ -184,13 +213,10 @@ class BrapiController extends ControllerBase {
       'messageType' => 'INFO',
     ];
     $datafiles   = $parameters['datafiles'] ?? [];
-    $page_size   = $parameters['page_size'] ?? BRAPI_DEFAULT_PAGE_SIZE;
+    $page_size   = $this->getCleanPageSize($config, $parameters['page_size']);
     $page        = $parameters['page'] ?? 0;
     $total_count = $parameters['total_count'] ?? 1;
     // Ajust pagination.
-    if (1 > $page_size) {
-      $page_size = BRAPI_DEFAULT_PAGE_SIZE;
-    }
     if (0 > $total_count) {
       $total_count = 0;
     }
@@ -576,7 +602,7 @@ class BrapiController extends ControllerBase {
       if (!empty($page)) {
         $filters['#page'] = $page;
       }
-      $page_size = $request->query->get('pageSize') ?? BRAPI_DEFAULT_PAGE_SIZE;
+      $page_size = $this->getCleanPageSize($config, $request->query->get('pageSize'));
       if (!empty($page_size)) {
         $filters['#pageSize'] = $page_size;
       }

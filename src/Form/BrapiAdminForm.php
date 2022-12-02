@@ -60,12 +60,27 @@ class BrapiAdminForm extends FormBase {
     }
     
     // Default page size.
+    $default_page_size = $config->get('page_size') ?: BRAPI_DEFAULT_PAGE_SIZE;
     $form['page_size'] = [
       '#type' => 'number',
       '#title' => $this->t('Default number of result in pages'),
-      '#default_value' => $config->get('page_size') ?: BRAPI_DEFAULT_PAGE_SIZE,
+      '#default_value' => $default_page_size,
       '#min' => 1,
       '#required' => TRUE,
+    ];
+
+    // Maximum allowed Pagesize value.
+    $page_size_max =
+      $config->get('page_size_max')
+      ?? max(BRAPI_DEFAULT_PAGE_SIZE_MAX, $default_page_size)
+    ;
+    $form['page_size_max'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Maximum number of results allowed per pages'),
+      '#default_value' => $page_size_max,
+      '#description' => $this->t('As BrAPI applications and users may specify very high values for the pageSize parameter, this setting prevents abuses by limiting the allowed number of value per page.'),
+      '#min' => 1,
+      '#required' => FALSE,
     ];
 
     // Token.
@@ -175,6 +190,8 @@ class BrapiAdminForm extends FormBase {
       ->set('location', $form_state->getValue('location') ?? '')
       ->set('organization_name', $form_state->getValue('organization_name') ?? '')
       ->set('organization_url', $form_state->getValue('organization_url') ?? '')
+      ->set('page_size', $form_state->getValue('page_size') ?? BRAPI_DEFAULT_PAGE_SIZE)
+      ->set('page_size_max', $form_state->getValue('page_size_max') ?? BRAPI_DEFAULT_PAGE_SIZE_MAX)
       ->set('token_default_lifetime', $form_state->getValue('token_default_lifetime') ?? BRAPI_DEFAULT_TOKEN_LIFETIME)
       ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
     ;
