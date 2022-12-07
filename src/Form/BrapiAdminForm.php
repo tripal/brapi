@@ -103,6 +103,13 @@ class BrapiAdminForm extends FormBase {
       '#required' => TRUE,
     ];
 
+    // Clear search cache button.
+    $form['clear_cache'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Clear search cache'),
+      '#submit' => ['::clearSearchCache'],
+    ];
+
     // Server info.
     $sys_config = \Drupal::config('system.site');
     $form['server_info'] = [
@@ -162,6 +169,7 @@ class BrapiAdminForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
     ];
+
     return $form;
   }
 
@@ -196,6 +204,18 @@ class BrapiAdminForm extends FormBase {
       ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
     ;
     $config->save();
+    $this->messenger()->addMessage($this->t('BrAPI settings have been updated.'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function clearSearchCache(array &$form, FormStateInterface $form_state) {
+    // Save current config.
+    $this->submitForm($form, $form_state);
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('Search cache has been cleared.'));
   }
 
 }

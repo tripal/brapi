@@ -5,6 +5,7 @@ namespace Drupal\brapi\EventSubscriber;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -16,7 +17,8 @@ class BrapiSubscriber implements EventSubscriberInterface {
    * {@inheritdoc}
    */
   public static function getSubscribedEvents() {
-    $events[KernelEvents::REQUEST][] = array('BrapiLoad', 20);
+    $events[KernelEvents::REQUEST][] = ['BrapiRequest', 20];
+    $events[KernelEvents::TERMINATE][] = 'BrapiTerminate';
     return $events;
   }
 
@@ -33,22 +35,23 @@ class BrapiSubscriber implements EventSubscriberInterface {
    *
    * To generate a token:
    *
+   *   $uid = ...; // Get user identifier.
    *   // $token_id is the user token.
    *   $token_id = bin2hex(random_bytes(16));
-   *   $cid = 'brapi:' . $token_id;
+   *   $cid = 'brapi_token:' . $token_id;
    *   // 'mgis' should be a valid user name.
    *   $data = ['username' => 'mgis'];
    *   // The token will expire in 1 day (=86400sec).
    *   // Other possibility for permanent token: Cache::PERMANENT.
    *   $expiration = time() + 86400;
-   *   \Drupal::cache('brapi_token')->set($cid, $data, $expiration);
+   *   \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid, 'brapi']);
    *
    * @see Symfony\Component\HttpKernel\KernelEvents for details
    *
    * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
    *   The response event to process.
    */
-  public function BrapiLoad(GetResponseEvent $event) {
+  public function BrapiRequest(GetResponseEvent $event) {
     $request = \Drupal::request();
     $route = $request->attributes->get('_route_object');
     
@@ -132,6 +135,17 @@ class BrapiSubscriber implements EventSubscriberInterface {
     }
 
     return $bearer;
+  }
+
+  /**
+   * Perform BrAPI heavy operation after client response has been sent.
+   *
+   * Peform a differed search if set.
+   */
+  public function BrapiTerminate(TerminateEvent $event) {
+    // Launch asynchroneous search if needed.
+    $async_search = \Drupal::Service('brapi.async_search');
+    $async_search->performSearches();
   }
 
 }

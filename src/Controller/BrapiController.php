@@ -158,7 +158,7 @@ class BrapiController extends ControllerBase {
    * @return ?array
    *   The posted JSON data structure or NULL.
    */
-  function getPostData(Request $request) :?array {
+  public function getPostData(Request $request) :?array {
     // Get optional POST JSON data.
     $content = $request->getContent();
     if (!empty($content)) {
@@ -177,7 +177,7 @@ class BrapiController extends ControllerBase {
    * @return int
    *   A valid pageSize value.
    */
-  function getCleanPageSize(
+  public function getCleanPageSize(
     ImmutableConfig $config,
     ?string $page_size_param = NULL
   ) :int {
@@ -208,7 +208,7 @@ class BrapiController extends ControllerBase {
    * @return array
    *   The generated metadata structure.
    */
-  function generateMetadata(
+  public function generateMetadata(
     Request $request,
     ImmutableConfig $config,
     array $parameters = []
@@ -269,7 +269,7 @@ class BrapiController extends ControllerBase {
    * @return array
    *   The response data structure.
    */
-  function processV2ServerInfoCall(
+  public function processV2ServerInfoCall(
     Request $request,
     ImmutableConfig $config
   ) {
@@ -316,7 +316,7 @@ class BrapiController extends ControllerBase {
    * @return array
    *   The response data structure.
    */
-  function processV1CallsCall(
+  public function processV1CallsCall(
     Request $request,
     ImmutableConfig $config
   ) {
@@ -354,7 +354,7 @@ class BrapiController extends ControllerBase {
    * @throw \Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException
    * @throw \Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException
    */
-  function processV1LoginCall(
+  public function processV1LoginCall(
     Request $request,
     ImmutableConfig $config
   ) {
@@ -429,7 +429,7 @@ class BrapiController extends ControllerBase {
         user_login_finalize($account);
         // Generate a new token.
         $token_id = bin2hex(random_bytes(16));
-        $cid = 'brapi:' . $token_id;
+        $cid = 'brapi_token:' . $token_id;
         $data = ['username' => $name];
         $config = \Drupal::config('brapi.settings');
         $maxlifetime =
@@ -437,7 +437,7 @@ class BrapiController extends ControllerBase {
           ?? BRAPI_DEFAULT_TOKEN_LIFETIME
         ;
         $expiration = time() + $maxlifetime;
-        \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid]);
+        \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid, 'brapi']);
         $result = [
           'access_token'    => $token_id,
           'expires_in'      => $maxlifetime,
@@ -466,7 +466,7 @@ class BrapiController extends ControllerBase {
    * @return array
    *   The response data structure.
    */
-  function processV1LogoutCall(
+  public function processV1LogoutCall(
     Request $request,
     ImmutableConfig $config
   ) {
@@ -477,14 +477,78 @@ class BrapiController extends ControllerBase {
   /**
    * Manage search calls.
    *
+   * This method uses `processObjectCalls` to search and fetch objects.
+   * However, it can manage deferred search in order to send a quick response to
+   * the client.
+   *
+   * Several strategies were considered to launch background searches:
+   * - launching an external (shell) command. This approach must be used by both
+   *   "cron" or "shell exec" methods. One problem is to pass the search query
+   *   and the optional user token. It could be achieved through a file that
+   *   must remain confidential (private file system). It adds the task of
+   *   managing search files and handle race conditions. It also adds the
+   *   question of managing crashed/lost computations.
+   *   Then, executing such a command requiers Drupal system: the best option
+   *   would be to use Drush and add it as a dependency for BrAPI module.
+   *   Moreover, the external process must be "detached" from parent process
+   *   and not be killed when the parent process ends.
+   * - perform the search task when the search call is submitted. This approach 
+   *   must be used by "shell exec" or "fork" or "kernel.terminate event"
+   *   methods. In any case, it must not block or delay the (202) response to 
+   *   the client.
+   *   One problem is that it will use a PHP-FPM thread during the whole
+   *   computation. To mitigate that problem, a limit of runnable paralele
+   *   searches must be managed in order to avoid DoS.
+   * - the Drupal cron method. Using the Drupal cron would not be conveninent as
+   *   it could be launched at an hour basis while the computation could be
+   *   short. It would mean the client would have to wait a very long time for
+   *   almost nothing.
+   * - a custom BrAPI cron method. It would require additional settings external
+   *   to Drupal. It would require server shell access and/or being setup by an
+   *   admin. The cron frequency might be hard to choose between too frequent
+   *   and not enough frequent.
+   * - fork method. The process is forked so parent process can return a search
+   *   identifier to the client while the child process performs the search.
+   *   However, forking is not convenient as handlers are shared, especially
+   *   database handles, that leads to many types of problems. Also both
+   *   process must not kill each other.
+   * - exec method. A process is launched in background with the problems
+   *   specified above (passing parameters, concurrency, dependencies, etc.).
+   * - the symphony "kernel.terminate" event. That's the best option. The only
+   *   drawback is that it locks a PHP-FPM process as described above, which can
+   *   be mitigated by limiting the number of concurrent searches. Limiting
+   *   could also be seen as a nice security feature.
+   *
+   * The symphony "kernel.terminate" event is the selected option. When a
+   * deferred search is submitted by a client, a hash is generated from the
+   * (normalized) request in order to identify a same search request submitted
+   * multiple times. This identifier is used to create a Drupal cache item that
+   * will be used as "search lock" to avoid running the same search multiple
+   * times (the current implementation still allows race conditions but it is
+   * mitigated by the fact that they have few chances to occur and will serve
+   * the same results anyway). The cache item contains a "202" HTTP code until
+   * the search is done. When the search completes, it stores its result in the
+   * cache item. Every client query submitting the same search or querying the
+   * search identifier will use that cache item to track the search status and
+   * finally return the search results when available. When the cache item
+   * expires, a client query with the old search identifier will result in a 404
+   * "not found" response and a new search with the same parameters will create
+   * a new cache item and perform a new search.
+   *
+   * Search must be managed "by users": clients must not be able to share the
+   * same results unless the are anonymous or use the same user idenfier as user
+   * may have different data access priviledges.
+   *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
    * @return array
    *   The response data structure.
+   *
+   * @see https://symfony.com/doc/current/components/http_kernel.html#component-http-kernel-kernel-terminate
    */
-  function processSearchCalls(
+  public function processSearchCalls(
     Request $request,
     ImmutableConfig $config,
     $version,
@@ -560,7 +624,7 @@ class BrapiController extends ControllerBase {
         // with a given set of parameter values).
         $search_id = md5($call . serialize($json_input));
       }
-      $cid = 'brapi:' . $search_id;
+      $cid = 'brapi_search:' . $search_id;
 
       // Check if the search has already run.
       $cache_data = \Drupal::cache('brapi_search')->get($cid);
@@ -573,48 +637,63 @@ class BrapiController extends ControllerBase {
             $config->get('search_default_lifetime')
             ?? BRAPI_DEFAULT_SEARCH_LIFETIME
           ;
+          // @todo: check for too many search jobs.
           $expiration = time() + $max_life_time;
           // Set a string as temporary value to be replaced by a result array.
-          \Drupal::cache('brapi_search')->set($cid, 'searching', $expiration);
+          \Drupal::cache('brapi_search')->set($cid, ['metadata' => ['code' => 202,]], $expiration, ['brapi']);
           // Return 202 HTTP code.
           $status['code'] = 202;
           $result = ['searchResultsDbId' => $search_id, ];
-          // @todo: launch the search in background.
-          // $process_id = shell_exec(sprintf(
-          //   '%s > %s 2>&1 & echo $!',
-          //   $command,
-          //   $outputFile
-          // ));
-// test code:
-//@todo: clear pager data
-$search_result = $this->processObjectCalls(
-  $request, $config, $version, $call, $method
-);
-\Drupal::cache('brapi_search')->set($cid, $search_result, $expiration);
+          // Launch the search in background.
+          $async_search = \Drupal::Service('brapi.async_search');
+          $async_search->addSearch([
+            'controller' => &$this,
+            'request'    => $request,
+            'config'     => $config,
+            'version'    => $version,
+            'call'       => $call,
+            'method'     => $method,
+            'cid'        => $cid,
+            'expiration' => $expiration,
+          ]);
         }
         else {
-          // Search expired or invalid search identifier.
+          // Search result expired or invalid search identifier.
           \Drupal::logger('brapi')->error("Invalid search identifier for call $call ($version).");
           throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
         }
       }
       else {
         // Check cache content.
-        if (is_array($cache_data->data)) {
+        if (!is_array($cache_data->data)) {
+          // Invalid data. It should be an array.
+          \Drupal::logger('brapi')->error("Corrupted search data for call $call ($version).");
+          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        }
+        elseif (202 == $cache_data->data['metadata']['code']) {
+          // Still searching.
+          $page_size = 1;
+          $status['code'] = 202;
+          $result = ['searchResultsDbId' => $search_id, ];
+        }
+        elseif ((200 == ($cache_data->data['metadata']['code'] ?? 200))
+            && array_key_exists('result', $cache_data->data)
+        ) {
           // Search ended and we got something to return.
-          //@todo: manage search behavior: save query filters or save result set?
+          // @todo: manage search result storage strategies:
+          //   save query filters or save resulting identifiers as list
+          //   or save the full result set?
           $result = ['result' => $cache_data->data['result']];
-          //@todo: Manage pager.
+          // @todo: Manage pager.
           $page_size = $this->getCleanPageSize(
             $config,
             $request->query->get('pageSize')
           );
         }
         else {
-          // Still searching.
-          $page_size = 1;
-          $status['code'] = 202;
-          $result = ['searchResultsDbId' => $search_id, ];
+          // Invalid result.
+          \Drupal::logger('brapi')->error("Invalid search result for call $call ($version).");
+          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
         }
       }
 
@@ -651,7 +730,7 @@ $search_result = $this->processObjectCalls(
    * @return array
    *   The response data structure.
    */
-  function processObjectCalls(
+  public function processObjectCalls(
     Request $request,
     ImmutableConfig $config,
     $version,

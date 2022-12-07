@@ -209,7 +209,7 @@ class BrapiCallsForm extends FormBase {
                   ) {
                     $form[$version][$call]['deferred'] = [
                       '#type' => 'checkbox',
-                      '#title' => $this->t('Use background search (provide a "searchResultsDbId" and deferred results)'),
+                      '#title' => $this->t('Use background search (provide a "searchResultsDbId" and deferred results asynchronously)'),
                       '#default_value' => !empty($call_settings[$version][$call]['deferred']),
                     ];
                   }

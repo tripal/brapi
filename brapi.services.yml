@@ -1,4 +1,6 @@
 services:
+  brapi.async_search:
+    class: Drupal\brapi\BrapiAsyncSearch
   brapi.brapi_subscriber:
     class: Drupal\brapi\EventSubscriber\BrapiSubscriber
     tags:
