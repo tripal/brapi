@@ -12,12 +12,13 @@ CONTENTS OF THIS FILE
  * Requirements
  * Installation
  * Configuration
+ * Administration
  * Maintainers
 
 INTRODUCTION
 ------------
 
-Version 9.x-4.x is a complete rewrite of the BrAPI module for Drupal 8+. This
+Version 4.0.x is a complete rewrite of the BrAPI module for Drupal 8+. This
 module only contains the BrAPI server part. For a Drupal BrAPI client, see
 External Entities BrAPI Storage plugin (
 https://www.drupal.org/project/xnttbrapi/).
@@ -31,12 +32,13 @@ version related.
 BrAPI calls are handled through:
 /brapi/v<1 or 2>/<call name with arguments>[parameters such as: ?page=0&pageSize=10]
 
-Current alpha support:
--simple calls for listing and displaying a single element (read only)
+Current beta support:
+-calls for listing and displaying a single element (read only)
+-search calls
 -pager
--some filters
--only simple fields can be mapped (composed/object fields not supported yet)
--permissions are not fully managed
+-filters
+-authentication
+-permissions are not fully managed (read only)
 -only JSON output
 
 
@@ -57,6 +59,24 @@ CONFIGURATION
 Got to your site /brapi/admin/ page. From there, you can manage supported BrAPI
 version, data types mapping (/brapi/admin/datatypes) and enabled calls
 (/brapi/admin/calls).
+On the "people" > "permissions" page, got to the "Plant Breeding API" section
+and set the "Use BrAPI" permission to the appropriate roles. You may grant that
+permission to the "Anonymous" role for anonymous access.
+
+
+ADMINISTRATION
+--------------
+
+* To manage user, use Drupal native user management interface.
+
+* To get a user access token, login to the website using the user account and
+  visit `/brapi/token/new`.
+  
+* To clear search cache, use drush command:
+```
+drush cc bin brapi_search
+```
+
 
 
 MAINTAINERS

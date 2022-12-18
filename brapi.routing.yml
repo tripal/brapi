@@ -14,6 +14,26 @@ brapi.documentation:
   requirements:
     _access: 'TRUE'
 
+brapi.token:
+  path: '/brapi/token'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::tokenPage'
+    _title: 'Plant Breeding API user access token'
+  requirements:
+    _role: 'authenticated'
+  options:
+    no_cache: 'TRUE'
+
+brapi.token.new:
+  path: '/brapi/token/new'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::newTokenPage'
+    _title: 'Generate a new Plant Breeding API user access token'
+  requirements:
+    _role: 'authenticated'
+  options:
+    no_cache: 'TRUE'
+
 brapi.admin:
   path: '/brapi/admin'
   defaults:

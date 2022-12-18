@@ -6,14 +6,20 @@
 
 namespace Drupal\brapi\Controller;
 
+use Drupal\brapi\Entity\BrapiList;
+use Drupal\brapi\Entity\BrapiToken;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class BrapiController extends ControllerBase {
 
@@ -54,6 +60,26 @@ class BrapiController extends ControllerBase {
   }
 
   /**
+   * Displays BrAPI token page.
+   */
+  public function tokenPage() {
+    $content = [
+      '#theme' => 'brapi_token',
+      '#title' => t('User Access Token.'),
+    ];
+
+    return $content;
+  }
+
+  /**
+   * Generates a new token if needed and displays BrAPI token page.
+   */
+  public function newTokenPage() {
+    $token = BrapiToken::getUserToken(NULL, TRUE);
+    return $this->tokenPage();
+  }
+
+  /**
    * Export BrAPI call results as JSON.
    *
    * Useful documentation:
@@ -63,89 +89,117 @@ class BrapiController extends ControllerBase {
    *   - https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
    */
   public function brapiCall() {
-    // Get intended HTTP method.
-    $request = \Drupal::request();
-    $method = strtolower($request->getMethod());
-    $route = $request->attributes->get('_route_object');
-    if (empty($route)) {
-      \Drupal::logger('brapi')->error('No route object for "' . $request->getUri() . '"');
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-    }
-    if (!preg_match('#^/brapi/(v\d)(/.+)#', $route->getPath(), $matches)) {
-      \Drupal::logger('brapi')->error('Invalid path structure for "' . $request->getUri() . '"');
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-    }
-    $version = $matches[1];
-    $call = $matches[2];
-    // Get current settings.
-    $config = \Drupal::config('brapi.settings');
-    $call_settings = $config->get('calls');
+    try {
+      // Get intended HTTP method.
+      $request = \Drupal::request();
+      $method = strtolower($request->getMethod());
+      $route = $request->attributes->get('_route_object');
+      if (empty($route)) {
+        $message = 'No route object for "' . $request->getUri() . '"';
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
+      }
+      if (!preg_match('#^/brapi/(v\d)(/.+)#', $route->getPath(), $matches)) {
+        $message = 'Invalid path structure for "' . $request->getUri() . '"';
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
+      }
+      $version = $matches[1];
+      $call = $matches[2];
+      // Get current settings.
+      $config = \Drupal::config('brapi.settings');
+      $call_settings = $config->get('calls');
 
-    // Check if we have something for that call and method.
-    if (empty($call_settings[$version][$call][$method])) {
-      \Drupal::logger('brapi')->error("No available settings for call '$call' ($version) using method $method.");
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-    }
+      // Check if we have something for that call and method.
+      if (empty($call_settings[$version][$call][$method])) {
+        $message = "No available settings for call '$call' ($version) using method $method.";
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
+      }
 
-    // Make sure we got a definition.
-    $active_def = $config->get($version . 'def');
-    $brapi_def = brapi_get_definition($version, $active_def);
-    if (empty($brapi_def['calls'][$call])) {
-      \Drupal::logger('brapi')->error("No available definition for call '$call' ($version, $active_def) using method $method.");
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-    }
+      // Make sure we got a definition.
+      $active_def = $config->get($version . 'def');
+      $brapi_def = brapi_get_definition($version, $active_def);
+      if (empty($brapi_def['calls'][$call])) {
+        $message = "No available definition for call '$call' ($version, $active_def) using method $method.";
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
+      }
+      
+      // Check permission.
+      if ((!\Drupal::currentUser()->hasPermission(BRAPI_USE_PERMISSION))
+          && !(('v1' == $version) && ('/login' == $call))
+      ) {
+        throw new AccessDeniedHttpException('You are not allowed to use BrAPI. Please use a valid access token.');
+      }
+      //@todo: also check write access on PUT or POST calls.
 
-    // Manage call cases.
-    if (0 === strpos($call, '/search/')) {
-      $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
-    }
-    // elseif (0 === strpos($call, '/lists/')) {
-    //   //@todo: implement...
-    //   // $json_array = $this->processListCalls($request, $config, $version, $call, $method);
-    // }
-    elseif (('v2' == $version) && ('/serverinfo' == $call)) {
-      $json_array = $this->processV2ServerInfoCall($request, $config);
-    }
-    elseif (('v1' == $version) && ('/calls' == $call)) {
-      $json_array = $this->processV1CallsCall($request, $config);
-    }
-    elseif (('v1' == $version) && ('/login' == $call)) {
-      $json_array = $this->processV1LoginCall($request, $config);
-    }
-    elseif (('v1' == $version) && ('/logout' == $call)) {
-      $json_array = $this->processV1LogoutCall($request, $config);
-    }
-    elseif (1 == count($brapi_def['calls'][$call]['data_types'])) {
-      // Call works with one data type: a regular BrAPI object call.
-      $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
-    }
-    else {
-      $this->logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
-    }
+      // Manage call cases.
+      if (0 === strpos($call, '/search/')) {
+        $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
+      }
+      elseif (('v2' == $version) && ('/serverinfo' == $call)) {
+        $json_array = $this->processV2ServerInfoCall($request, $config);
+      }
+      elseif (('v1' == $version) && ('/calls' == $call)) {
+        $json_array = $this->processV1CallsCall($request, $config);
+      }
+      elseif (('v1' == $version) && ('/login' == $call)) {
+        $json_array = $this->processV1LoginCall($request, $config);
+      }
+      elseif (('v1' == $version) && ('/logout' == $call)) {
+        $json_array = $this->processV1LogoutCall($request, $config);
+      }
+      elseif ('/lists' == $call) {
+        // Special case of '/lists' thats uses 2 data types. The right one is
+        // selected in processObjectCalls() by a dedicated "if".
+        $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
+      }
+      elseif (1 == count($brapi_def['calls'][$call]['data_types'])) {
+        // Call works with one data type: a regular BrAPI object call.
+        $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
+      }
+      else {
+        \Drupal::logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
+      }
 
-    // @todo: Manage other special call cases.
-    // -manage special output formats (eg. /phenotypes-search/csv)
+      // @todo: Manage other special call cases.
+      // -manage special output formats (eg. /phenotypes-search/csv)
 
-    // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
-    // https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
-    // https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
+      // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
+      // https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
+      // https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
 
-    // Check if the whole response is not specific and has not been set already.
-    if (!isset($json_array)) {
-      // @todo: Add error and debug info.
+      // Check if the whole response is not specific and has not been set already.
+      if (!isset($json_array)) {
+        // @todo: Add error and debug info.
+        $parameters = [
+          'status' => [
+            'message'     => 'Not implemented',
+            'messageType' => 'ERROR',
+          ],
+        ];
+        $metadata = $this->generateMetadata($request, $config, $parameters);
+        $json_array = $metadata;
+      }
+      $response = new JsonResponse($json_array);
+      // Check for specified status code.
+      if (!empty($json_array['metadata']['status']['code'])) {
+        // Here we could delete the 'code' key from the status array if we want.
+        $response->setStatusCode($json_array['metadata']['status']['code']);
+      }
+    }
+    catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+      // Catch HTTP errors.
       $parameters = [
         'status' => [
-          'message'     => 'Not implemented',
+          'message'     => $e->getMessage() ?: 'An exception occurred.',
           'messageType' => 'ERROR',
         ],
       ];
-      $metadata = $this->generateMetadata($request, $config, $parameters);
-      $json_array = $metadata;
-    }
-    $response = new JsonResponse($json_array);
-    // Check for specified status code.
-    if (!empty($json_array['metadata']['status']['code'])) {
-      $response->setStatusCode($json_array['metadata']['status']['code']);
+      $json_array = $this->generateMetadata($request, $config, $parameters);
+      $response = new JsonResponse($json_array);
+      $response->setStatusCode($e->getStatusCode());
     }
     return $response;
   }
@@ -155,14 +209,30 @@ class BrapiController extends ControllerBase {
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The HTTP request object.
+   * @param bool $raise_error
+   *   If TRUE and an invalid JSON data has been provided, throws a
+   *   BadRequestHttpException exception. Default: FALSE.
+   * @param string $error_message
+   *   Specific error message to display if needed. Default provided.
    * @return ?array
    *   The posted JSON data structure or NULL.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
    */
-  public function getPostData(Request $request) :?array {
+  public function getPostData(
+    Request $request,
+    bool $raise_error = FALSE,
+    string $error_message = 'Invalid or malformed JSON data.'
+  ) :?array {
     // Get optional POST JSON data.
     $content = $request->getContent();
     if (!empty($content)) {
       $json_input = json_decode($content, TRUE);
+    }
+    if ($raise_error && !isset($json_input)) {
+      $message = $error_message . "\n" . json_last_error_msg();
+      \Drupal::logger('brapi')->error($message);
+      throw new BadRequestHttpException($message);
     }
     return $json_input;
   }
@@ -218,7 +288,7 @@ class BrapiController extends ControllerBase {
       'messageType' => 'INFO',
     ];
     $datafiles   = $parameters['datafiles'] ?? [];
-    $page_size   = $this->getCleanPageSize($config, $parameters['page_size']);
+    $page_size   = $this->getCleanPageSize($config, $parameters['page_size'] ?? NULL);
     $page        = $parameters['page'] ?? 0;
     $total_count = $parameters['total_count'] ?? 1;
     // Ajust pagination.
@@ -373,7 +443,7 @@ class BrapiController extends ControllerBase {
       'client_id'       => \Drupal::currentUser()->getAccountName(),
     ];
 
-    $json_input = $this->getPostData($request);
+    $json_input = $this->getPostData($request, TRUE);
     // Check for log in request.
     $method = strtolower($request->getMethod());
     if ('post' == $method) {
@@ -394,6 +464,7 @@ class BrapiController extends ControllerBase {
           ->get('ip_limit'), $flood_config
           ->get('ip_window'))
         ) {
+          \Drupal::logger('brapi')->error('Too many login attempts for account "' . $name . '"');
           throw new TooManyRequestsHttpException('Too many attempts.');
         }
 
@@ -418,6 +489,7 @@ class BrapiController extends ControllerBase {
             ->get('user_limit'), $flood_config
             ->get('user_window'), $identifier)
           ) {
+            \Drupal::logger('brapi')->error('Too many login attempts for account "' . $name . '"');
             throw new TooManyRequestsHttpException('Too many attempts.');
           }
         }
@@ -427,27 +499,22 @@ class BrapiController extends ControllerBase {
       }
       if (!empty($uid)) {
         user_login_finalize($account);
-        // Generate a new token.
-        $token_id = bin2hex(random_bytes(16));
-        $cid = 'brapi_token:' . $token_id;
-        $data = ['username' => $name];
-        $config = \Drupal::config('brapi.settings');
-        $maxlifetime =
-          $config->get('token_default_lifetime')
-          ?? BRAPI_DEFAULT_TOKEN_LIFETIME
-        ;
-        $expiration = time() + $maxlifetime;
-        \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid, 'brapi']);
+        $token = BrapiToken::getUserToken($account, TRUE);
         $result = [
-          'access_token'    => $token_id,
-          'expires_in'      => $maxlifetime,
+          'access_token'    => $token->token->getString(),
+          'expires_in'      => $token->expiration->getString(),
           'userDisplayName' => $account->getDisplayName(),
           'client_id'       => $account->getAccountName(),
         ];
       }
       elseif (\Drupal::currentUser()->id()) {
-        // Logout as the login try failed.
+        // Logout current user as the login try failed.
         user_logout();
+        throw new UnauthorizedHttpException('Basic', 'Login failed. Login out current user.');
+      }
+      else {
+        // Authentication failed.
+        throw new UnauthorizedHttpException('Basic', 'Login failed.');
       }
     }
     $metadata = $this->generateMetadata($request, $config);
@@ -576,13 +643,15 @@ class BrapiController extends ControllerBase {
       // Check call consistency.
       if (('get' == $method) && empty($filters['searchResultsDbId'])) {
         // Missing search identifier!
-        \Drupal::logger('brapi')->error("No search identifier provided for call $call ($version).");
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        $message = "No search identifier provided for call $call ($version).";
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
       }
       elseif (('get' != $method) && !empty($filters['searchResultsDbId'])) {
         // Using a search identifier with a POST method.
-        \Drupal::logger('brapi')->error("A search identifier has provided for call $call ($version) while not using the GET method.");
-        throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        $message = "A search identifier has provided for call $call ($version) while not using the GET method.";
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
       }
       
       if (!empty($filters['searchResultsDbId'])) {
@@ -595,12 +664,7 @@ class BrapiController extends ControllerBase {
         $new_search = TRUE;
         // Get a normalized search parameter array.
         // It will be used to generate a search identifier.
-        $json_input = $this->getPostData($request);
-        if (!isset($json_input)) {
-          // @todo: should return a 400 code.
-          \Drupal::logger('brapi')->error("Invalid JSON data for search call $call ($version).");
-          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-        }
+        $json_input = $this->getPostData($request, TRUE, "Invalid JSON data for search call $call ($version).");
         $filter_array_recursive = 'throw';
         $filter_array_recursive = function (&$array)
           use ($filter_array_recursive)
@@ -620,6 +684,8 @@ class BrapiController extends ControllerBase {
           return $array;
         };
         $json_input = $filter_array_recursive($json_input);
+        // @todo: take into account user identifier for access restrictions and
+        // concurrent search limitations.
         // Generate a normalized cache identifier (unique for a given search call
         // with a given set of parameter values).
         $search_id = md5($call . serialize($json_input));
@@ -659,16 +725,18 @@ class BrapiController extends ControllerBase {
         }
         else {
           // Search result expired or invalid search identifier.
-          \Drupal::logger('brapi')->error("Invalid search identifier for call $call ($version).");
-          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+          $message = "Invalid search identifier for call $call ($version).";
+          \Drupal::logger('brapi')->error($message);
+          throw new NotFoundHttpException($message);
         }
       }
       else {
         // Check cache content.
         if (!is_array($cache_data->data)) {
           // Invalid data. It should be an array.
-          \Drupal::logger('brapi')->error("Corrupted search data for call $call ($version).");
-          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+          $message = "Corrupted search data for call $call ($version).";
+          \Drupal::logger('brapi')->error($message);
+          throw new NotFoundHttpException($message);
         }
         elseif (202 == $cache_data->data['metadata']['code']) {
           // Still searching.
@@ -692,8 +760,9 @@ class BrapiController extends ControllerBase {
         }
         else {
           // Invalid result.
-          \Drupal::logger('brapi')->error("Invalid search result for call $call ($version).");
-          throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+          $message = "Invalid search result for call $call ($version).";
+          \Drupal::logger('brapi')->error($message);
+          throw new NotFoundHttpException($message);
         }
       }
 
@@ -713,8 +782,9 @@ class BrapiController extends ControllerBase {
     }
     else {
       // Using 'get' method on a non-deferred search call. 
-      \Drupal::logger('brapi')->error("Non-deferred search call must use POST method.");
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+      $message = "Non-deferred search call must use POST method.";
+      \Drupal::logger('brapi')->error($message);
+      throw new NotFoundHttpException($message);
     }
   }
 
@@ -782,16 +852,24 @@ class BrapiController extends ControllerBase {
 
     // Get associated data type.
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
-    $datatype_id = brapi_generate_datatype_id(array_keys($brapi_def['calls'][$call]['data_types'])[0], $version, $active_def);
+    $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+    // Special case for list of lists.
+    if ('ListTypes' == $datatype) {
+      $datatype = 'ListSummary';
+    }
+    $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
     $datatype_mapping = $mapping_loader->load($datatype_id);
     if (empty($datatype_mapping)) {
-      \Drupal::logger('brapi')->error("No mapping available for data type '$datatype_id'.");
-      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+      $message = "No mapping available for data type '$datatype_id'.";
+      \Drupal::logger('brapi')->error($message);
+      throw new NotFoundHttpException($message);
     }
     // Process query filters.
     // @todo: manage PUT calls and record data.
     if ('put' == $method) {
-      
+      $message = "Not implemented yet.";
+      \Drupal::logger('brapi')->error($message);
+      \Drupal::messenger()->addWarning($message);
     }
     // Manage old /v1/*-search calls and /v*/search/* calls.
     if (str_contains($call, 'search')) {
@@ -919,4 +997,5 @@ class BrapiController extends ControllerBase {
     $metadata = $this->generateMetadata($request, $config, $parameters);
     return $metadata + $result;
   }
+
 }

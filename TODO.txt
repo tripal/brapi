@@ -5,10 +5,6 @@ Manage search/load cache.
   BrapiController.php, in processObjectCalls(), line 640.
   $brapi_data = $datatype_mapping->getBrapiData([]);
   
-Manage search identifiers searchResultsDbId
-  BrapiController.php, in processSearchCalls(), line 467.
-  // Check if the search call should use differed result.
-
 Manage paginiation when filtering search results using module.
   BrapiController.php, in processObjectCalls(), line 640.
   $brapi_data = $datatype_mapping->getBrapiData([]);
@@ -17,9 +13,10 @@ Implement list call.
   BrapiController.php, in brapiCall(), line 102.
   // elseif (0 === strpos($call, '/lists/')) {
 
-Add an interface to generate access token.
-  Use BrapiController.php, in processV1LoginCall(), line 409 as example.
-  \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid]);
+Improve interface access token management.
+  - add "remove" token on user token page (brapi/token)
+  - add a "create new token" button (targetting brapi/token/new)
+  - add admin interface for global management (interface BrapiToken::purgeExpiredTokens())
 
 Add an interface to manage used/unused sub-mappings.
   BrapiDataTypesForm.php, in buildForm(), line 88.
@@ -33,8 +30,6 @@ Support for PUT/POST request to edit/create new objects.
   if ('put' == $method) {
 
 Add and manage permission for editing.
-
-Add setting for max page size.
 
 Documentation.
 
@@ -54,6 +49,7 @@ Add automated tests.
   /tests directory.
 
 Manual tests to check BrAPI specifications compliance.
+  Should include a call test page to check BrAPI compliance against specs.
 
 Support Drupal config export.
 

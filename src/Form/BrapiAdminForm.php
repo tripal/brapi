@@ -2,6 +2,7 @@
 
 namespace Drupal\brapi\Form;
 
+use Drupal\brapi\Entity\BrapiList;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -189,6 +190,50 @@ class BrapiAdminForm extends FormBase {
         ;
       }
     }
+
+    // Check if BrAPI v2 is enabled and ensure a List mapping is there.
+    if ($form_state->getValue('v2') ?? FALSE) {
+      $mapping_sm = \Drupal::entityTypeManager()->getStorage('brapidatatype');
+      // Check if a mapping for lists already exists.
+      $active_def = $form_state->getValue('v2_definition') ?? '';
+      foreach (['ListDetails', 'ListSummary'] as $list_datatype) {
+        $list_datatype_id = brapi_generate_datatype_id($list_datatype, 'v2', $active_def);
+        $brapi_list = $mapping_sm->load($list_datatype_id);
+        if (!$brapi_list) {
+          // No mapping. Create one.
+          $brapi_definition = brapi_get_definition('v2', $active_def);
+          $mapping = [];
+          foreach (
+            $brapi_definition["data_types"]["ListDetails"]["fields"]
+            as $bfield => $fdef
+          ) {
+            // Change field name convention (CaMel to snake_case).
+            // (?<!^) lookbehind to avoid a '_' at the begining of the name.
+            $dfield = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $bfield));
+            $mapping[$bfield] = [
+              'field' => $dfield,
+              'static' => '',
+              // Use JSON for complex data and lists.
+              'is_json' => (
+                in_array($fdef['type'], ['string', 'integer', 'uuid'])
+                ? FALSE
+                : TRUE
+              ),
+              'subfield' => '',
+            ];
+          }
+
+          $brapi_list = $mapping_sm->create([
+            'id' => $list_datatype_id,
+            'label' => "List for BrAPI v2.0",
+            'contentType' => "brapi_list:brapi_list",
+            'mapping' => $mapping,
+          ]);
+          $brapi_list->save();
+        }
+      }
+    }
+
     // Save server settings.
     $config
       ->set('server_name', $form_state->getValue('server_name') ?? '')

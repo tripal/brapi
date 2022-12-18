@@ -555,6 +555,25 @@ class BrapiDatatypeFormBase extends EntityForm {
           ],
         ];          
 
+        // JSON data.
+        $state_conditions = [
+          ['value' => '_submapping'],
+        ];
+        foreach (array_keys($string_field_options['References']) as $ref_val) {
+          $state_conditions[] = 'or';
+          $state_conditions[] = ['value' => $ref_val];
+        }
+        $mapping_form[$field_name]['is_json'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Treate value as JSON data'),
+          '#default_value' => $brapi_datatype->mapping[$field_name]['is_json'] ?? FALSE,
+          '#states' => [
+            'invisible' => [
+              ':input[id="edit-mapping-' . $field_name . '-field"]' => $state_conditions,
+            ],
+          ],
+        ];
+
         // Sub-mapping.
         $mapping_form[$field_name]['subfield'] = [
           '#type' => 'textfield',

@@ -41,7 +41,6 @@ use JsonPath\JsonObject;
  */
 class BrapiDatatype extends ConfigEntityBase {
 
-
   /**
    * Parse BrAPI datatype identifier into version, release, datatype and fields.
    *
@@ -251,6 +250,7 @@ class BrapiDatatype extends ConfigEntityBase {
               $sub_datatype_id = brapi_generate_datatype_id($brapi_field_datatype, $version, $active_def);
               $sub_datatype = $mapping_loader->load($sub_datatype_id);
               # Get data from sub-mapping.
+              $field = $entity->get($drupal_mapping['field']);
               $field_entities = $field->referencedEntities();
               $brapi_data[$brapi_field] = [];
               foreach ($field_entities as $field_entity) {
@@ -260,9 +260,14 @@ class BrapiDatatype extends ConfigEntityBase {
               }
             }
             elseif ('_static' == $drupal_mapping['field']) {
-              // Static value.
-              // @todo: manage JSON data in a static string.
-              $brapi_data[$brapi_field] = $drupal_mapping['static'];
+              // Static value, manage JSON data in a static string.
+              if (empty($drupal_mapping['is_json'])) {
+                $brapi_data[$brapi_field] = $drupal_mapping['static'];
+              }
+              else {
+                // Treate as JSON.
+                $brapi_data[$brapi_field] = json_decode($drupal_mapping['static'], TRUE);
+              }
             }
             else {
               // BrAPI field mapped to an entity field, get its value.
@@ -279,7 +284,13 @@ class BrapiDatatype extends ConfigEntityBase {
               }
               else {
                 // Regular field, get it as string.
-                $brapi_data[$brapi_field] = $field->getString();
+                if (empty($drupal_mapping['is_json'])) {
+                  $brapi_data[$brapi_field] = $field->getString();
+                }
+                else {
+                  // Treate as JSON.
+                  $brapi_data[$brapi_field] = json_decode($field->getString(), TRUE);
+                }
               }
             }
           }

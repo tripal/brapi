@@ -25,6 +25,22 @@ class BrapiDataTypesForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    // V1 internal types.
+    $v1_internal_types = [
+      'WSMIMEDataTypes',
+      'call',
+      'successfulSearchResponse_result',
+    ];
+    // V2 internal types.
+    $v2_internal_types = [
+      'WSMIMEDataTypes',
+      'ServerInfo',
+      'ListTypes',
+      'ListDetails',
+      'ListSummary',
+      'ListValue',
+    ];
+
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
 
@@ -56,6 +72,19 @@ class BrapiDataTypesForm extends FormBase {
           ) {
             // Skip datatypes not used in calls or other datatypes.
             // $this->logger('brapi')->notice('Skipping datatype "%datatype" (v%version) has it does not seem to be used.', ['%datatype' => $datatype, '%version' => $active_def]);
+            continue 1;
+          }
+          // Skip special datatypes managed internally.
+          // Always allows the use of calls: v1/calls, v2/serverinfo,
+          // v1 search calls, v2/lists.
+          if (
+            (('v2' == $version)
+              && (in_array($datatype, $v2_internal_types))
+            )
+            || (('v1' == $version)
+              && (in_array($datatype, $v1_internal_types))
+            )
+          ) {
             continue 1;
           }
 

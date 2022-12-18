@@ -1,0 +1,18 @@
+<p>You are logged in as &quot;<a href="{{ path('entity.user.canonical', {'user': user.id}) }}" title="{{ 'View user profile'|t }}">{{ user.getAccountName() }}</a>&quot;</p>
+
+{% if tokens is empty %}
+<p>Your don't have any valid BrAPI token at the moment.</p>
+{% else %}
+  <ul>
+  {% for token in tokens %}
+    <li class="brapi-token">
+      <div class="field field-brapi-token-token">
+        <span class="field-label">Token:</span> <span class="field-value"><input type="text" value="{{ token.token.getString() }}" size="40em" readonly {% if token.isExpired %}disabled {% endif %}/></span>
+      </div>
+      <div class="field field-brapi-token-expiration">
+        <span class="field-label">Expiration:</span> <span class="field-value"> {{ token.expiration.getString()|date('Y/m/d h:m:s') }}{% if token.isExpired %} (<span class="warning">Expired!</span>){% endif %}</span>
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+{% endif %}

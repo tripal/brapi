@@ -5,6 +5,7 @@
  * Contains brapi.module.
  */
 
+use Drupal\brapi\Entity\BrapiToken;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 const BRAPI_USE_PERMISSION = 'use brapi';
@@ -43,7 +44,20 @@ function brapi_theme($existing, $type, $theme, $path) {
     'brapi_documentation' => [
       'template' => 'brapi-documentation',
     ],
+    'brapi_token' => [
+      'template' => 'brapi-token',
+      'variables' => ['tokens'],
+    ],
   ];
+}
+
+/**
+ * Implements hook_preprocess_TEMPLATE().
+ */
+function brapi_preprocess_brapi_token(&$variables){
+  $user = \Drupal::currentUser();
+  $tokens = BrapiToken::getUserTokens($user, TRUE);
+  $variables['tokens'] = $tokens;
 }
 
 /**

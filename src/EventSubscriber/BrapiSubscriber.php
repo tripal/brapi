@@ -2,6 +2,7 @@
 
 namespace Drupal\brapi\EventSubscriber;
 
+use Drupal\brapi\Entity\BrapiToken;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -33,20 +34,8 @@ class BrapiSubscriber implements EventSubscriberInterface {
    * This hook implementation uses the "bearer" token provided by
    * BrAPI-compliant clients to login clients.
    *
-   * To generate a token:
-   *
-   *   $uid = ...; // Get user identifier.
-   *   // $token_id is the user token.
-   *   $token_id = bin2hex(random_bytes(16));
-   *   $cid = 'brapi_token:' . $token_id;
-   *   // 'mgis' should be a valid user name.
-   *   $data = ['username' => 'mgis'];
-   *   // The token will expire in 1 day (=86400sec).
-   *   // Other possibility for permanent token: Cache::PERMANENT.
-   *   $expiration = time() + 86400;
-   *   \Drupal::cache('brapi_token')->set($cid, $data, $expiration, ['user:' . $uid, 'brapi']);
-   *
-   * @see Symfony\Component\HttpKernel\KernelEvents for details
+   * @see \Symfony\Component\HttpKernel\KernelEvents
+   * @see \Drupal\brapi\Entity\BrapiToken
    *
    * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
    *   The response event to process.
@@ -54,7 +43,7 @@ class BrapiSubscriber implements EventSubscriberInterface {
   public function BrapiRequest(GetResponseEvent $event) {
     $request = \Drupal::request();
     $route = $request->attributes->get('_route_object');
-    
+
     // Skip non-BrAPI calls.
     if (!preg_match('#^/brapi/(v\d)(/.+)#', $route->getPath(), $matches)) {
       return;
@@ -70,20 +59,24 @@ class BrapiSubscriber implements EventSubscriberInterface {
     if ($request->isSecure() && !empty($bearer)) {
       $name = '';
       // Try to get the token.
-      $cid = 'brapi:' . $bearer;
-      if ($cache = \Drupal::cache('brapi_token')->get($cid)) {
-        $name = $cache->data['username'];
-      }
+      $tokens = \Drupal::entityTypeManager()
+        ->getStorage('brapi_token')
+        ->loadByProperties(['token' => $bearer])
+      ;
+      if (count($tokens)) {
+        $token = current($tokens);
+        $user_id = $token->user_id->getValue()[0]['target_id'] ?? 0;
+        // Make sure we got a user to login.
+        if ($user_id) {
+          $account = \Drupal\user\Entity\User::load($user_id);
+        }
 
-      // Make sure we got a user to login.
-      if (!empty($name)) {
-        // Get user account.
-        $account = user_load_by_name($name);
         // Try to login user.
         if ($account) {
           user_login_finalize($account);
         }
       }
+
     }
     elseif (!empty($bearer)) {
       \Drupal::messenger()->addMessage('BrAPI: Authentication is only supported through HTTPS (secure http)!', \Drupal\Core\Messenger\MessengerInterface::TYPE_WARNING);

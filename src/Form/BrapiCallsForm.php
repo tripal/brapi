@@ -68,7 +68,6 @@ class BrapiCallsForm extends FormBase {
       'WSMIMEDataTypes',
       'ServerInfo',
       'ListTypes',
-      'ListSummary',
     ];
     // Global query parameters (nb. "Authorization" *should* not be in query).
     $global_query_parameters = [

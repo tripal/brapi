@@ -23,20 +23,16 @@ class BrapiRoutes {
     $route_collection = new RouteCollection();
     foreach ($version_settings as $version => $calls) {
       foreach ($calls as $call => $call_settings) {
-        $permission = ['_permission'  => BRAPI_USE_PERMISSION,];
-        // Special case of v1 login and logout.
-        if (('v1' == $version)
-            && (('/login' == $call) || ('/logout' == $call))
-        ) {
-          $permission = ['_access' => 'TRUE',];
-        }
         $route = new Route(
           '/brapi/' . $version . $call,
           [
             '_controller' => '\Drupal\brapi\Controller\BrapiController::brapiCall',
             '_title' => 'BrAPI Call',
           ],
-          $permission
+          // BrAPI accesses are managed by BrAPI controller as the route
+          // permissions are checked before BrAPI gets a change to login a user
+          //  through his/her bearer.
+          ['_access' => 'TRUE',]
         );
         $route->setMethods(array_map('strtoupper', array_keys($call_settings)));
         $route_name =
