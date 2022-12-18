@@ -3170,7 +3170,6 @@ function brapi_get_variables_details_11($cvterm) {
     'name',
     'abbreviation',
     'objective',
-    'leadPerson',
   );
 
   // Handle 'include'.
