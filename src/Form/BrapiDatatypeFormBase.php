@@ -96,7 +96,7 @@ class BrapiDatatypeFormBase extends EntityForm {
       $mapping_name = $mapping_id;
       if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $mapping_id, $matches)) {
         list(, $version, $active_def, $datatype_name, $subfields) = $matches;
-        $subfields = explode('-', $subfields);
+        $subfields = array_filter(explode('-', $subfields));
         // $brapi_definition = brapi_get_definition($version, $active_def);
         $mapping_name = $datatype_name . ' for BrAPI v' . $active_def;
       }
