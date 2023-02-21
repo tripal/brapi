@@ -429,9 +429,9 @@ class BrapiController extends ControllerBase {
     ImmutableConfig $config
   ) {
     // Enforce HTTPS use.
-    if (!$request->isSecure()) {
+    if (!$request->isSecure() && !$config->get('insecure')) {
       throw new PreconditionFailedHttpException(
-        'You must use HTTPS protocol to login. Login through unsecure HTTP is forbidden.'
+        'You must use HTTPS protocol to login. Login through insecure HTTP is forbidden.'
       );
     }
 

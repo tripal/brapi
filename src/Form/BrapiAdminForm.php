@@ -111,6 +111,13 @@ class BrapiAdminForm extends FormBase {
       '#submit' => ['::clearSearchCache'],
     ];
 
+    $form['insecure'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow the use of token over insecure connections (ie. not HTTPS)'),
+      '#return_value' => TRUE,
+      '#default_value' => $config->get('insecure') ?? FALSE,
+    ];
+
     // Server info.
     $sys_config = \Drupal::config('system.site');
     $form['server_info'] = [
@@ -247,6 +254,7 @@ class BrapiAdminForm extends FormBase {
       ->set('page_size_max', $form_state->getValue('page_size_max') ?? BRAPI_DEFAULT_PAGE_SIZE_MAX)
       ->set('token_default_lifetime', $form_state->getValue('token_default_lifetime') ?? BRAPI_DEFAULT_TOKEN_LIFETIME)
       ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
+      ->set('insecure', $form_state->getValue('insecure') ?? FALSE)
     ;
     $config->save();
     $this->messenger()->addMessage($this->t('BrAPI settings have been updated.'));

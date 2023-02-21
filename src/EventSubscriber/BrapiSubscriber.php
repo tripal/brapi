@@ -56,7 +56,10 @@ class BrapiSubscriber implements EventSubscriberInterface {
 
     // Only allow authentication through HTTPS chanel.
     // Get session id from bearer token (HTTP header provided by the client).
-    if ($request->isSecure() && !empty($bearer)) {
+    $config = \Drupal::config('brapi.settings');
+    if (($request->isSecure() || $config->get('insecure'))
+        && !empty($bearer)
+    ) {
       $name = '';
       // Try to get the token.
       $tokens = \Drupal::entityTypeManager()
@@ -78,7 +81,7 @@ class BrapiSubscriber implements EventSubscriberInterface {
       }
 
     }
-    elseif (!empty($bearer)) {
+    elseif (!empty($bearer) && !$config->get('insecure')) {
       \Drupal::messenger()->addMessage('BrAPI: Authentication is only supported through HTTPS (secure http)!', \Drupal\Core\Messenger\MessengerInterface::TYPE_WARNING);
       \Drupal::logger('brapi')->warning('A user tried to use a BrAPI token without secure HTTPS connection.');
     }
