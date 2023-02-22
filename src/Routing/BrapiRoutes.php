@@ -17,7 +17,7 @@ class BrapiRoutes {
 
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
-    $version_settings = $config->get('calls');
+    $version_settings = $config->get('calls') ?? [];
 
     // Set available call routes.
     $route_collection = new RouteCollection();
