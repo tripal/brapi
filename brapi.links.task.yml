@@ -1,5 +1,5 @@
 brapi.admin:
-  route_name: brapi.admin  
+  route_name: brapi.admin
   title: 'Settings'
   base_route: brapi.admin
 
@@ -8,7 +8,7 @@ brapi.datatypes:
   title: 'BrAPI Data Types'
   base_route: brapi.admin
   weight: 1
-  
+
 brapi.calls:
   route_name: brapi.calls
   title: 'BrAPI Calls'
