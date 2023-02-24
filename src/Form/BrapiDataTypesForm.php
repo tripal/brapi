@@ -34,6 +34,7 @@ class BrapiDataTypesForm extends FormBase {
     // V2 internal types.
     $v2_internal_types = [
       'WSMIMEDataTypes',
+      'ContentTypes',
       'ServerInfo',
       'ListTypes',
       'ListDetails',
