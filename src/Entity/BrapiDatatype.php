@@ -4,6 +4,8 @@ namespace Drupal\brapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use JsonPath\JsonObject;
+use JsonPath\InvalidJsonException;
+use JsonPath\InvalidJsonPathException;
 
 /**
  * Defines BrAPI Datatype Mapping entity.
@@ -335,10 +337,18 @@ class BrapiDatatype extends ConfigEntityBase {
             $subfield = $drupal_mapping['subfield'];
             // Process JSONPath mapping.
             // @see https://github.com/Galbar/JsonPath-PHP
-            $json_object = new JsonObject($brapi_data[$brapi_field]);
-            $value = $json_object->get($subfield);
-            if (FALSE !== $value) {
-              $brapi_data[$brapi_field] = $value[0];
+            try {
+              $json_object = new JsonObject($brapi_data[$brapi_field]);
+              $value = $json_object->get($subfield);
+              if (FALSE !== $value) {
+                $brapi_data[$brapi_field] = $value[0];
+              }
+            }
+            catch (InvalidJsonException | InvalidJsonPathException $e) {
+              // JSONPath mapping failed. Report.
+              \Drupal::logger('brapi')->warning(
+                "Invalid JSONPath: " . $e
+              );
             }
           }
         }
