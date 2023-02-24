@@ -125,7 +125,7 @@ class BrapiController extends ControllerBase {
         \Drupal::logger('brapi')->error($message);
         throw new NotFoundHttpException($message);
       }
-      
+
       // Check permission.
       if ((!\Drupal::currentUser()->hasPermission(BRAPI_USE_PERMISSION))
           && !(('v1' == $version) && ('/login' == $call))
@@ -559,9 +559,9 @@ class BrapiController extends ControllerBase {
    *   would be to use Drush and add it as a dependency for BrAPI module.
    *   Moreover, the external process must be "detached" from parent process
    *   and not be killed when the parent process ends.
-   * - perform the search task when the search call is submitted. This approach 
+   * - perform the search task when the search call is submitted. This approach
    *   must be used by "shell exec" or "fork" or "kernel.terminate event"
-   *   methods. In any case, it must not block or delay the (202) response to 
+   *   methods. In any case, it must not block or delay the (202) response to
    *   the client.
    *   One problem is that it will use a PHP-FPM thread during the whole
    *   computation. To mitigate that problem, a limit of runnable paralele
@@ -637,7 +637,7 @@ class BrapiController extends ControllerBase {
         'message'     => 'Request accepted, response successful',
         'messageType' => 'INFO',
       ];
-      
+
       // Check if a search identifier has been provided.
       $filters = $request->attributes->get('_raw_variables')->all();
       // Check call consistency.
@@ -653,7 +653,7 @@ class BrapiController extends ControllerBase {
         \Drupal::logger('brapi')->error($message);
         throw new NotFoundHttpException($message);
       }
-      
+
       if (!empty($filters['searchResultsDbId'])) {
         $new_search = FALSE;
         // Try to fetch a search result.
@@ -781,7 +781,7 @@ class BrapiController extends ControllerBase {
       return $this->processObjectCalls($request, $config, $version, $call, $method);
     }
     else {
-      // Using 'get' method on a non-deferred search call. 
+      // Using 'get' method on a non-deferred search call.
       $message = "Non-deferred search call must use POST method.";
       \Drupal::logger('brapi')->error($message);
       throw new NotFoundHttpException($message);
@@ -907,60 +907,86 @@ class BrapiController extends ControllerBase {
     }
 
     // Check if BrAPI filtering is enabled for the call.
-    if (!$internal_filtering) {
-      // Fetch BrAPI object(s).
+    if ($internal_filtering) {
       // @todo: use cache.
-      $brapi_data = $datatype_mapping->getBrapiData([]);
-      // @todo: pagination is not handled here yet.
+
+      // Process pagination.
+      $page_size = empty($filters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $filters['#pageSize'];
+      $page_start = (empty($filters['#page']) ? 0 : $filters['#page']) * $page_size;
+      $current_page = 0;
+      // $max_pages is used to make sure we won't go into an infinite loop in
+      // case the pagination is not well handled by the BrAPI data type.
+      $max_pages = 0;
+
       // Proceed to entity filtering.
       $entities = [];
-      foreach ($brapi_data['entities'] as $entity) {
-        // Proceed filters.
-        foreach ($filters as $field => $value) {
-          // Make sure entity has this field.
-          if (!array_key_exists($field, $entity)) {
-            continue 1;
-          }          
-          if (is_array($value)) {
-            if (empty(($value))) {
-              // Empty filter, skip.
+
+      do {
+        // Fetch next BrAPI objects and apply internal filtering.
+        $brapi_data = $datatype_mapping->getBrapiData(
+          ['#pageSize' => $page_size, '#page' => $current_page++,]
+        );
+        // Set $max_pages if not really initialized yet.
+        if (!$max_pages) {
+          // get the count from the first BrAPI data query.
+          $max_pages = 1 + floor(($brapi_data['total_count'] - 1) / $page_size);
+        }
+
+        foreach ($brapi_data['entities'] as $entity) {
+          // Proceed filters.
+          foreach ($filters as $field => $value) {
+            // Make sure entity has this field.
+            if (!array_key_exists($field, $entity)) {
+              // Entity does not have this type of field, ignore/skip filter.
               continue 1;
             }
-            // Filter value is a non-empty array.
-            if (is_array($entity[$field])) {
-              // Entity field contains an array of values.
-              foreach ($entity[$field] as $entity_value) {
-                if (in_array($entity_value, $value)) {
-                  // Matched a value, process next filter.
-                  continue 1;
-                }
+            if (is_array($value)) {
+              // Filter on a list of possible values.
+              if (empty(($value))) {
+                // Empty filter list, skip filter.
+                continue 1;
               }
-            }
-            elseif (!in_array($entity[$field], $value)) {
-              // Filter value is an array and entity value is a single value not
-              // in that array. Unmatched value, skip that entity.
-              continue 2;
-            }
-          }
-          elseif (isset($value) && ('' != $value)) {
-            // Filter value is a single non-empty (NULL and empty string) value.
-            if (!is_array($entity[$field])) {
-              if ($value != $entity[$field]) {
-                // Filter value and entity value are single values but are
-                // different. Unmatched value, skip that entity.
+              // Filter value is a non-empty array.
+              if (is_array($entity[$field])) {
+                // Entity field contains an array of values as well.
+                foreach ($entity[$field] as $entity_value) {
+                  if (in_array($entity_value, $value)) {
+                    // Matched a value, skip filter.
+                    continue 2;
+                  }
+                }
+                // No value matched, skip entity.
+                continue 2;
+              }
+              elseif (!in_array($entity[$field], $value)) {
+                // Filter value is an array and entity value is a single value not
+                // in that array. Unmatched value, skip that entity.
                 continue 2;
               }
             }
-            elseif (!in_array($value, $entity[$field])) {
-              // Entity field contains an array of values.
-              // Filter value does not match any of the entity values (array).
-              // Unmatched value, skip that entity.
-              continue 2;
+            elseif (isset($value) && ('' != $value)) {
+              // Filter value is a single non-empty (NULL and empty string) value.
+              if (!is_array($entity[$field])) {
+                if ($value != $entity[$field]) {
+                  // Filter value and entity value are single values but are
+                  // different. Unmatched value, skip that entity.
+                  continue 2;
+                }
+              }
+              elseif (!in_array($value, $entity[$field])) {
+                // Entity field contains an array of values.
+                // Filter value does not match any of the entity values (array).
+                // Unmatched value, skip that entity.
+                continue 2;
+              }
             }
           }
+          $entities[] = $entity;
         }
-        $entities[] = $entity;
-      }
+      } while (!empty($brapi_data['entities'])
+        && (count($entities) < $page_size)
+        && ($current_page < $max_pages)
+      );
       $brapi_data['total_count'] = count($entities);
     }
     else {
@@ -979,7 +1005,7 @@ class BrapiController extends ControllerBase {
           ['%count' => count($entities), '%call' => $route->getPath(), ]
         );
       }
-      $result = ['result' => ['data' => $entities[0]]];
+      $result = ['result' => current($entities)];
     }
     else {
       $result = ['result' => ['data' => $entities]];

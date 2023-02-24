@@ -262,10 +262,12 @@ class BrapiCallsForm extends FormBase {
     $calls = [];
     foreach ($active_definitions as $version => $active_def) {
       $call_values = $form_state->getValue($version);
-      foreach ($call_values as $call => $methods) {
-        foreach ($methods as $method => $enabled) {
-          if (!empty($enabled)) {
-            $calls[$version][$call][$method] = TRUE;
+      foreach ($call_values as $call => $call_settings) {
+        foreach ($call_settings as $call_setting => $call_setting_value) {
+          // $call_setting can be either a method ('post', 'get', etc.) or a
+          // specific setting such as 'filtering' or 'deferred'.
+          if (!empty($call_setting_value)) {
+            $calls[$version][$call][$call_setting] = $call_setting_value;
           }
         }
       }
