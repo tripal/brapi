@@ -201,6 +201,7 @@ class BrapiToken extends ContentEntityBase implements BrapiTokenInterface {
 
     if (empty($token)) {
       // Generate a new token.
+      $token_storage = \Drupal::entityTypeManager()->getStorage('brapi_token');
       $token = $token_storage->create([
         'user_id' => $user->id(),
       ]);

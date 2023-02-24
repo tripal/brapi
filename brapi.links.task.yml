@@ -14,3 +14,14 @@ brapi.calls:
   title: 'BrAPI Calls'
   base_route: brapi.admin
   weight: 2
+
+brapi.token:
+  route_name: brapi.token
+  title: 'Token'
+  base_route: brapi.token
+
+brapi.token.new:
+  route_name: brapi.token.new
+  title: '(Re)New'
+  base_route: brapi.token
+  weight: 1
