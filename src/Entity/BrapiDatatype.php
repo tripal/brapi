@@ -347,7 +347,7 @@ class BrapiDatatype extends ConfigEntityBase {
             catch (InvalidJsonException | InvalidJsonPathException $e) {
               // JSONPath mapping failed. Report.
               \Drupal::logger('brapi')->warning(
-                "Invalid JSONPath: " . $e
+                'Invalid JSONPath ("' . $subfield . '") for field "' . $brapi_field . '" of ' . $this->label . ': ' . $e
               );
             }
           }
