@@ -174,10 +174,10 @@ class BrapiController extends ControllerBase {
       if (!isset($json_array)) {
         // @todo: Add error and debug info.
         $parameters = [
-          'status' => [
+          'status' => [[
             'message'     => 'Not implemented',
             'messageType' => 'ERROR',
-          ],
+          ]],
         ];
         $metadata = $this->generateMetadata($request, $config, $parameters);
         $json_array = $metadata;
@@ -192,10 +192,10 @@ class BrapiController extends ControllerBase {
     catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
       // Catch HTTP errors.
       $parameters = [
-        'status' => [
+        'status' => [[
           'message'     => $e->getMessage() ?: 'An exception occurred.',
           'messageType' => 'ERROR',
-        ],
+        ]],
       ];
       $json_array = $this->generateMetadata($request, $config, $parameters);
       $response = new JsonResponse($json_array);
@@ -283,10 +283,10 @@ class BrapiController extends ControllerBase {
     ImmutableConfig $config,
     array $parameters = []
   ) {
-    $status = $parameters['status'] ?? [
+    $status = $parameters['status'] ?? [[
       'message'     => 'Request accepted, response successful',
       'messageType' => 'INFO',
-    ];
+    ]];
     $datafiles   = $parameters['datafiles'] ?? [];
     $page_size   = $this->getCleanPageSize($config, $parameters['page_size'] ?? NULL);
     $page        = $parameters['page'] ?? 0;
@@ -626,14 +626,15 @@ class BrapiController extends ControllerBase {
     $page_size   = 1;
     $page        = 0;
     $total_count = 1;
+    $status      = [];
 
-    // Check if the search call should use differed result.
+    // Check if the search call should use deferred result.
     $call_settings = $config->get('calls');
     if (!empty($call_settings[$version][$call]['deferred'])
         || str_contains($call, 'searchResultsDbId')
     ) {
       // Deferred.
-      $status = [
+      $status[] = [
         'message'     => 'Request accepted, response successful',
         'messageType' => 'INFO',
       ];
@@ -770,7 +771,7 @@ class BrapiController extends ControllerBase {
         'page_size'   => $page_size,
         'page'        => $page,
         'total_count' => $total_count,
-        'status'      => $status,
+        'status'      => $status ?: NULL,
       ];
 
       $metadata = $this->generateMetadata($request, $config, $parameters);
@@ -810,6 +811,7 @@ class BrapiController extends ControllerBase {
     $page_size   = 1;
     $page        = 0;
     $total_count = 1;
+    $status      = [];
     $result = [];
 
     $call_settings = $config->get('calls');
@@ -864,7 +866,6 @@ class BrapiController extends ControllerBase {
       \Drupal::logger('brapi')->error($message);
       throw new NotFoundHttpException($message);
     }
-    // Process query filters.
     // @todo: manage PUT calls and record data.
     if ('put' == $method) {
       $message = "Not implemented yet.";
@@ -889,21 +890,33 @@ class BrapiController extends ControllerBase {
         }
       }
     }
-    else {
-      foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] as $filter_param) {
-        $param_name = $filter_param['name'];
-        // Only take into account parameters in URL query string and skip
-        // output control parameters.
-        if (('query' != $filter_param['in'])
-            || (in_array($param_name, ['page', 'pageSize', 'Authorization']))
-        ) {
-          continue 1;
-        }
-        $param_value = $request->query->get($param_name);
-        if ((NULL != $param_value) && ('' != $param_value)) {
-          $filters[$param_name] = $param_value;
-        }
+    // Process query filters.
+    $processed_filters = ['page', 'pageSize', 'Authorization', ];
+    foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] as $filter_param) {
+      $param_name = $filter_param['name'];
+      // Only take into account parameters in URL query string and skip
+      // output control parameters.
+      if (('query' != $filter_param['in'])
+          || (in_array($param_name, ['page', 'pageSize', 'Authorization', ]))
+      ) {
+        continue 1;
       }
+      $param_value = $request->query->get($param_name);
+      if ((NULL != $param_value) && ('' != $param_value)) {
+        $filters[$param_name] = $param_value;
+        $processed_filters[] = $param_name;
+      }
+    }
+    // Keep track of unprocessed filters in metadata as warning.
+    $unsupported_filters = array_diff(
+      $request->query->keys(),
+      $processed_filters
+    );
+    if (!empty($unsupported_filters)) {
+      $status[] = [
+        'message'     => 'Unsupported query filters: ' . implode(', ', $unsupported_filters),
+        'messageType' => 'WARNING',
+      ];
     }
 
     // Check if BrAPI filtering is enabled for the call.
@@ -1018,6 +1031,7 @@ class BrapiController extends ControllerBase {
       'page_size'   =>  $page_size,
       'page'        =>  $page,
       'total_count' =>  $total_count,
+      'status'      =>  $status ?: NULL,
     ];
 
     $metadata = $this->generateMetadata($request, $config, $parameters);
