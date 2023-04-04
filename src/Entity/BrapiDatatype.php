@@ -237,7 +237,7 @@ class BrapiDatatype extends ConfigEntityBase {
               // There is a sub-mapping of current entity, load datatype entity.
               $sub_datatype_id = $this->id . '-' . $brapi_field;
               $sub_datatype = $mapping_loader->load($sub_datatype_id);
-              # Get data from sub-mapping.
+              // Get data from sub-mapping.
               if (!empty($sub_datatype)) {
                 $brapi_data[$brapi_field] = $sub_datatype->getBrapiData(['#entity' => $entity])['entities'];
               }
@@ -261,6 +261,11 @@ class BrapiDatatype extends ConfigEntityBase {
                 }
               }
             }
+            elseif ('_self' == $drupal_mapping['field']) {
+              // @todo: remove this case and replace it by static+json-path.
+              // Use entity data.
+              $brapi_data[$brapi_field] = $entity->toArray();
+            }
             elseif ('_static' == $drupal_mapping['field']) {
               // Static value, manage JSON data in a static string.
               if (empty($drupal_mapping['is_json'])) {
@@ -268,6 +273,7 @@ class BrapiDatatype extends ConfigEntityBase {
               }
               else {
                 // Treate as JSON.
+                // @todo: pre-parse JSON Path.
                 $brapi_data[$brapi_field] = json_decode($drupal_mapping['static'], TRUE);
               }
             }
