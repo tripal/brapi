@@ -261,11 +261,6 @@ class BrapiDatatype extends ConfigEntityBase {
                 }
               }
             }
-            elseif ('_self' == $drupal_mapping['field']) {
-              // @todo: remove this case and replace it by static+json-path.
-              // Use entity data.
-              $brapi_data[$brapi_field] = $entity->toArray();
-            }
             elseif ('_static' == $drupal_mapping['field']) {
               // Static value, manage JSON data in a static string.
               if (empty($drupal_mapping['is_json'])) {
@@ -273,8 +268,25 @@ class BrapiDatatype extends ConfigEntityBase {
               }
               else {
                 // Treate as JSON.
-                // @todo: pre-parse JSON Path.
-                $brapi_data[$brapi_field] = json_decode($drupal_mapping['static'], TRUE);
+                $json_data = $drupal_mapping['static'];
+                // Check for JSON path to replace.
+                if (preg_match_all('/\$(?:\*|\.\.|\.\w+|\[\'\w+\'(?:\s*,\s*\'\w+\')*\]|\[-?\d+(?:\s*,\s*-?\d+)*\]|\[-?\d*:-?\d*\])+/', $json_data, $matches)) {
+                  $entity_array = $entity->toArray();
+                  foreach ($matches[0] as $match) {
+                    try {
+                      $json_object = new JsonObject($entity_array, TRUE);
+                      $jpath_value = $json_object->get($match);
+                      $json_data = str_replace($match, json_encode($jpath_value), $json_data);
+                    }
+                    catch (InvalidJsonException | InvalidJsonPathException $e) {
+                      // JSONPath mapping failed. Report.
+                      \Drupal::logger('brapi')->warning(
+                        'Invalid JSONPath ("' . $drupal_mapping['static'] . '") for field "' . $brapi_field . '" of ' . $this->label . ': ' . $e . 'Data: ' . print_r($entity_array, TRUE)
+                      );
+                    }
+                  }
+                }
+                $brapi_data[$brapi_field] = json_decode($json_data, TRUE);
               }
             }
             else {

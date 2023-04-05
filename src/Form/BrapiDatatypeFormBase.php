@@ -375,7 +375,7 @@ class BrapiDatatypeFormBase extends EntityForm {
 
     $string_field_options = [];
     $entityref_field_options = [];
-    $static_field_option = ['_static' => '[Static value]',];
+    $static_field_option = ['_static' => '[Static value/Content JSON Path]',];
     if (preg_match('/^(.+):(.+)$/', $content_type, $matches)) {
       list(, $entity_type_id, $bundle_id) = $matches;
       if ($entity_type_id && $bundle_id) {
@@ -486,12 +486,8 @@ class BrapiDatatypeFormBase extends EntityForm {
           ;
         }
         elseif ('object' == $base_datatype) {
-          // @todo: remove "self" case and replace it by static+json-path.
           $options =
-            [
-              '_self' => '[Self]',
-            ]
-            + $string_field_options
+            $string_field_options
             + $static_field_option
           ;
           // @todo: add object fields mapping?
@@ -623,7 +619,12 @@ class BrapiDatatypeFormBase extends EntityForm {
           '#title' => $this->t('JSON Path sub-field specification (if needed)'),
           '#description' => $this->t('If the selected mapped field is an object, you can specify a <a href="https://goessner.net/articles/JsonPath/">JSON path</a> to select the sub-value(s) to use.'),
           '#default_value' => $brapi_datatype->mapping[$field_name]['subfield'] ?? '',
-        ];          
+          '#states' => [
+            'invisible' => [
+              ':input[id="edit-mapping-' . $field_name . '-field"]' => ['value' => '_static'],
+            ],
+          ],
+        ];
 
       }
     }
