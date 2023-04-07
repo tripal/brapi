@@ -1,0 +1,6 @@
+brapi.core:
+  js:
+    js/brapi.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.dialog

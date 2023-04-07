@@ -89,6 +89,9 @@ class BrapiDatatypeFormBase extends EntityForm {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $mapping_id = '') {
     $form = parent::buildForm($form, $form_state);
+    // Adds JS library.
+    $form['#attached']['library'][] = 'brapi/brapi.core';
+
     $brapi_datatype = $this->entity;
 
     // Build the form.
@@ -219,6 +222,36 @@ class BrapiDatatypeFormBase extends EntityForm {
       '#tree' => TRUE,
     ];
     $form['mapping'] += $this->getFieldMappingForm($form, $form_state);
+
+    $form['actions']['brapi-mapping-export'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Export mapping'),
+      // Place the button after save/update/delete buttons.
+      '#weight' => 11,
+      '#attributes' => [
+        'onclick' => 'return false;'
+      ],
+      '#attached' => array(
+        'library' => array(
+          'brapi/brapi.core',
+        ),
+      ),
+    ];
+
+    $form['actions']['brapi-mapping-import'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Import mapping'),
+      // Place the button after save/update/delete/export buttons.
+      '#weight' => 12,
+      '#attributes' => [
+        'onclick' => 'return false;',
+      ],
+      '#attached' => [
+        'library' => [
+          'brapi/brapi.core',
+        ],
+      ],
+    ];
 
     return $form;
   }
