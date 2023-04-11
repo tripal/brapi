@@ -225,7 +225,7 @@ class BrapiDatatypeFormBase extends EntityForm {
 
     $form['actions']['brapi-mapping-export'] = [
       '#type' => 'button',
-      '#value' => $this->t('Export mapping'),
+      '#value' => $this->t('Export'),
       // Place the button after save/update/delete buttons.
       '#weight' => 11,
       '#attributes' => [
@@ -240,7 +240,7 @@ class BrapiDatatypeFormBase extends EntityForm {
 
     $form['actions']['brapi-mapping-import'] = [
       '#type' => 'button',
-      '#value' => $this->t('Import mapping'),
+      '#value' => $this->t('Import'),
       // Place the button after save/update/delete/export buttons.
       '#weight' => 12,
       '#attributes' => [
