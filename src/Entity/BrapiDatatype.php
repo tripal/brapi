@@ -282,6 +282,11 @@ class BrapiDatatype extends ConfigEntityBase {
                   // Field mapped to an other BrAPI mapping.
                   $sub_datatype = $mapping_loader->load($drupal_mapping['submapping']);
                 }
+                // @todo: make sure we won't get into an infinite loop if a
+                // submapping is also submapping current content.
+                // We should check if a given entity with a given mapping has
+                // already been processed that way. A "processed" chain should
+                // be added to $parameters and checked.
                 // Get data from sub-mapping.
                 if (!empty($sub_datatype)) {
                   if (is_array($sub_entities)) {

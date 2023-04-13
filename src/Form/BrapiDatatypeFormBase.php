@@ -549,7 +549,8 @@ class BrapiDatatypeFormBase extends EntityForm {
           $submapping_type_options = [
             'custom' => 'Custom sub-mapping',
           ];
-          $submapping_content_options = $entityref_field_options['object'] + $custom_field_option;
+          // @todo: we could add custom field if used to return the ID of an entity (of type given by the selected sub-mapping) to load.
+          $submapping_content_options = $entityref_field_options['object'] /* + $custom_field_option*/;
           // Select sub-mapping type: existing BrAPI datatype mapping or custom.
           // Check if a BrAPI datatype-specific mapping is available.
           // @todo use a more generic way to get existing mappings: maybe use BrAPI git YAML files as source instead of Swagger?

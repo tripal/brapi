@@ -264,7 +264,7 @@ class BrapiAdminForm extends FormBase {
           $brapi_definition = brapi_get_definition('v2', $active_def);
           $mapping = [];
           foreach (
-            $brapi_definition["data_types"]["ListDetails"]["fields"]
+            $brapi_definition['data_types']['ListDetails']['fields']
             as $bfield => $fdef
           ) {
             // Change field name convention (CaMel to snake_case).
@@ -272,20 +272,19 @@ class BrapiAdminForm extends FormBase {
             $dfield = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $bfield));
             $mapping[$bfield] = [
               'field' => $dfield,
-              'static' => '',
+              'custom' => '',
               // Use JSON for complex data and lists.
               'is_json' => (
                 in_array($fdef['type'], ['string', 'integer', 'uuid'])
                 ? FALSE
                 : TRUE
               ),
-              'subfield' => '',
             ];
           }
 
           $brapi_list = $mapping_sm->create([
             'id' => $list_datatype_id,
-            'label' => "List for BrAPI v2.0",
+            'label' => "List for BrAPI v" . $active_def,
             'contentType' => "brapi_list:brapi_list",
             'mapping' => $mapping,
           ]);
@@ -306,8 +305,8 @@ class BrapiAdminForm extends FormBase {
       ->set('page_size', $form_state->getValue('page_size') ?? BRAPI_DEFAULT_PAGE_SIZE)
       ->set('page_size_max', $form_state->getValue('page_size_max') ?? BRAPI_DEFAULT_PAGE_SIZE_MAX)
       ->set('token_default_lifetime', $form_state->getValue('token_default_lifetime') ?? BRAPI_DEFAULT_TOKEN_LIFETIME)
-      ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
       ->set('insecure', $form_state->getValue('insecure') ?? FALSE)
+      ->set('search_default_lifetime', $form_state->getValue('search_default_lifetime') ?? BRAPI_DEFAULT_SEARCH_LIFETIME)
     ;
     $config->save();
     $this->messenger()->addMessage($this->t('BrAPI settings have been updated.'));
