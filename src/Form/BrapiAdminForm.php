@@ -30,6 +30,14 @@ class BrapiAdminForm extends FormBase {
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
 
+    // Versions.
+    $form['versions'] = [
+      '#type'  => 'details',
+      '#title' => $this->t('Version Management'),
+      '#open'  => TRUE,
+      '#tree'  => FALSE,
+    ];
+
     // Get BrAPI versions.
     $versions = brapi_available_versions();
     
@@ -37,7 +45,7 @@ class BrapiAdminForm extends FormBase {
       $version_options = array_keys($version_definition);
       $version_options = array_combine($version_options, $version_options);
       if (!empty($version_options)) {
-        $form[$version] = [
+        $form['versions'][$version] = [
           '#type' => 'checkbox',
           '#title' => $this->t(
             'Enable BrAPI %version endpoint',
@@ -46,23 +54,53 @@ class BrapiAdminForm extends FormBase {
           '#return_value' => TRUE,
           '#default_value' => $config->get($version),
         ];
-        $form[$version . '_definition'] = [
+        $form['versions'][$version . '_definition'] = [
           '#type' => 'select',
           '#options' => $version_options,
-          '#title' => $this->t('Select an implementation'),
+          '#title' => $this->t(
+            'Select an implementation for %version',
+            ['%version' => $version]
+          ),
           '#default_value' => $config->get($version . 'def'),
+          '#wrapper_attributes' => [
+              'class' => ['container-inline'],
+          ],
           '#states' => [
-            'enabled' => [
+            'visible' => [
               ':input[name="' . $version . '"]' => ['checked' => TRUE],
             ],
           ],
         ];
       }
     }
-    
+    // @todo Add existing/obsolete mapping management.
+    $form['mappings'] = [
+      '#type'  => 'details',
+      '#title' => $this->t('Mappings'),
+      '#open'  => TRUE,
+      '#tree'  => FALSE,
+    ];
+    $form['mappings']['mapping_list'] = [
+      '#type'  => 'markup',
+      '#markup'  => 'TODO: display the list of defined mappings by sub-versions (with counts), highlight disabled ones and add button to remove all their related mappings.<br/>',
+    ];
+    $form['mappings']['manage_link'] = [
+      '#title' => $this->t('Manage all mappings'),
+      '#type' => 'link',
+      '#url' => \Drupal\Core\Url::fromRoute('entity.brapidatatype.list'),
+    ];
+
+    // Paging group.
+    $form['paging'] = [
+      '#type'  => 'details',
+      '#title' => $this->t('Paging'),
+      '#open'  => TRUE,
+      '#tree'  => FALSE,
+    ];
+
     // Default page size.
     $default_page_size = $config->get('page_size') ?: BRAPI_DEFAULT_PAGE_SIZE;
-    $form['page_size'] = [
+    $form['paging']['page_size'] = [
       '#type' => 'number',
       '#title' => $this->t('Default number of result in pages'),
       '#default_value' => $default_page_size,
@@ -75,17 +113,25 @@ class BrapiAdminForm extends FormBase {
       $config->get('page_size_max')
       ?? max(BRAPI_DEFAULT_PAGE_SIZE_MAX, $default_page_size)
     ;
-    $form['page_size_max'] = [
+    $form['paging']['page_size_max'] = [
       '#type' => 'number',
       '#title' => $this->t('Maximum number of results allowed per pages'),
       '#default_value' => $page_size_max,
-      '#description' => $this->t('As BrAPI applications and users may specify very high values for the pageSize parameter, this setting prevents abuses by limiting the allowed number of value per page.'),
+      '#description' => $this->t('As BrAPI applications and users may specify very high values for the pageSize parameter, this setting prevents abuses by limiting the allowed number of values per page.'),
       '#min' => 1,
       '#required' => FALSE,
     ];
 
+    // Access restriction group.
+    $form['access'] = [
+      '#type'  => 'details',
+      '#title' => $this->t('Access Restrictions'),
+      '#open'  => TRUE,
+      '#tree'  => FALSE,
+    ];
+
     // Token.
-    $form['token_default_lifetime'] = [
+    $form['access']['token_default_lifetime'] = [
       '#type' => 'number',
       '#title' => $this->t('Default token lifetime'),
       '#description' => $this->t('Maximum lifetime in seconds.'),
@@ -94,8 +140,22 @@ class BrapiAdminForm extends FormBase {
       '#required' => TRUE,
     ];
 
-    // Search.
-    $form['search_default_lifetime'] = [
+    $form['access']['insecure'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow the use of token over insecure connections (ie. not HTTPS)'),
+      '#return_value' => TRUE,
+      '#default_value' => $config->get('insecure') ?? FALSE,
+    ];
+
+
+    // Search group.
+    $form['search'] = [
+      '#type'  => 'details',
+      '#title' => $this->t('Search'),
+      '#open'  => TRUE,
+      '#tree'  => FALSE,
+    ];
+    $form['search']['search_default_lifetime'] = [
       '#type' => 'number',
       '#title' => $this->t('Default search lifetime'),
       '#description' => $this->t('Minimum lifetime in seconds.'),
@@ -105,17 +165,10 @@ class BrapiAdminForm extends FormBase {
     ];
 
     // Clear search cache button.
-    $form['clear_cache'] = [
+    $form['search']['clear_cache'] = [
       '#type' => 'submit',
       '#value' => $this->t('Clear search cache'),
       '#submit' => ['::clearSearchCache'],
-    ];
-
-    $form['insecure'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Allow the use of token over insecure connections (ie. not HTTPS)'),
-      '#return_value' => TRUE,
-      '#default_value' => $config->get('insecure') ?? FALSE,
     ];
 
     // Server info.

@@ -3,6 +3,7 @@
 namespace Drupal\brapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityInterface;
 use JsonPath\JsonObject;
 use JsonPath\InvalidJsonException;
 use JsonPath\InvalidJsonPathException;
@@ -228,66 +229,99 @@ class BrapiDatatype extends ConfigEntityBase {
 
     // Now translate each Drupal entity into a BrAPI datatype.
     foreach ($entities as $id => $entity) {
+      // @todo: Warn if the entity type does not match the BrAPI mapping.
       $brapi_data = [];
       foreach ($this->mapping as $brapi_field => $drupal_mapping) {
         if (!empty($drupal_mapping) && !empty($drupal_mapping['field'])) {
           try {
             // Check mapping type.
             if ('_submapping' == $drupal_mapping['field']) {
-              // There is a sub-mapping of current entity, load datatype entity.
-              $sub_datatype_id = $this->id . '-' . $brapi_field;
-              $sub_datatype = $mapping_loader->load($sub_datatype_id);
-              // Get data from sub-mapping.
-              if (!empty($sub_datatype)) {
-                $brapi_data[$brapi_field] = $sub_datatype->getBrapiData(['#entity' => $entity])['entities'];
+              // @todo: refactoring as form changed.
+              $brapi_data[$brapi_field] = NULL;
+              // Get sub-content to use.
+              if (empty($drupal_mapping['subcontent'])) {
+                // Just use current content.
+                $sub_entities = $entity;
               }
               else {
+                $field_name = $drupal_mapping['subcontent'];
+                if ('_custom' == $field_name) {
+                  // Get field value(s).
+                  // Issue: the design expects an entity and we provide a field.
+                  // @todo Rethink the thing. Remove "custom"? or:
+                  // Consider the returned value as an identifier to load an
+                  // entity of the type given by the corresponding BrAPI mapping.
+                  $sub_entities = $this->parseCustomValue(
+                    $drupal_mapping['custom'],
+                    $entity,
+                    $drupal_mapping['is_json'],
+                    'Invalid JSONPath for BrAPI field ' . $brapi_field
+                  );
+                }
+                else {
+                  // Get referenced entities from field.
+                  $sub_entities = $entity->get($field_name)->referencedEntities();
+                  // @todo Check if the field should return a single value or is
+                  // an array as we manage returned values according to the type.
+                }
+              }
+              
+              if (!empty($sub_entities)) {
+                // Here $sub_entities is expected to contain a single
+                // ContentEntity or an array of ContentEntity. Depending on the
+                // type (single/array), the returned value will also be a single
+                // field value (which may be complex) or an array of those.
+
+                // Get sub-mapping type.
+                if ('custom' == $drupal_mapping['submapping']) {
+                  // Custom sub-mapping, load datatype entity.
+                  $sub_datatype_id = $this->id . '-' . $brapi_field;
+                  $sub_datatype = $mapping_loader->load($sub_datatype_id);
+                }
+                else {
+                  // Field mapped to an other BrAPI mapping.
+                  $sub_datatype = $mapping_loader->load($drupal_mapping['submapping']);
+                }
+                // Get data from sub-mapping.
+                if (!empty($sub_datatype)) {
+                  if (is_array($sub_entities)) {
+                    $brapi_data[$brapi_field] = [];
+                    foreach ($sub_entities as $sub_entity) {
+                      $brapi_data[$brapi_field][] = $sub_datatype->getBrapiData(['#entity' => $sub_entity])['entities'];
+                    }
+                  }
+                  else {
+                    $brapi_data[$brapi_field] = $sub_datatype->getBrapiData(['#entity' => $sub_entities])['entities'];
+                  }
+                }
+                else {
+                  // No corresponding sub-mapping found.
+                  // @todo: improve logs.
+                  \Drupal::logger('brapi')->warning(
+                    'No corresponding sub-mapping found (%brapi_mapping) for BrAPI field %brapi_field of %datatype.',
+                    [
+                      '%brapi_mapping' => $sub_datatype_id,
+                      '%brapi_field' => $brapi_field,
+                      '%datatype' => $this->label,
+                    ]
+                  );
+                  $brapi_data[$brapi_field] = NULL;
+                }
+
+              }
+              else {
+                // No sub-entity found, nothing to return.
                 $brapi_data[$brapi_field] = NULL;
               }
             }
-            elseif ('_brapi_datatype' == $drupal_mapping['field']) {
-              // Field is mapped to a matching BrAPI datatype.
-              $brapi_field_datatype = $brapi_definition['data_types'][$datatype_name]['fields'][$brapi_field]['type'];
-              $brapi_field_datatype = rtrim($brapi_field_datatype, '[]');
-              $sub_datatype_id = brapi_generate_datatype_id($brapi_field_datatype, $version, $active_def);
-              $sub_datatype = $mapping_loader->load($sub_datatype_id);
-              # Get data from sub-mapping.
-              $field = $entity->get($drupal_mapping['field']);
-              $field_entities = $field->referencedEntities();
-              $brapi_data[$brapi_field] = [];
-              foreach ($field_entities as $field_entity) {
-                foreach ($sub_datatype->getBrapiData(['#entity' => $field_entity])['entities'] as $translated_entity) {
-                  $brapi_data[$brapi_field][] = $translated_entity;
-                }
-              }
-            }
-            elseif ('_static' == $drupal_mapping['field']) {
-              // Static value, manage JSON data in a static string.
-              if (empty($drupal_mapping['is_json'])) {
-                $brapi_data[$brapi_field] = $drupal_mapping['static'];
-              }
-              else {
-                // Treate as JSON.
-                $json_data = $drupal_mapping['static'];
-                // Check for JSON path to replace.
-                if (preg_match_all('/\$(?:\*|\.\.|\.\w+|\[\'\w+\'(?:\s*,\s*\'\w+\')*\]|\[-?\d+(?:\s*,\s*-?\d+)*\]|\[-?\d*:-?\d*\])+/', $json_data, $matches)) {
-                  $entity_array = $entity->toArray();
-                  foreach ($matches[0] as $match) {
-                    try {
-                      $json_object = new JsonObject($entity_array, TRUE);
-                      $jpath_value = $json_object->get($match);
-                      $json_data = str_replace($match, json_encode($jpath_value), $json_data);
-                    }
-                    catch (InvalidJsonException | InvalidJsonPathException $e) {
-                      // JSONPath mapping failed. Report.
-                      \Drupal::logger('brapi')->warning(
-                        'Invalid JSONPath ("' . $drupal_mapping['static'] . '") for field "' . $brapi_field . '" of ' . $this->label . ': ' . $e . 'Data: ' . print_r($entity_array, TRUE)
-                      );
-                    }
-                  }
-                }
-                $brapi_data[$brapi_field] = json_decode($json_data, TRUE);
-              }
+            elseif ('_custom' == $drupal_mapping['field']) {
+              // Custom value.
+              $brapi_data[$brapi_field] = $this->parseCustomValue(
+                $drupal_mapping['custom'],
+                $entity,
+                $drupal_mapping['is_json'],
+                'Invalid JSONPath ("' . $drupal_mapping['custom'] . '") for field "' . $brapi_field . '" of ' . $this->label
+              );
             }
             else {
               // BrAPI field mapped to an entity field, get its value.
@@ -314,7 +348,7 @@ class BrapiDatatype extends ConfigEntityBase {
               }
             }
           }
-          catch (InvalidArgumentException $e) {
+          catch (\InvalidArgumentException $e) {
             // Warn for invalid mapping.
             \Drupal::logger('brapi')->warning(
               'Invalid datatype field mapping for BrAPI object field "%brapi_field" to Drupal entity field "%drupal_field".',
@@ -323,6 +357,9 @@ class BrapiDatatype extends ConfigEntityBase {
                 '%drupal_field' => $drupal_field,
               ]
             );
+          }
+          catch (\Throwable $e) {
+            \Drupal::logger('brapi')->error($e);
           }
           
           // Check expected structure: array or not?
@@ -349,26 +386,6 @@ class BrapiDatatype extends ConfigEntityBase {
               }
             }
           }
-
-          // Check if only a subfield should be returned.
-          if (!empty($drupal_mapping['subfield'])) {
-            $subfield = $drupal_mapping['subfield'];
-            // Process JSONPath mapping.
-            // @see https://github.com/Galbar/JsonPath-PHP
-            try {
-              $json_object = new JsonObject($brapi_data[$brapi_field]);
-              $value = $json_object->get($subfield);
-              if (FALSE !== $value) {
-                $brapi_data[$brapi_field] = $value[0];
-              }
-            }
-            catch (InvalidJsonException | InvalidJsonPathException $e) {
-              // JSONPath mapping failed. Report.
-              \Drupal::logger('brapi')->warning(
-                'Invalid JSONPath ("' . $subfield . '") for field "' . $brapi_field . '" of ' . $this->label . ': ' . $e
-              );
-            }
-          }
         }
         else {
           // No mapping for that field.
@@ -381,6 +398,60 @@ class BrapiDatatype extends ConfigEntityBase {
     return ['total_count' => $item_count, 'entities' => $result];
   }
 
+  /**
+   * Parse custom field value that may contain JSON path items and be JSON data.
+   *
+   * @param string $custom_value
+   *   The custom string containing static text, JSON Path expression or any
+   *   combination of both.
+   * @param EntityInterface $entity
+   *   The entity from wich data should be extracted.
+   * @param $is_json
+   *   If not empty, the result string is parsed as JSON and the parsed
+   *   data structure is returned instead of a sting.
+   * @param string $invalid_jp_message
+   *   Message to display in case of invalid JSON Path.
+   *
+   * @return string or array
+   *   The JSON Path parsed string is returned or its corresponding structure as
+   *   an array if $is_json is not empty.
+   *   NULL is returned in case of invalid JSON data (and non-empty $is_json).
+   */
+  protected function parseCustomValue(
+    string $custom_value,
+    EntityInterface $entity,
+    $is_json,
+    string $invalid_jp_message = 'Invalid JSONPath'
+  ) {
+    // Check for JSON path to replace.
+    if (preg_match_all('/\$(?:\*|\.\.|\.\w+|\[\'\w+\'(?:\s*,\s*\'\w+\')*\]|\[-?\d+(?:\s*,\s*-?\d+)*\]|\[-?\d*:-?\d*\])+/', $custom_value, $matches)) {
+      $entity_array = $entity->toArray();
+      foreach ($matches[0] as $match) {
+        try {
+          $json_object = new JsonObject($entity_array, TRUE);
+          $jpath_value = $json_object->get($match);
+          $custom_value = str_replace($match, json_encode($jpath_value), $custom_value);
+        }
+        catch (InvalidJsonException | InvalidJsonPathException $e) {
+          // JSONPath mapping failed. Report.
+          \Drupal::logger('brapi')->warning(
+            $invalid_jp_message
+            . ': '
+            . $e
+            . "\nData: "
+            . print_r($entity_array, TRUE)
+          );
+        }
+      }
+    }
+    // Manage JSON data in a custom string.
+    if (!empty($is_json)) {
+      // Treate as JSON.
+      $custom_value = json_decode($custom_value, TRUE);
+    }
+    return $custom_value;
+  }
+  
   /**
    * Returns the related Drupal content field name.
    *
@@ -397,7 +468,7 @@ class BrapiDatatype extends ConfigEntityBase {
   public function getDrupalMappedField(string $brapi_field_name) :string {
     $mapped_field = $this->mapping[$brapi_field_name]['field'] ?? '';
     // Take into account special mappings.
-    if (!empty($mapped_field) && ('_static' == $mapped_field)) {
+    if (!empty($mapped_field) && ('_custom' == $mapped_field)) {
       $mapped_field = '';
     }
     return $mapped_field;

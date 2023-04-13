@@ -45,6 +45,9 @@ class BrapiDataTypesForm extends FormBase {
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
 
+    // @todo Allow the use of a URL parameter to manage a specific version
+    // mapping, even if it is not enabled (for export for instance).
+
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
     $active_definitions = [];
@@ -69,9 +72,9 @@ class BrapiDataTypesForm extends FormBase {
         $brapi_definition = brapi_get_definition($version, $active_def);
         foreach ($brapi_definition['data_types'] as $datatype => $datatype_definition) {
           if (empty($datatype_definition['calls'])
-              && empty($datatype_definition['as_field_in'])
+              /*&& empty($datatype_definition['as_field_in'])*/
           ) {
-            // Skip datatypes not used in calls or other datatypes.
+            // Skip datatypes not used in calls. // or other datatypes.
             // $this->logger('brapi')->notice('Skipping datatype "%datatype" (v%version) has it does not seem to be used.', ['%datatype' => $datatype, '%version' => $active_def]);
             continue 1;
           }
@@ -131,17 +134,54 @@ class BrapiDataTypesForm extends FormBase {
             ,
           ];
         }
+
+        // Sort datatypes.
+        ksort($form[$active_def]);
+
+        // Complete mapping.
+        $complete_options = [];
+        foreach ($brapi_versions as $version => $subversions) {
+          $subversion_numbers = array_keys($subversions);
+          $complete_options = array_merge($complete_options, array_combine($subversion_numbers, $subversion_numbers));
+        }
+        unset($complete_options[$active_def]);
+
+        $form[$active_def]['complete'] = [
+          '#type' => 'container',
+          '#weight' => count($brapi_definition['data_types']) + 15,
+          '#attributes' => [
+            'class' => ['container-inline'],
+          ],
+        ];
+        $form[$active_def]['complete']['complete_version'] = [
+          '#type' => 'select',
+          '#title' => $this->t('Complete %def mapping from version', ['%def' => $active_def]),
+          '#weight' => 5,
+          '#options' => $complete_options,
+        ];
+        $form[$active_def]['complete']['complete_submit'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Complete'),
+          '#submit' => [[$this, 'submitCompleteForm']],
+          '#weight' => 10,
+        ];
+        // Export mapping.
+        $form[$active_def]['export'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Export %def mapping', ['%def' => $active_def]),
+          '#submit' => [[$this, 'submitExportForm']],
+          '#weight' => count($brapi_definition['data_types']) + 20,
+        ];
+        // Import mapping.
+        $form[$active_def]['import'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Import mapping'),
+          '#submit' => [[$this, 'submitImportForm']],
+          '#weight' => count($brapi_definition['data_types']) + 25,
+        ];
       }
     }
-
-    // Sort datatypes.
-    ksort($form[$active_def]);
     
-
-    $form['submit'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Save'),
-    ];
     return $form;
   }
 
@@ -149,6 +189,28 @@ class BrapiDataTypesForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitCompleteForm(array &$form, FormStateInterface $form_state) {
+    \Drupal::messenger()->addMessage('Complete not implemented yet.');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitExportForm(array &$form, FormStateInterface $form_state) {
+    \Drupal::messenger()->addMessage('Export not implemented yet.');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitImportForm(array &$form, FormStateInterface $form_state) {
+    \Drupal::messenger()->addMessage('Import not implemented yet.');
   }
 
 }
