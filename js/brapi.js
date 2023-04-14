@@ -33,14 +33,18 @@
       var data = new FormData(brapiForm);
       var settings = Object.fromEntries(data.entries());
       for (var key in settings) {
-        if ("form" == key.substr(0, 4)) {
+        if (("mapping" != key.substr(0, 7))
+          && ("id" != key)
+          && ("label" != key)
+          && ("contentType" != key)
+        ) {
           delete settings[key];
         }
       }
       var blob = new Blob([JSON.stringify(settings)], { type: 'text/plain' });
       var a = document.createElement('a');
-      // @todo: generate a name using form "label" field.
-      a.download = 'brapi_mapping.json';
+      var mapid = data.get('id') ? data.get('id') + '_' : '';
+      a.download = 'brapi_' + mapid + 'mapping.yml';
       a.href = window.URL.createObjectURL(blob);
       a.click();
     }
@@ -56,6 +60,9 @@
       reader.onload = function() {
         var text = reader.result;
         try {
+          // @todo: We need to support YAML.
+          // Maybe check if the lib https://github.com/nodeca/js-yaml is
+          // available and fallback to JSON if not.
           var mapping = JSON.parse(text);
           for (var brapiElementName in mapping) {
             if ('mapping' === brapiElementName.substr(0, 7)) {
@@ -83,8 +90,8 @@
           }
         }
         catch(e) {
-          alert(e);
           console.log(e);
+          alert('Unsupported format. Current implementation only supports JSON. ' + e);
         }
       };
       reader.readAsText(file);
@@ -96,7 +103,7 @@
 
   Drupal.brapi.importMapping = function() {
     var $brapiDialog = $(
-      '<label>Select BrAPI mapping file: <input type="file" accept=".json,.txt" /></label>'
+      '<label>Select BrAPI mapping file: <input type="file" accept=".yml,.yaml,.json" /></label>'
     ).appendTo('body');
     Drupal.dialog($brapiDialog, {
       title: 'Load BrAPI Datatype Mapping',

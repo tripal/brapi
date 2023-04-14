@@ -174,6 +174,13 @@ class BrapiDatatypeFormBase extends EntityForm {
           '#description' => $this->t('The machine-readable name must be unique, and can only contain lowercase letters, numbers, underscores, dashes and dots.'),
         ];
       }
+      else {
+        // Used by Javascript.
+        $form['id'] = [
+          '#type' => 'hidden',
+          '#value' => $brapi_datatype->id(),
+        ];
+      }
     }
 
     // Check for sub-mapping.

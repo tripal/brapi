@@ -18,10 +18,6 @@ Improve interface access token management.
   - add a "create new token" button (targetting brapi/token/new)
   - add admin interface for global management (interface BrapiToken::purgeExpiredTokens())
 
-Add an interface to manage used/unused sub-mappings.
-  BrapiDataTypesForm.php, in buildForm(), line 88.
-  // @todo: add sub-mapping list.
-
 Manage special calls with files outputs
   BrapiController.php, in brapiCall(), line 126.
 
@@ -40,10 +36,6 @@ Manage subcalls that return multiple values for a given object.
   ex.: /seedlots/{seedLotDbId}/transactions
   BrapiController.php, in processObjectCalls(), line 565.
   // @todo: also check for sub-calls that may have an identifier in the filter
-
-See if pertienent to manage JSON data in object field static values.
-  BrapiDatatype.php, in getBrapiData(), line 264.
-  $brapi_data[$brapi_field] = $drupal_mapping['static'];
 
 Add automated tests.
   /tests directory.
