@@ -5,6 +5,7 @@
  * Contains brapi.module.
  */
 
+use Drupal\brapi\Entity\BrapiDatatype;
 use Drupal\brapi\Entity\BrapiToken;
 use Drupal\Core\Routing\RouteMatchInterface;
 
@@ -15,6 +16,22 @@ const BRAPI_DATATYPE_ID_REGEXP = '/^(v[\d])-([^\-]+)-([^\-]+)-?(.*)$/';
 const BRAPI_MIME_JSON = 'application/json';
 const BRAPI_DEFAULT_TOKEN_LIFETIME   = 86400; // 1 day.
 const BRAPI_DEFAULT_SEARCH_LIFETIME  = 604800; // 1 week.
+const BRAPI_TO_PLURAL = [
+  'entity'    => 'entities',
+  'Entity'    => 'Entities',
+  'ENTITY'    => 'ENTITIES',
+  'germplasm' => 'germplasm',
+  'Germplasm' => 'Germplasm',
+  'GERMPLASM' => 'GERMPLASM',
+];
+const BRAPI_TO_SINGULAR = [
+  'entities'  => 'entity',
+  'Entities'  => 'Entity',
+  'ENTITIES'  => 'ENTITY',
+  'germplasm' => 'germplasm',
+  'Germplasm' => 'Germplasm',
+  'GERMPLASM' => 'GERMPLASM',
+];
 
 /**
  * Implements hook_help().
@@ -58,6 +75,7 @@ function brapi_preprocess_brapi_token(&$variables){
   $user = \Drupal::currentUser();
   $tokens = BrapiToken::getUserTokens($user, TRUE);
   $variables['tokens'] = $tokens;
+  // @todo: Check if admin and add all available tokens.
 }
 
 /**
@@ -585,3 +603,155 @@ function brapi_open_api_to_definition(array $openapis) :array {
 
   return $definition;
 }
+
+/**
+ * Tells if a field references another BrAPI datatype.
+ *
+ * @param string $field
+ *   The current datatype field name to check.
+ * @param string $current_datatype
+ *   The current datatype that holds the potential reference field to check.
+ * @param array $brapi_def
+ *   The BrAPI definition to use.
+ *
+ * @return FALSE if the field is not a reference, the referenced datatype name
+ *   otherwise (evaluated as a TRUE value).
+ */
+function brapi_is_reference_to_datatype(
+  string $field,
+  string $current_datatype,
+  array $brapi_def
+) {
+  $referenced_datatype = FALSE;
+  $field_datatype =
+    $brapi_def['data_types'][$current_datatype]['fields'][$field]['type']
+    ?? ''
+  ;
+
+  // Adjust field datatype to match real datatypes.
+  // Ex.: field datatype "GermplasmAttribute_trait" should be in fact
+  // treated as "Trait".
+  // @todo: Maybe use a more generic way to get existing mappings: maybe use
+  // BrAPI git YAML files as source instead of Swagger?
+  $field_datatype = ucfirst(
+    str_replace($current_datatype . '_', '', $field)
+  );
+  if (array_key_exists($field_datatype, $brapi_def['data_types'])) {
+    $referenced_datatype = $field_datatype;
+  }
+
+  return $referenced_datatype;
+}
+
+/**
+ * Tells if a field references another BrAPI datatype.
+ *
+ * @param string $field
+ *   The current datatype field name to check.
+ * @param BrapiDatatype $current_datatype_mapping
+ *   The current datatype mapping containing the field to check.
+ * @param array $brapi_def
+ *   The BrAPI definition to use.
+ *
+ * @return the BrapiDatatype instance used to load field data, FALSE if there is
+ *   no corresponding mapping object.
+ */
+function brapi_get_referenced_datatype_mapping(
+  string $field,
+  BrapiDatatype $current_datatype_mapping,
+  array $brapi_def
+) {
+  $brapi_mapping = FALSE;
+  $current_datatype = $current_datatype_mapping->getBrapiDatatype();
+  $ref_datatype = brapi_is_reference_to_datatype(
+    $field,
+    $current_datatype,
+    $brapi_def
+  );
+  if ($ref_datatype) {
+    $drupal_mapping = $current_datatype_mapping->mapping[$field] ?? ['field' => '',];
+    if ('_submapping' == $drupal_mapping['field']) {
+      // Get data type mapping entities.
+      $mapping_loader = \Drupal::service('entity_type.manager')
+        ->getStorage('brapidatatype')
+      ;
+      if ('custom' == $drupal_mapping['submapping']) {
+        $submapping = $current_datatype_mapping->id . '-' . lcfirst($ref_datatype);
+        $brapi_mapping = $mapping_loader->load($submapping);
+      }
+      else {
+        $brapi_mapping = $mapping_loader->load($drupal_mapping['submapping']);
+      }
+    }
+  }
+  return $brapi_mapping;
+}
+
+/**
+ * Returns the datatype identifier field of the given datatype.
+ *
+ * @param string $datatype
+ *   BrAPI datatype name.
+ * @param array $brapi_def
+ *   The BrAPI definition to use.
+ *
+ * @return string
+ *   The name of the datatype identifier field.
+ */
+function brapi_get_datatype_identifier(
+  string $datatype,
+  array $brapi_def
+) :string {
+  // @todo: check the datatype exists and has a DbId field as well.
+  return lcfirst($datatype . 'DbId');
+}
+
+/**
+ * Returns a given term plural as defined in BrAPI.
+ *
+ * This function supports lower case, uppercase, camelCase and CamelCase.
+ *
+ * @param string $term
+ *   Term to pluralize.
+ *
+ * @return string
+ *   Pluralized term.
+ */
+function brapi_get_term_plural(string $term) :string {
+  if (array_key_exists($term, BRAPI_TO_PLURAL)) {
+    $plural = BRAPI_TO_PLURAL[$term];
+  }
+  elseif (preg_match('#[a-z]#', $term)) {
+    $plural = $term . 's';
+  }
+  else {
+    // All upper case.
+    $plural = $term . 'S';
+  }
+  return $plural;
+}
+
+/**
+ * Returns a given term singular as defined in BrAPI.
+ *
+ * This function supports lower case, uppercase, camelCase and CamelCase.
+ *
+ * @param string $term
+ *   Term to singularize.
+ *
+ * @return string
+ *   Singularized term.
+ */
+function brapi_get_term_singular(string $term) :string {
+  if (array_key_exists($term, BRAPI_TO_SINGULAR)) {
+    $singular = BRAPI_TO_SINGULAR[$term];
+  }
+  elseif (('s' == substr($term, -1)) || ('S' == substr($term, -1))) {
+    $singular = substr($term, 0, -1);
+  }
+  else {
+    $singular = $term;
+  }
+  return $singular;
+}
+

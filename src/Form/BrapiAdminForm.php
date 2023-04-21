@@ -40,7 +40,7 @@ class BrapiAdminForm extends FormBase {
 
     // Get BrAPI versions.
     $versions = brapi_available_versions();
-    
+
     foreach ($versions as $version => $version_definition) {
       $version_options = array_keys($version_definition);
       $version_options = array_combine($version_options, $version_options);
@@ -73,18 +73,57 @@ class BrapiAdminForm extends FormBase {
         ];
       }
     }
+
+    // @todo: implement...
+    $all_definitions = [];
+    foreach ($versions as $version => $version_definition) {
+      $version_options = array_keys($version_definition);
+      $version_options = array_combine($version_options, $version_options);
+      $all_definitions += $version_options;
+    }
+    if (!empty($all_definitions)) {
+      $form['versions']['compare'] = [
+        '#type' => 'fieldset',
+        '#title' => $this->t('Compare definitions'),
+        '#attributes' => [
+            'class' => ['container-inline'],
+        ],
+      ];
+      $form['versions']['compare']['ref_version'] = [
+        '#type' => 'select',
+        '#options' => $all_definitions,
+        '#default_value' => array_key_first($all_definitions),
+        '#title' => $this->t(
+          'Compare ',
+        ),
+        '#wrapper_attributes' => [
+            'class' => ['container-inline'],
+        ],
+      ];
+      $form['versions']['compare']['other_version'] = [
+        '#type' => 'select',
+        '#options' => $all_definitions,
+        '#default_value' => array_key_last($all_definitions),
+        '#title' => $this->t(
+          ' to',
+        ),
+        '#wrapper_attributes' => [
+            'class' => ['container-inline'],
+        ],
+      ];
+      $form['versions']['compare']['compare_submit'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Compare'),
+        '#submit' => ['::submitCompareForm'],
+      ];
+    }
+
     // @todo Add existing/obsolete mapping management.
-    $form['mappings'] = [
-      '#type'  => 'details',
-      '#title' => $this->t('Mappings'),
-      '#open'  => TRUE,
-      '#tree'  => FALSE,
-    ];
-    $form['mappings']['mapping_list'] = [
+    $form['versions']['mapping_list'] = [
       '#type'  => 'markup',
       '#markup'  => 'TODO: display the list of defined mappings by sub-versions (with counts), highlight disabled ones and add button to remove all their related mappings.<br/>',
     ];
-    $form['mappings']['manage_link'] = [
+    $form['versions']['manage_link'] = [
       '#title' => $this->t('Manage all mappings'),
       '#type' => 'link',
       '#url' => \Drupal\Core\Url::fromRoute('entity.brapidatatype.list'),
@@ -130,7 +169,12 @@ class BrapiAdminForm extends FormBase {
       '#tree'  => FALSE,
     ];
 
-    // Token.
+    // @todo: implement... (route: brapi.token)
+    $form['access']['token_list'] = [
+      '#type' => 'markup',
+      '#markup' => $this->t('List active tokens (not implemented yet - TODO)'),
+    ];
+
     $form['access']['token_default_lifetime'] = [
       '#type' => 'number',
       '#title' => $this->t('Default token lifetime'),
@@ -310,6 +354,16 @@ class BrapiAdminForm extends FormBase {
     ;
     $config->save();
     $this->messenger()->addMessage($this->t('BrAPI settings have been updated.'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitCompareForm(array &$form, FormStateInterface $form_state) {
+    // Save current config.
+    $this->submitForm($form, $form_state);
+    // Do comparison.
+    $this->messenger()->addWarning('Definition comparison not implemented yet.');
   }
 
   /**

@@ -101,7 +101,6 @@ class BrapiDatatypeFormBase extends EntityForm {
       if (preg_match(BRAPI_DATATYPE_ID_REGEXP, $mapping_id, $matches)) {
         list(, $version, $active_def, $datatype_name, $subfields) = $matches;
         $subfields = array_filter(explode('-', $subfields));
-        // $brapi_definition = brapi_get_definition($version, $active_def);
         $mapping_name = $datatype_name . ' for BrAPI v' . $active_def;
       }
       else {
@@ -229,6 +228,32 @@ class BrapiDatatypeFormBase extends EntityForm {
       '#tree' => TRUE,
     ];
     $form['mapping'] += $this->getFieldMappingForm($form, $form_state);
+
+    // If we are mapping subfields, keep source object id as a possible
+    // filter.
+    if (!empty($subfields)) {
+      $brapi_definition = brapi_get_definition($version, $active_def);
+      $id_field = brapi_get_datatype_identifier(
+        $datatype_name,
+        $brapi_definition
+      );
+      $id_field_def =
+        $brapi_definition['data_types'][$datatype_name]['fields'][$id_field]
+        ?? NULL
+      ;
+      if (!empty($id_field_def) && !empty($parent_datatype->mapping[$id_field])) {
+        $form['mapping'][$id_field]['hidden'] = [
+          '#type' => 'hidden',
+          '#value' => TRUE,
+        ];
+        foreach ($parent_datatype->mapping[$id_field] as $param => $value) {
+          $form['mapping'][$id_field][$param] = [
+            '#type' => 'hidden',
+            '#value' => $value,
+          ];
+        }
+      }
+    }
 
     $form['actions']['brapi-mapping-export'] = [
       '#type' => 'button',
@@ -556,14 +581,17 @@ class BrapiDatatypeFormBase extends EntityForm {
           $submapping_type_options = [
             'custom' => 'Custom sub-mapping',
           ];
-          // @todo: we could add custom field if used to return the ID of an entity (of type given by the selected sub-mapping) to load.
-          $submapping_content_options = $entityref_field_options['object'] /* + $custom_field_option*/;
+          // @todo: We could add "custom field" if used to return the ID of an
+          // entity (of type given by the selected sub-mapping) to load.
+          // $submapping_content_options = $entityref_field_options['object'] + $custom_field_option;
+          $submapping_content_options = $entityref_field_options['object'];
           // Select sub-mapping type: existing BrAPI datatype mapping or custom.
           // Check if a BrAPI datatype-specific mapping is available.
-          // @todo use a more generic way to get existing mappings: maybe use BrAPI git YAML files as source instead of Swagger?
-          $base_datatype = ucfirst(str_replace($datatype_name . '_', '', $base_datatype));
-          $target_datatype_id = brapi_generate_datatype_id($base_datatype, $version, $active_def);
-          $other_mapping = $mapping_loader->load($target_datatype_id);
+          $base_datatype = brapi_is_reference_to_datatype($field_name, $datatype_name, $brapi_definition);
+          if ($base_datatype) {
+            $target_datatype_id = brapi_generate_datatype_id($base_datatype, $version, $active_def);
+            $other_mapping = $mapping_loader->load($target_datatype_id);
+          }
           if (!empty($other_mapping)) {
             // The datatype is mapped to a content type.
             $submapping_type_options[$other_mapping->id()] = $this->t(
@@ -755,7 +783,7 @@ class BrapiDatatypeFormBase extends EntityForm {
               return [$current_path . ' = "' . $data . '"'];
             }
           };
-          
+
           $mapping_form['json_path']['examples'] = [
             '#type' => 'markup',
             '#markup' => $this->t(

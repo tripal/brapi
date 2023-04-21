@@ -74,7 +74,7 @@ class BrapiCallsForm extends FormBase {
     $global_query_parameters = [
       'page', 'pageSize', 'Authorization',
     ];
-    
+
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
 
@@ -138,7 +138,7 @@ class BrapiCallsForm extends FormBase {
                     $mapped_datatypes[] = $datatype;
                   }
                 }
-                
+
                 if (empty($missing_mappings)) {
                   $description = preg_replace(
                     "/\\n+/", "<br/>\n", $method_def['description']
@@ -245,7 +245,7 @@ class BrapiCallsForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    
+
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
 

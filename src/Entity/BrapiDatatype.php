@@ -150,12 +150,20 @@ class BrapiDatatype extends ConfigEntityBase {
    *   An associative array. Keys starting with '#' contain special values such
    *   as pager data and other keys are considered as field names with their
    *   associated values to use to filter data.
+   *   Special values:
+   *   #entity: used by submapping to grab field values from an already loaded
+   *     entity.
+   *   #include_hidden: used by submapping to also include hidden fields such as
+   *     the parent object identifier (which are hidden in the returned
+   *     output otherwise).
+   *   #page: page number.
+   *   #pageSize: page size (number of objects per page).
    *
    * @return array
    *   An array with "total_count" and "entities" as an array of BrAPI entity.
    */
   public function getBrapiData(array $parameters) :array {
-    
+
     // Get data type mapping entities.
     $mapping_loader = \Drupal::service('entity_type.manager')
       ->getStorage('brapidatatype')
@@ -199,10 +207,12 @@ class BrapiDatatype extends ConfigEntityBase {
         $count_query->condition($name, (array) $value, 'IN');
       }
       // Range (paggination) is not applied on the total count.
-      $query->range(
-        empty($parameters['#page']) ? 0 : $parameters['#page'],
-        empty($parameters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $parameters['#pageSize']
-      );
+      if (isset($parameters['#pageSize']) && (0 < $parameters['#pageSize'])) {
+        $query->range(
+          empty($parameters['#page']) ? 0 : $parameters['#page'],
+          $parameters['#pageSize']
+        );
+      }
       // Get total number of entities matching filters.
       $item_count = intval($count_query->count()->execute());
       // Get IDs of selected entity range.
@@ -213,7 +223,7 @@ class BrapiDatatype extends ConfigEntityBase {
 
     // Initialize result array.
     $result = [];
-    // Check wich fields are arrays.
+    // Check which fields are arrays.
     $array_fields = [];
     list($version, $active_def, $datatype_name) = $this->parseId();
     $brapi_definition = brapi_get_definition($version, $active_def);
@@ -232,11 +242,17 @@ class BrapiDatatype extends ConfigEntityBase {
       // @todo: Warn if the entity type does not match the BrAPI mapping.
       $brapi_data = [];
       foreach ($this->mapping as $brapi_field => $drupal_mapping) {
-        if (!empty($drupal_mapping) && !empty($drupal_mapping['field'])) {
+        if (!empty($drupal_mapping)
+            && !empty($drupal_mapping['field'])
+        ) {
+          // Skip hidden fields such as parent object id in sub-mapping.
+          if (!empty($drupal_mapping['hidden']) && (empty($parameters['#include_hidden']))) {
+            continue 1;
+          }
+
           try {
             // Check mapping type.
             if ('_submapping' == $drupal_mapping['field']) {
-              // @todo: refactoring as form changed.
               $brapi_data[$brapi_field] = NULL;
               // Get sub-content to use.
               if (empty($drupal_mapping['subcontent'])) {
@@ -265,7 +281,7 @@ class BrapiDatatype extends ConfigEntityBase {
                   // an array as we manage returned values according to the type.
                 }
               }
-              
+
               if (!empty($sub_entities)) {
                 // Here $sub_entities is expected to contain a single
                 // ContentEntity or an array of ContentEntity. Depending on the
@@ -366,7 +382,7 @@ class BrapiDatatype extends ConfigEntityBase {
           catch (\Throwable $e) {
             \Drupal::logger('brapi')->error($e);
           }
-          
+
           // Check expected structure: array or not?
           if (!empty($array_fields[$brapi_field])
               && (!is_array($brapi_data[$brapi_field]))
@@ -456,7 +472,7 @@ class BrapiDatatype extends ConfigEntityBase {
     }
     return $custom_value;
   }
-  
+
   /**
    * Returns the related Drupal content field name.
    *
@@ -476,6 +492,10 @@ class BrapiDatatype extends ConfigEntityBase {
     if (!empty($mapped_field) && ('_custom' == $mapped_field)) {
       $mapped_field = '';
     }
+    if (!empty($mapped_field) &&("_submapping" == $mapped_field)) {
+      $mapped_field = $this->mapping[$brapi_field_name]['subcontent'];
+    }
+
     return $mapped_field;
   }
 

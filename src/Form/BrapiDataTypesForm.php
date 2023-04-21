@@ -32,6 +32,12 @@ class BrapiDataTypesForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
+    if ($form_state->has('confirm_delete') && !empty($form_state->get('confirm_delete'))) {
+      return $this->buildDeleteConfirmForm($form, $form_state);
+    }
+
+    $form_state->set('page_num', 1);
+
     // V1 internal types.
     $v1_internal_types = [
       'WSMIMEDataTypes',
@@ -63,7 +69,7 @@ class BrapiDataTypesForm extends FormBase {
         $active_definitions[$version] = $config->get($version . 'def');
       }
     }
-    
+
     // Get data type mapping entities.
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
 
@@ -79,11 +85,8 @@ class BrapiDataTypesForm extends FormBase {
 
         $brapi_definition = brapi_get_definition($version, $active_def);
         foreach ($brapi_definition['data_types'] as $datatype => $datatype_definition) {
-          if (empty($datatype_definition['calls'])
-              /*&& empty($datatype_definition['as_field_in'])*/
-          ) {
-            // Skip datatypes not used in calls. // or other datatypes.
-            // $this->logger('brapi')->notice('Skipping datatype "%datatype" (v%version) has it does not seem to be used.', ['%datatype' => $datatype, '%version' => $active_def]);
+          if (empty($datatype_definition['calls'])) {
+            // Skip datatypes not used in calls.
             continue 1;
           }
           // Skip special datatypes managed internally.
@@ -102,7 +105,7 @@ class BrapiDataTypesForm extends FormBase {
 
           // Generate datatype machine name.
           $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
-          
+
           $form[$active_def_id][$datatype] = [
             '#type' => 'details',
             '#title' => $datatype,
@@ -199,7 +202,7 @@ class BrapiDataTypesForm extends FormBase {
         ];
         $form[$active_def_id]['import']['import_mapping'] = [
           '#type' => 'managed_file',
-          '#title' => $this->t('Mapping file'),
+          '#title' => $this->t('Mapping file to import'),
           '#weight' => 5,
           '#upload_location' => 'private://',
           '#upload_validators' => [
@@ -208,10 +211,19 @@ class BrapiDataTypesForm extends FormBase {
         ];
         $form[$active_def_id]['import']['import_submit'] = [
           '#type' => 'submit',
-          '#value' =>  $this->t('Import mapping'),
+          '#value' =>  $this->t('Import'),
           '#name' => 'import_' . $active_def_id,
           '#weight' => 10,
         ];
+
+        // Remove all.
+        $form[$active_def_id]['delete'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Remove all :def mapping', [':def' => $active_def]),
+          '#name' => 'delete_' . $active_def_id,
+          '#weight' => count($brapi_definition['data_types']) + 30,
+        ];
+
       }
     }
 
@@ -221,9 +233,47 @@ class BrapiDataTypesForm extends FormBase {
   /**
    * {@inheritdoc}
    */
+  public function buildDeleteConfirmForm(array $form, FormStateInterface $form_state) {
+
+    $verdef = $form_state->get('confirm_delete', ['version' => '', 'definition' => '',]);
+    $form_state->set('confirm_delete', FALSE)->setRebuild(TRUE);
+
+    // Make sure we got something to delete.
+    if (empty($verdef['definition'])) {
+      return $this->buildForm($form, $form_state);
+    }
+
+    $form['question'] = [
+      '#type' => 'markup',
+      '#markup' => $this->t(
+        'Are you sure you want to remove BrAPI mapping configuration for version %definition? This operation can not be undone (unless you exported the mapping and reimport it afteward).',
+        ['%definition' => $verdef['definition'],]
+      ),
+    ];
+
+    $form['actions'] = [
+      '#type' => 'container',
+    ];
+
+    $form['actions']['confirm'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Confirm'),
+      '#submit' => ['::submitConfirmDeleteForm'],
+    ];
+    $form['actions']['cancel'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Cancel'),
+    ];
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $action = $form_state->getTriggeringElement()['#name'];
-    if (preg_match('#^(complete|export|import)_(\d)_(\d.*)#', $action, $matches)) {
+    if (preg_match('#^(complete|export|import|delete)_(\d)_(\d.*)#', $action, $matches)) {
       $operation     = $matches[1];
       $version       = 'v' . $matches[2];
       $definition    = $matches[2] . '.' . $matches[3];
@@ -241,6 +291,10 @@ class BrapiDataTypesForm extends FormBase {
           $this->submitImportForm($form, $form_state, $version, $definition, $definition_id);
           break;
 
+        case 'delete':
+          $this->submitDeleteForm($form, $form_state, $version, $definition, $definition_id);
+          break;
+
         default:
           // Should never get there unless the regex is modified.
           $this->logger('brapi')->warning('Unrecognized operation "%operation".', ['%operation' => $operation,]);
@@ -250,7 +304,7 @@ class BrapiDataTypesForm extends FormBase {
     else {
       $this->logger('brapi')->warning('Unsupported form action "%action".', ['%action' => $action,]);
     }
-    
+
   }
 
   /**
@@ -448,6 +502,26 @@ class BrapiDataTypesForm extends FormBase {
         $this->messenger()->addError('Failed to read mapping file.');
       }
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitDeleteForm(array &$form, FormStateInterface $form_state, string $version, string $definition, string $definition_id) {
+    $form_state->set(
+      'confirm_delete',
+      [
+        'version' => $version,
+        'definition' => $definition,
+      ]
+    )->setRebuild(TRUE);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitConfirmDeleteForm(array &$form, FormStateInterface $form_state) {
+    $this->messenger()->addMessage('Delete not implemented yet.');
   }
 
 }
