@@ -166,43 +166,6 @@ class BrapiCallsForm extends FormBase {
                     ,
                   ];
 
-                  // Check if current method has query parameters.
-                  $has_filtering_parameters = FALSE;
-                  if (!empty($method_def['parameters'])) {
-                    foreach ($method_def['parameters'] as $parameter) {
-                      if (!empty($parameter['in'])
-                          && ('query' == $parameter['in'])
-                          && (!in_array($parameter['in'], $global_query_parameters))
-                      ) {
-                        $has_filtering_parameters = TRUE;
-                      }
-                    }
-                  }
-                  // Add filtering options for listing and search calls.
-                  // Note: the radios could appear more than once by call if
-                  // several methods allow filtering but it's unlikely to
-                  // happen.
-                  if ((!empty($mapped_datatypes) && $has_filtering_parameters)
-                      || (str_starts_with($call, '/search'))
-                  ) {
-                    if (isset($call_settings[$version][$call]['filtering'])
-                        && (in_array('' . $call_settings[$version][$call]['filtering'], ['drupal', 'brapi']))
-                    ) {
-                      $filtering_default = $call_settings[$version][$call]['filtering'];
-                    }
-                    else {
-                      $filtering_default = 'drupal';
-                    }
-                    $form[$version][$call]['filtering'] = [
-                      '#type' => 'radios',
-                      '#title' => $this->t('Result filtering'),
-                      '#default_value' => $filtering_default,
-                      '#options' => [
-                        'drupal' => $this->t('use Drupal entity filtering (recommended if functionnal)'),
-                        'brapi'  => $this->t('use BrAPI module filtering (slower)'),
-                      ],
-                    ];
-                  }
                   // Add deferred result option for search-* calls.
                   if (str_starts_with($call, '/search')
                       && !str_contains($call, 'searchResultsDbId')
@@ -265,7 +228,7 @@ class BrapiCallsForm extends FormBase {
       foreach ($call_values as $call => $call_settings) {
         foreach ($call_settings as $call_setting => $call_setting_value) {
           // $call_setting can be either a method ('post', 'get', etc.) or a
-          // specific setting such as 'filtering' or 'deferred'.
+          // specific setting such as 'deferred'.
           if (!empty($call_setting_value)) {
             $calls[$version][$call][$call_setting] = $call_setting_value;
           }

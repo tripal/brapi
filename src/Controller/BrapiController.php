@@ -887,6 +887,7 @@ class BrapiController extends ControllerBase {
         $param_value =
           $request->query->get($field_name )
           ?? $request->query->get(brapi_get_term_plural($field_name))
+          ?? $request->query->get(brapi_get_term_singular($field_name))
         ;
         // If nothing from GET, try from POST parameters.
         if ((!isset($param_value)) || ('' == $param_value)) {
@@ -894,24 +895,43 @@ class BrapiController extends ControllerBase {
             $param_value = $json_input[$field_name];
             unset($json_input[$field_name]);
           }
-          elseif (array_key_exists(brapi_get_term_plural($field_name), $json_input)) {
+          elseif (
+            array_key_exists(
+              $plural_field_name = brapi_get_term_plural($field_name),
+              $json_input
+            )
+          ) {
             // Check for plural and array of values.
-            $plural_field_name = brapi_get_term_plural($field_name);
             $param_value = $json_input[$plural_field_name];
             unset($json_input[$plural_field_name]);
           }
-          elseif (array_key_exists(strtolower($field_name), $json_low_keys)) {
+          elseif (
+            array_key_exists(
+              $singular_field_name = brapi_get_term_singular($field_name),
+              $json_input
+            )
+          ) {
+            // Check for plural and array of values.
+            $param_value = $json_input[$singular_field_name];
+            unset($json_input[$singular_field_name]);
+          }
+          elseif (
+            array_key_exists(
+              $field_name_low = strtolower($field_name),
+              $json_low_keys
+            )
+          ) {
             // Also check for invalid capitalization.
-            $param_value = $json_input[$field_name];
-            unset($json_input[$field_name]);
+            $invalid_case_field = $json_low_keys[$field_name_low];
+            $param_value = $json_input[$invalid_case_field];
+            unset($json_input[$invalid_case_field]);
             // Warn.
             $status[] = [
-              'message'     => 'Invalid capitalization for post filters adjusted: "' . $json_low_keys[$field_name] . '" should be "' . $field_name . '"',
+              'message'     => 'Invalid capitalization for post filters adjusted: "' . $invalid_case_field . '" should be "' . $field_name . '"',
               'messageType' => 'WARNING',
             ];
           }
         }
-
         if (isset($param_value) && ('' != $param_value)) {
           // We got something, set the filter.
           $filters[$field_name] = $param_value;
@@ -992,18 +1012,27 @@ class BrapiController extends ControllerBase {
           }
         }
       }
-      // @todo: Check sub/complex fields?
 
-      // @todo: Process non-trivial field filters in GET.
+      // @todo: Process sub/complex fields (GET and POST).
+      // ex. Germplasm externalReferences
+      // Loop on remaining unresolved filters.
+      // foreach ($json_input as $filter_field => $filter_value) {
+      // ...
+      // }
+
+      // @todo: Process non-trivial field filters (GET and POST).
       // ex.: Trait GET uses filter observationVariableDbIds.
       //      We could check if it ends by DbId or DbIds and see if the prefix
       //      is a datatype that has a traitDbId field or trait as a subobject.
-
+      // Loop on remaining unresolved filters.
+      // foreach ($json_input as $filter_field => $filter_value) {
+      // ...
+      // }
 
       // Report unprocessed filters.
       if (!empty($json_input)) {
         $status[] = [
-          'message'     => 'Unsupported post filters: ' . implode(', ', array_keys($json_input)),
+          'message'     => 'Unsupported filter(s): ' . implode(', ', array_keys($json_input)),
           'messageType' => 'WARNING',
         ];
       }
@@ -1037,101 +1066,9 @@ class BrapiController extends ControllerBase {
       ];
     }
 
-    // Check if BrAPI filtering is enabled for the call.
-    $internal_filtering = FALSE;
-    if (!empty($call_settings[$version][$call]['filtering'])
-        && ('brapi' == $call_settings[$version][$call]['filtering'])
-    ) {
-      $internal_filtering = TRUE;
-    }
-
-    if ($internal_filtering) {
-      // @todo: use cache.
-
-      // Process pagination.
-      $page_size = empty($filters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $filters['#pageSize'];
-      $page_start = (empty($filters['#page']) ? 0 : $filters['#page']) * $page_size;
-      $current_page = 0;
-      // $max_pages is used to make sure we won't go into an infinite loop in
-      // case the pagination is not well handled by the BrAPI data type.
-      $max_pages = 0;
-
-      // Proceed to entity filtering.
-      $entities = [];
-
-      do {
-        // Fetch next BrAPI objects and apply internal filtering.
-        $brapi_data = $datatype_mapping->getBrapiData(
-          ['#pageSize' => $page_size, '#page' => $current_page++,]
-        );
-        // Set $max_pages if not really initialized yet.
-        if (!$max_pages) {
-          // get the count from the first BrAPI data query.
-          $max_pages = 1 + floor(($brapi_data['total_count'] - 1) / $page_size);
-        }
-
-        foreach ($brapi_data['entities'] as $entity) {
-          // Proceed filters.
-          foreach ($filters as $field => $value) {
-            // Make sure entity has this field.
-            if (!array_key_exists($field, $entity)) {
-              // Entity does not have this type of field, ignore/skip filter.
-              continue 1;
-            }
-            if (is_array($value)) {
-              // Filter on a list of possible values.
-              if (empty(($value))) {
-                // Empty filter list, skip filter.
-                continue 1;
-              }
-              // Filter value is a non-empty array.
-              if (is_array($entity[$field])) {
-                // Entity field contains an array of values as well.
-                foreach ($entity[$field] as $entity_value) {
-                  if (in_array($entity_value, $value)) {
-                    // Matched a value, skip filter.
-                    continue 2;
-                  }
-                }
-                // No value matched, skip entity.
-                continue 2;
-              }
-              elseif (!in_array($entity[$field], $value)) {
-                // Filter value is an array and entity value is a single value not
-                // in that array. Unmatched value, skip that entity.
-                continue 2;
-              }
-            }
-            elseif (isset($value) && ('' != $value)) {
-              // Filter value is a single non-empty (NULL and empty string) value.
-              if (!is_array($entity[$field])) {
-                if ($value != $entity[$field]) {
-                  // Filter value and entity value are single values but are
-                  // different. Unmatched value, skip that entity.
-                  continue 2;
-                }
-              }
-              elseif (!in_array($value, $entity[$field])) {
-                // Entity field contains an array of values.
-                // Filter value does not match any of the entity values (array).
-                // Unmatched value, skip that entity.
-                continue 2;
-              }
-            }
-          }
-          $entities[] = $entity;
-        }
-      } while (!empty($brapi_data['entities'])
-        && (count($entities) < $page_size)
-        && ($current_page < $max_pages)
-      );
-      $brapi_data['total_count'] = count($entities);
-    }
-    else {
-      // Fetch BrAPI object(s).
-      $brapi_data = $datatype_mapping->getBrapiData($filters);
-      $entities = $brapi_data['entities'];
-    }
+    // Fetch BrAPI object(s).
+    $brapi_data = $datatype_mapping->getBrapiData($filters);
+    $entities = $brapi_data['entities'];
 
     // $result not set: regular data call.
     if ($single_record) {
@@ -1168,96 +1105,11 @@ class BrapiController extends ControllerBase {
    */
   public function getBrapiData(
     $datatype_mapping,
-    $filters,
-    bool $internal_filtering = FALSE
+    $filters
   ) {
-    if ($internal_filtering) {
-      // @todo: use cache.
-
-      // Process pagination.
-      $page_size = empty($filters['#pageSize']) ? BRAPI_DEFAULT_PAGE_SIZE : $filters['#pageSize'];
-      $page_start = (empty($filters['#page']) ? 0 : $filters['#page']) * $page_size;
-      $current_page = 0;
-      // $max_pages is used to make sure we won't go into an infinite loop in
-      // case the pagination is not well handled by the BrAPI data type.
-      $max_pages = 0;
-
-      // Proceed to entity filtering.
-      $entities = [];
-
-      do {
-        // Fetch next BrAPI objects and apply internal filtering.
-        $brapi_data = $datatype_mapping->getBrapiData(
-          ['#pageSize' => $page_size, '#page' => $current_page++,]
-        );
-        // Set $max_pages if not really initialized yet.
-        if (!$max_pages) {
-          // get the count from the first BrAPI data query.
-          $max_pages = 1 + floor(($brapi_data['total_count'] - 1) / $page_size);
-        }
-
-        foreach ($brapi_data['entities'] as $entity) {
-          // Proceed filters.
-          foreach ($filters as $field => $value) {
-            // Make sure entity has this field.
-            if (!array_key_exists($field, $entity)) {
-              // Entity does not have this type of field, ignore/skip filter.
-              continue 1;
-            }
-            if (is_array($value)) {
-              // Filter on a list of possible values.
-              if (empty(($value))) {
-                // Empty filter list, skip filter.
-                continue 1;
-              }
-              // Filter value is a non-empty array.
-              if (is_array($entity[$field])) {
-                // Entity field contains an array of values as well.
-                foreach ($entity[$field] as $entity_value) {
-                  if (in_array($entity_value, $value)) {
-                    // Matched a value, skip filter.
-                    continue 2;
-                  }
-                }
-                // No value matched, skip entity.
-                continue 2;
-              }
-              elseif (!in_array($entity[$field], $value)) {
-                // Filter value is an array and entity value is a single value not
-                // in that array. Unmatched value, skip that entity.
-                continue 2;
-              }
-            }
-            elseif (isset($value) && ('' != $value)) {
-              // Filter value is a single non-empty (NULL and empty string) value.
-              if (!is_array($entity[$field])) {
-                if ($value != $entity[$field]) {
-                  // Filter value and entity value are single values but are
-                  // different. Unmatched value, skip that entity.
-                  continue 2;
-                }
-              }
-              elseif (!in_array($value, $entity[$field])) {
-                // Entity field contains an array of values.
-                // Filter value does not match any of the entity values (array).
-                // Unmatched value, skip that entity.
-                continue 2;
-              }
-            }
-          }
-          $entities[] = $entity;
-        }
-      } while (!empty($brapi_data['entities'])
-        && (count($entities) < $page_size)
-        && ($current_page < $max_pages)
-      );
-      $brapi_data['total_count'] = count($entities);
-    }
-    else {
-      // Fetch BrAPI object(s).
-      $brapi_data = $datatype_mapping->getBrapiData($filters);
-      $entities = $brapi_data['entities'];
-    }
+    // Fetch BrAPI object(s).
+    $brapi_data = $datatype_mapping->getBrapiData($filters);
+    $entities = $brapi_data['entities'];
 
     return $entities;
   }

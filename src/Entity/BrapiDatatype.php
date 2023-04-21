@@ -189,10 +189,27 @@ class BrapiDatatype extends ConfigEntityBase {
     else {
       // Load associated Drupal entity matching filter parameters.
       $filters = [];
+      $post_filters = [];
       foreach ($parameters as $parameter => $value) {
         $field_name = $this->getDrupalMappedField($parameter);
-        if (!empty($field_name)) {
-          $filters[$field_name] = $value;
+        if (FALSE === $field_name) {
+          $field_name = $this->getDrupalMappedField(brapi_get_term_singular($parameter));
+        }
+        if (FALSE ===  $field_name) {
+          $field_name = $this->getDrupalMappedField(brapi_get_term_plural($parameter));
+        }
+
+        if (FALSE !== $field_name) {
+          if ('' === $field_name) {
+            // Complex mapping, use post-filtering.
+            $post_filters[$parameter] = $value;
+          }
+          else {
+            $filters[$field_name] = $value;
+          }
+        }
+        elseif ('#' != substr($parameter, 0, 1)) {
+          \Drupal::logger('brapi')->warning('Unsupported filter "' . $parameter . '" for BrAPI datatype "' . $this->getBrapiDatatype() . '"');
         }
       }
       $query = $storage->getQuery();
@@ -206,19 +223,27 @@ class BrapiDatatype extends ConfigEntityBase {
         $query->condition($name, (array) $value, 'IN');
         $count_query->condition($name, (array) $value, 'IN');
       }
-      // Range (paggination) is not applied on the total count.
+      // Paggination.
       if (isset($parameters['#pageSize']) && (0 < $parameters['#pageSize'])) {
-        $query->range(
-          empty($parameters['#page']) ? 0 : $parameters['#page'],
-          $parameters['#pageSize']
-        );
+        $page_size = $parameters['#pageSize'];
+        $page = empty($parameters['#page']) ? 0 : $parameters['#page'];
       }
       // Get total number of entities matching filters.
       $item_count = intval($count_query->count()->execute());
+      // Do not apply paggination now when there are post-filters.
+      if (empty($post_filters) && !empty($page_size)) {
+        // Note: range (paggination) is not applied on the total count.
+        $query->range($page, $page_size);
+      }
+      elseif (!empty($post_filters)) {
+        $item_count = 0;
+      }
+      $current_page = 0;
       // Get IDs of selected entity range.
       $ids = $query->execute();
       // Load entity instances.
       $entities = $storage->loadMultiple($ids);
+      
     }
 
     // Initialize result array.
@@ -413,7 +438,93 @@ class BrapiDatatype extends ConfigEntityBase {
           $brapi_data[$brapi_field] = NULL;
         }
       }
-      $result[] = $brapi_data;
+
+      // Process post-filtering if needed.
+      if (!empty($post_filters)) {
+        // Apply post-filters and paggination.
+        foreach ($post_filters as $field => $value) {
+          // Make sure entity has this field.
+          if (!array_key_exists($field, $brapi_data)) {
+            // Entity does not have a value for this field, skip entity.
+            continue 2;
+          }
+          if (is_array($value)) {
+            // Filter on a list of possible values.
+            if (empty(($value))) {
+              // Empty filter list, skip filter.
+              continue 1;
+            }
+            // Filter value is a non-empty array.
+            if (is_array($brapi_data[$field])) {
+              // Entity field contains an array of values as well.
+              foreach ($brapi_data[$field] as $entity_value) {
+                if (in_array($entity_value, $value)) {
+                  // Matched a value, skip filter.
+                  continue 2;
+                }
+              }
+              // No value matched, skip entity.
+              continue 2;
+            }
+            elseif (!in_array($brapi_data[$field], $value)) {
+              // Filter value is an array and entity value is a single value not
+              // in that array. Unmatched value, skip that entity.
+              continue 2;
+            }
+          }
+          elseif (isset($value) && ('' != $value)) {
+            // Filter value is a single non-empty (NULL and empty string) value.
+            if (!is_array($brapi_data[$field])) {
+              if ($value != $brapi_data[$field]) {
+                // Filter value and entity value are single values but are
+                // different. Unmatched value, skip that entity.
+                continue 2;
+              }
+            }
+            elseif (!in_array($value, $brapi_data[$field])) {
+              // Entity field contains an array of values.
+              // Filter value does not match any of the entity values (array).
+              // Unmatched value, skip that entity.
+              continue 2;
+            }
+          }
+        }
+        // Entity passed filtration.
+        $result[] = $brapi_data;
+        // Manage pager.
+        if (!empty($page_size)) {
+          ++$item_count;
+          if (count($result) == $page_size) {
+            // We got a full page.
+            if ($current_page == $page) {
+              // We got our page.
+              $post_result = $result;
+            }
+            // Empty list and proceed to next page.
+            $result = [];
+            ++$current_page;
+          }
+        }
+      }
+      else {
+        // No post-filtering.
+        $result[] = $brapi_data;
+      }
+    }
+    
+    // Manage post-filtering paggination.
+    if (!empty($page_size)) {
+      // Make sure the client did not ask a higher page.
+      if ($current_page < $page) {
+        $result = [];
+      }
+      elseif (empty($post_result) && ($current_page == $page)) {
+        // The last page may not be complete and $post_result may not be filled.
+        // Get what's left.
+        $post_result = $result;
+      }
+      // Get post-filtering results.
+      $result = $post_result;
     }
 
     return ['total_count' => $item_count, 'entities' => $result];
@@ -451,7 +562,12 @@ class BrapiDatatype extends ConfigEntityBase {
         try {
           $json_object = new JsonObject($entity_array, TRUE);
           $jpath_value = $json_object->get($match);
-          $custom_value = str_replace($match, json_encode($jpath_value), $custom_value);
+          if (!empty($is_json)) {
+            $custom_value = str_replace($match, json_encode($jpath_value), $custom_value);
+          }
+          else {
+            $custom_value = str_replace($match, $jpath_value, $custom_value);
+          }
         }
         catch (InvalidJsonException | InvalidJsonPathException $e) {
           // JSONPath mapping failed. Report.
@@ -482,12 +598,12 @@ class BrapiDatatype extends ConfigEntityBase {
    * @param string $brapi_field_name
    *   A BrAPI field name.
    *
-   * @return string
-   *   The associated Drupal field name or an empty string if no mapping was
-   *   set.
+   * @return bool|string
+   *   The associated Drupal field name if mapped, an empty string if mapped to
+   *   a complex value (like a custom value) or FALSE if no mapping was set.
    */
-  public function getDrupalMappedField(string $brapi_field_name) :string {
-    $mapped_field = $this->mapping[$brapi_field_name]['field'] ?? '';
+  public function getDrupalMappedField(string $brapi_field_name) {
+    $mapped_field = $this->mapping[$brapi_field_name]['field'] ?? FALSE;
     // Take into account special mappings.
     if (!empty($mapped_field) && ('_custom' == $mapped_field)) {
       $mapped_field = '';
