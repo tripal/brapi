@@ -159,6 +159,15 @@ class BrapiCallsForm extends FormBase {
                     ,
                     '#default_value' => $call_enabled,
                   ];
+                  // Adds auto-checking for deffered search.
+                  if (str_contains($call, 'searchResultsDbId')) {
+                    $parent_call_id = strtolower(str_replace(['/{searchResultsDbId}', '/'], '', $call));
+                    $form[$version][$call][$method]['#states'] = [
+                      'checked' => [
+                        ':input[id="edit-' . $version . '-' . $parent_call_id . '-deferred"]' => ['checked' => TRUE,],
+                      ],
+                    ];
+                  }
                   $form[$version][$call][$method . '_datatypes'] = [
                     '#type' => 'markup',
                     '#markup' =>
@@ -170,10 +179,16 @@ class BrapiCallsForm extends FormBase {
                   if (str_starts_with($call, '/search')
                       && !str_contains($call, 'searchResultsDbId')
                   ) {
+                    $child_call_id = strtolower(str_replace('/', '', $call . 'searchresultsdbid-get'));
                     $form[$version][$call]['deferred'] = [
                       '#type' => 'checkbox',
                       '#title' => $this->t('Use background search (provide a "searchResultsDbId" and deferred results asynchronously)'),
                       '#default_value' => !empty($call_settings[$version][$call]['deferred']),
+                      '#states' => [
+                        'checked' => [
+                          ':input[id="edit-' . $version . '-' . $child_call_id . '"]' => ['checked' => TRUE,],
+                        ],
+                      ],
                     ];
                   }
                 }
@@ -189,6 +204,12 @@ class BrapiCallsForm extends FormBase {
               // Open call section if one is senabled.
               if ($has_enabled_calls) {
                 $form[$version][$call]['#open'] = TRUE;
+              }
+              // Conditional open for searchdDbId.
+              if (str_contains($call, 'searchResultsDbId')) {
+                $form[$version][$call]['#states']['expanded'] = [
+                  ':input[id="edit-' . $version . '-' . $parent_call_id . '-deferred"]' => ['checked' => TRUE,],
+                ];
               }
             }
           }
