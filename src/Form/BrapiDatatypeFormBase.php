@@ -740,17 +740,21 @@ class BrapiDatatypeFormBase extends EntityForm {
       // Provide a list of available JSON Path with example values.
       try {
         try {
-          // @todo FIXME: change the way to check an get the bundle type. It
+          // @todo FIXME: change the way to check and get the bundle type. It
           // generates a log error for content type that use the "type" field
           // as something else than a bundle identifier.
           // Try using bundle first.
-          $last_number = max(\Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->count()->execute() - 1, 0);
-          $id = \Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->range(rand(0, $last_number),1)->execute();
-          if (!empty($id)) {
-            $example_entity = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load(current($id));
+          if ('node' == $entity_type_id) {
+            $last_number = max(\Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->count()->execute() - 1, 0);
+            $id = \Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->range(rand(0, $last_number),1)->execute();
+            if (!empty($id)) {
+              $example_entity = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load(current($id));
+            }
           }
         }
         catch (\TypeError $e) {
+        }
+        if (empty($last_number)) {
           // No bundle.
           $last_number = max(\Drupal::entityQuery($entity_type_id)->count()->execute() - 1, 0);
           $id = \Drupal::entityQuery($entity_type_id)->range(rand(0, $last_number),1)->execute();
