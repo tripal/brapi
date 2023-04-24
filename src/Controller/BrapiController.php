@@ -354,10 +354,10 @@ class BrapiController extends ControllerBase {
       'metadata' => [
           'status' => $status,
           'pagination' => [
-              'pageSize' => $page_size,
-              'currentPage' => $page,
-              'totalCount' => $total_count,
-              'totalPages' => $total_pages,
+              'pageSize' => (int) $page_size,
+              'currentPage' => (int) $page,
+              'totalCount' => (int) $total_count,
+              'totalPages' => (int) $total_pages,
           ],
           'datafiles' => $datafiles,
       ],
