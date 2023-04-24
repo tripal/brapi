@@ -223,16 +223,16 @@ class BrapiDatatype extends ConfigEntityBase {
         $query->condition($name, (array) $value, 'IN');
         $count_query->condition($name, (array) $value, 'IN');
       }
-      // Paggination.
+      // Pagination.
       if (isset($parameters['#pageSize']) && (0 < $parameters['#pageSize'])) {
         $page_size = $parameters['#pageSize'];
         $page = empty($parameters['#page']) ? 0 : $parameters['#page'];
       }
       // Get total number of entities matching filters.
       $item_count = intval($count_query->count()->execute());
-      // Do not apply paggination now when there are post-filters.
+      // Do not apply pagination now when there are post-filters.
       if (empty($post_filters) && !empty($page_size)) {
-        // Note: range (paggination) is not applied on the total count.
+        // Note: range (pagination) is not applied on the total count.
         $query->range($page, $page_size);
       }
       elseif (!empty($post_filters)) {
@@ -441,7 +441,7 @@ class BrapiDatatype extends ConfigEntityBase {
 
       // Process post-filtering if needed.
       if (!empty($post_filters)) {
-        // Apply post-filters and paggination.
+        // Apply post-filters and pagination.
         foreach ($post_filters as $field => $value) {
           // Make sure entity has this field.
           if (!array_key_exists($field, $brapi_data)) {
@@ -512,7 +512,7 @@ class BrapiDatatype extends ConfigEntityBase {
       }
     }
 
-    // Manage post-filtering paggination.
+    // Manage post-filtering pagination.
     if (!empty($page_size)) {
       // Make sure the client did not ask a higher page.
       if ($current_page < $page) {
