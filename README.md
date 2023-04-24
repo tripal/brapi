@@ -45,13 +45,25 @@ Current beta support:
 REQUIREMENTS
 ------------
 
-none.
+No Drupal module requirements.
+Requires composer package galbar/jsonpath (automatically installed by composer).
 
 INSTALLATION
 ------------
 
  * Install as you would normally install a contributed Drupal module. Visit
    https://www.drupal.org/node/1897420 for further information.
+
+ * Setup your site services.yml file (copy "default/default.services.yml" into
+   your site directory where your "settings.php" is, as "services.yml").
+   In "cors.config:" section, make sure it is enabled:
+   "enabled: true".
+   Then allow the headers:
+   "allowedHeaders: ['authorization','content-type','accept','origin','access-control-allow-origin','x-allowed-header']".
+   If you don't want to restrict sites using your BrAPI end point:
+   "allowedOrigins: ['*']".
+   For details, visit
+   https://www.drupal.org/docs/drupal-apis/services-and-dependency-injection/structure-of-a-service-file
 
 CONFIGURATION
 -------------
@@ -71,13 +83,11 @@ ADMINISTRATION
 
 * To get a user access token, login to the website using the user account and
   visit `/brapi/token/new`.
-  
+
 * To clear search cache, use drush command:
 ```
 drush cc bin brapi_search
 ```
-
-
 
 MAINTAINERS
 -----------

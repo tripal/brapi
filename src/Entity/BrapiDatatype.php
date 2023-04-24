@@ -511,7 +511,7 @@ class BrapiDatatype extends ConfigEntityBase {
         $result[] = $brapi_data;
       }
     }
-    
+
     // Manage post-filtering paggination.
     if (!empty($page_size)) {
       // Make sure the client did not ask a higher page.

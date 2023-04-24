@@ -89,7 +89,6 @@ class BrapiController extends ControllerBase {
    *   - https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
    */
   public function brapiCall() {
-    // @otod: catch all exceptions and return a JSON error instead of Drupal.
     try {
       // Get intended HTTP method.
       $request = \Drupal::request();
@@ -202,6 +201,38 @@ class BrapiController extends ControllerBase {
       $response = new JsonResponse($json_array);
       $response->setStatusCode($e->getStatusCode());
     }
+    catch (\Throwable $e) {
+      // Catch other errors.
+      $parameters = [
+        'status' => [[
+          'message'     => 'Unexpected: ' . ($e->getMessage() ?: 'An exception occurred.'),
+          'messageType' => 'ERROR',
+        ]],
+      ];
+      $json_array = $this->generateMetadata($request, $config, $parameters);
+      $response = new JsonResponse($json_array);
+      $response->setStatusCode(500);
+    }
+
+    return $response;
+  }
+
+  /**
+   * Returns a JSON error content for invalid calls.
+   */
+  public function brapiInvalidCall() {
+    $request = \Drupal::request();
+    $config = \Drupal::config('brapi.settings');
+    $parameters = [
+      'status' => [[
+        'message'     => 'Unsupported call.',
+        'messageType' => 'ERROR',
+      ]],
+    ];
+    $json_array = $this->generateMetadata($request, $config, $parameters);
+    $response = new JsonResponse($json_array);
+    $response->setStatusCode(404);
+
     return $response;
   }
 
@@ -216,7 +247,7 @@ class BrapiController extends ControllerBase {
    * @param string $error_message
    *   Specific error message to display if needed. Default provided.
    * @return ?array
-   *   The posted JSON data structure or NULL.
+   *   The posted JSON data structure or an empty array.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
    */
@@ -231,11 +262,18 @@ class BrapiController extends ControllerBase {
       $json_input = json_decode($content, TRUE);
     }
     if ($raise_error && !isset($json_input)) {
-      $message = $error_message . "\n" . json_last_error_msg();
+      $message =
+        $error_message
+        . (
+          empty($content)?
+          ''
+          : "\n" . json_last_error_msg()
+        )
+      ;
       \Drupal::logger('brapi')->error($message);
       throw new BadRequestHttpException($message);
     }
-    return $json_input;
+    return $json_input ?? [];
   }
 
   /**

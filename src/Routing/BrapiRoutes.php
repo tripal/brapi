@@ -34,12 +34,35 @@ class BrapiRoutes {
           //  through his/her bearer.
           ['_access' => 'TRUE',]
         );
-        $route->setMethods(array_map('strtoupper', array_keys($call_settings)));
+        // (Invalid) methods are managed by BrAPI controller.
+        $route->setMethods(['GET', 'POST', 'PUT', 'DELETE']);
         $route_name =
           'brapi.'
           . $version
           . strtolower(preg_replace('/\W/', '_', $call))
         ;
+        $route_collection->add($route_name, $route);
+      }
+    }
+    // Add support for invalid routes.
+    foreach (['v1', 'v2'] as $version) {
+      $levels = [
+        'brapi.' . $version . '_invalid'   => '',
+        'brapi.' . $version . '_invalid_1' => '/{level1}',
+        'brapi.' . $version . '_invalid_2' => '/{level1}/{level2}',
+        'brapi.' . $version . '_invalid_3' => '/{level1}/{level2}/{level3}',
+        'brapi.' . $version . '_invalid_4' => '/{level1}/{level2}/{level3}/{level4}',
+      ];
+      foreach ($levels as $route_name => $sub_route) {
+        $route = new Route(
+          '/brapi/' . $version . $sub_route,
+          [
+            '_controller' => '\Drupal\brapi\Controller\BrapiController::brapiInvalidCall',
+            '_title' => 'BrAPI Call',
+          ],
+          ['_access' => 'TRUE',]
+        );
+        $route->setMethods(['GET', 'POST', 'PUT', 'DELETE']);
         $route_collection->add($route_name, $route);
       }
     }
