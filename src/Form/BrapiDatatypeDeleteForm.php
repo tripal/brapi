@@ -46,6 +46,10 @@ class BrapiDatatypeDeleteForm extends EntityConfirmFormBase {
       '%label' => $this->entity->label(),
     ]));
 
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
+
     // Redirect the user to the list controller when complete.
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

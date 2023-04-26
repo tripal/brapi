@@ -311,6 +311,16 @@ class BrapiDatatypeFormBase extends EntityForm {
   /**
    * {@inheritdoc}
    */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    parent::submitForm($form, $form_state);
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function exists($entity_id, array $element, FormStateInterface $form_state) {
     $query = $this->entityStorage->getQuery();
     $result = $query

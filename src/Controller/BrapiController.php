@@ -778,7 +778,7 @@ class BrapiController extends ControllerBase {
           \Drupal::logger('brapi')->error($message);
           throw new NotFoundHttpException($message);
         }
-        elseif (202 == $cache_data->data['metadata']['code']) {
+        elseif (202 == ($cache_data->data['metadata']['code'] ?? 0)) {
           // Still searching.
           $page_size = 1;
           $status['code'] = 202;
@@ -788,6 +788,8 @@ class BrapiController extends ControllerBase {
             && array_key_exists('result', $cache_data->data)
         ) {
           // Search ended and we got something to return.
+          // Note: if no 'code' key, it means the search was run before without
+          // deferred mode.
           // @todo: manage search result storage strategies:
           //   save query filters or save resulting identifiers as list
           //   or save the full result set?

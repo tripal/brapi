@@ -305,6 +305,9 @@ class BrapiDataTypesForm extends FormBase {
       $this->logger('brapi')->warning('Unsupported form action "%action".', ['%action' => $action,]);
     }
 
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
   }
 
   /**
@@ -312,6 +315,9 @@ class BrapiDataTypesForm extends FormBase {
    */
   public function submitCompleteForm(array &$form, FormStateInterface $form_state, string $version, string $definition, string $definition_id) {
     $this->messenger()->addMessage('Complete not implemented yet.');
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
   }
 
   /**
@@ -502,6 +508,9 @@ class BrapiDataTypesForm extends FormBase {
         $this->messenger()->addError('Failed to read mapping file.');
       }
     }
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
   }
 
   /**
@@ -522,6 +531,9 @@ class BrapiDataTypesForm extends FormBase {
    */
   public function submitConfirmDeleteForm(array &$form, FormStateInterface $form_state) {
     $this->messenger()->addMessage('Delete not implemented yet.');
+    // Clear cache.
+    \Drupal::cache('brapi_search')->invalidateAll();
+    $this->messenger()->addMessage($this->t('BrAPI search cache has been cleared.'));
   }
 
 }
