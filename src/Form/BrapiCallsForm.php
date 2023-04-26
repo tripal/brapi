@@ -5,6 +5,7 @@ namespace Drupal\brapi\Form;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\Role;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -77,6 +78,29 @@ class BrapiCallsForm extends FormBase {
 
     // Get BrAPI versions.
     $brapi_versions = brapi_available_versions();
+
+    // Get roles with restricted BrAPI access.
+    $role_storage = \Drupal::service('entity_type.manager')
+      ->getStorage('user_role')
+    ;
+    $role_query = $role_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('permissions.*', BRAPI_PERMISSION_USE)
+    ;
+    $ids = $role_query->execute();
+    $read_roles = $role_storage->loadMultiple($ids);
+    $role_query = $role_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('permissions.*', BRAPI_PERMISSION_SPECIFIC)
+    ;
+    $ids = $role_query->execute();
+    $restricted_roles = $role_storage->loadMultiple($ids);
+    $role_query = $role_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('permissions.*', BRAPI_PERMISSION_EDIT)
+    ;
+    $ids = $role_query->execute();
+    $write_roles = $role_storage->loadMultiple($ids);
 
     // Get current settings.
     $config = \Drupal::config('brapi.settings');
@@ -160,7 +184,9 @@ class BrapiCallsForm extends FormBase {
                     '#default_value' => $call_enabled,
                   ];
                   // Adds auto-checking for deffered search.
+                  $deferred_search_call = FALSE;
                   if (str_contains($call, 'searchResultsDbId')) {
+                    $deferred_search_call = TRUE;
                     $parent_call_id = strtolower(str_replace(['/{searchResultsDbId}', '/'], '', $call));
                     $form[$version][$call][$method]['#states'] = [
                       'checked' => [
@@ -176,10 +202,12 @@ class BrapiCallsForm extends FormBase {
                   ];
 
                   // Add deferred result option for search-* calls.
+                  $search_call = FALSE;
                   if (str_starts_with($call, '/search')
                       && !str_contains($call, 'searchResultsDbId')
                   ) {
-                    $child_call_id = strtolower(str_replace('/', '', $call . 'searchresultsdbid-get'));
+                    $search_call = TRUE;
+                    $child_call_id = strtolower(str_replace(['/', '{', '}'], '', $call . 'searchresultsdbid-get'));
                     $form[$version][$call]['deferred'] = [
                       '#type' => 'checkbox',
                       '#title' => $this->t('Use background search (provide a "searchResultsDbId" and deferred results asynchronously)'),
@@ -191,6 +219,100 @@ class BrapiCallsForm extends FormBase {
                       ],
                     ];
                   }
+
+                  // Add role-specific permission settings.
+                  $call_id = strtolower(
+                    str_replace(['/', '{', '}'], '', $call) . '-' . $method
+                  );
+                  $form[$version][$call]['access'][$method] = [
+                    '#type' => 'details',
+                    '#title' => $this->t('Roles allowed to use the method'),
+                    '#open' => FALSE,
+                    '#tree' => TRUE,
+                    '#attributes' => [
+                      'class' => ['brapi-call-role-list'],
+                    ],
+                    '#states' => [
+                      'visible' => [
+                        ':input[id="edit-' . $version . '-' . $call_id . '"]' => ['checked' => TRUE,],
+                      ],
+                    ],
+                  ];
+                  if (!empty($restricted_roles)) {
+                    $form[$version][$call]['access'][$method]['_label_'] = [
+                      '#type' => 'markup',
+                      '#markup' => $this->t('<div>Allow for:</div>'),
+                    ];
+                    foreach ($restricted_roles as $role) {
+                      $form[$version][$call]['access'][$method][$role->id()] = [
+                        '#type' => 'checkbox',
+                        '#title' => $role->label(),
+                        '#default_value' => !empty($call_settings[$version][$call]['access'][$method][$role->id()]),
+                      ];
+                    }
+                  }
+                  // Check method type and call type to determine permission
+                  // type (read/write).
+                  if (('get' == $method)
+                    || $search_call
+                    || $deferred_search_call
+                  ) {
+                    // Read access.
+                    if (empty($restricted_roles)
+                        && empty($write_roles)
+                        && empty($read_roles)
+                    ) {
+                      // Nobody except admins.
+                      $form[$version][$call]['access'][$method]['_default_'] = [
+                        '#type' => 'markup',
+                        '#markup' => $this->t('Administrators only'),
+                      ];
+                    }
+                    else {
+                      // List other roles with global permissions.
+                      $all_read_roles = array_map(
+                        function ($role) {
+                          return $role->label();
+                        },
+                        array_merge($read_roles, $write_roles)
+                      );
+                      sort($all_read_roles);
+                      $form[$version][$call]['access'][$method]['_default_'] = [
+                        '#type' => 'markup',
+                        '#markup' => $this->t(
+                          'Roles allowed by global permissions: %roles',
+                          ['%roles' => implode(', ', $all_read_roles)]
+                        ),
+                      ];
+                    }
+                  }
+                  else {
+                    // Write access.
+                    if (empty($restricted_roles) && empty($write_roles)) {
+                      // Nobody except admins.
+                      $form[$version][$call]['access'][$method]['_default_'] = [
+                        '#type' => 'markup',
+                        '#markup' => $this->t('Administrators only'),
+                      ];
+                    }
+                    else {
+                      // List other roles with global permissions.
+                      $all_write_roles = array_map(
+                        function ($role) {
+                          return $role->label();
+                        },
+                        $write_roles
+                      );
+                      sort($all_write_roles);
+                      $form[$version][$call]['access'][$method]['_default_'] = [
+                        '#type' => 'markup',
+                        '#markup' => $this->t(
+                          '<div>Roles allowed by global permissions: %roles</div>',
+                          ['%roles' => implode(', ', $all_write_roles)]
+                        ),
+                      ];
+                    }
+                  }
                 }
                 else {
                   $form[$version][$call][$method] = [
@@ -199,8 +321,12 @@ class BrapiCallsForm extends FormBase {
                       $this->t("Method %method: missing data type mapping for: %datatypes<br/>\n", ['%datatypes' => implode(', ', $missing_mappings), '%method' => strtoupper($method), ])
                     ,
                   ];
+                  if (str_contains($call, 'searchResultsDbId')) {
+                    $parent_call_id = strtolower(str_replace(['/{searchResultsDbId}', '/'], '', $call));
+                  }
                 }
               }
+
               // Open call section if one is senabled.
               if ($has_enabled_calls) {
                 $form[$version][$call]['#open'] = TRUE;
@@ -257,6 +383,7 @@ class BrapiCallsForm extends FormBase {
       }
     }
     $config->set('calls', $calls);
+
     $config->save();
     // Update routes.
     \Drupal::service("router.builder")->rebuild();

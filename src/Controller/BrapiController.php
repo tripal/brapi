@@ -126,13 +126,35 @@ class BrapiController extends ControllerBase {
         throw new NotFoundHttpException($message);
       }
 
-      // Check permission.
-      if ((!\Drupal::currentUser()->hasPermission(BRAPI_USE_PERMISSION))
+      // Check BrAPI access permission.
+      $read_mode = ($method == 'get');
+      if (($method == 'post')
+        && (FALSE !== strpos($call, 'search'))
+      ) {
+        $read_mode = TRUE;
+      }
+      elseif (('v1' == $version)
+        && (('/login' == $call) || ('/logout' == $call))
+      ) {
+        $read_mode = TRUE;
+      }
+      
+      $user = \Drupal::currentUser();
+      if ((!($read_mode && $user->hasPermission(BRAPI_PERMISSION_USE)))
+          && (!$user->hasPermission(BRAPI_PERMISSION_EDIT))
+          && (!$user->hasPermission(BRAPI_PERMISSION_ADMIN))
           && !(('v1' == $version) && ('/login' == $call))
       ) {
-        throw new AccessDeniedHttpException('You are not allowed to use BrAPI. Please use a valid access token.');
+        // Check call permission.
+        $allowed_roles = array_keys(
+          array_filter($call_settings[$version][$call]['access'][$method] ?? [])
+        );
+        if (empty(array_intersect($allowed_roles, $user->getRoles()))) {
+          // No maching role, not allowed.
+          throw new AccessDeniedHttpException('You are not allowed to use BrAPI. Please use a valid access token.');
+        }
       }
-      //@todo: also check write access on PUT or POST calls.
+      //@todo: also check write access on DELETE, POST or PUT calls.
 
       // Manage call cases.
       if (0 === strpos($call, '/search/')) {
@@ -388,7 +410,13 @@ class BrapiController extends ControllerBase {
     $call_settings = $config->get('calls');
     $calls = [];
     foreach ($call_settings['v2'] as $call => $methods) {
-      $methods = array_map('strtoupper', array_keys(array_filter($methods)));
+      $methods = array_intersect(
+        ['GET', 'DELETE', 'POST', 'PUT'],
+        array_map(
+          'strtoupper',
+          array_keys(array_filter($methods))
+        )
+      );
       $calls[] = [
         'contentTypes' => [BRAPI_MIME_JSON],
         'dataTypes'    => [BRAPI_MIME_JSON],
@@ -435,7 +463,13 @@ class BrapiController extends ControllerBase {
     $call_settings = $config->get('calls');
     $calls = [];
     foreach ($call_settings['v1'] as $call => $methods) {
-      $methods = array_map('strtoupper', array_keys(array_filter($methods)));
+      $methods = array_intersect(
+        ['GET', 'DELETE', 'POST', 'PUT'],
+        array_map(
+          'strtoupper',
+          array_keys(array_filter($methods))
+        )
+      );
       $calls[] = [
         'call'         => substr($call, 1),
         'dataTypes'    => [BRAPI_MIME_JSON],

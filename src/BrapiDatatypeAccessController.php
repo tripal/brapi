@@ -18,7 +18,7 @@ class BrapiDatatypeAccessController extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-    // @todo: manage access permission 'use brapi' and 'edit brapi content'.
+    // @todo: manage access permission BRAPI_PERMISSION_USE, BRAPI_PERMISSION_SPECIFIC and BRAPI_PERMISSION_EDIT.
     // 'view', 'update' or 'delete'
     // if ($operation == 'view') {
     //   return AccessResult::allowed();

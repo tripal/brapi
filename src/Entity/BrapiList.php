@@ -53,7 +53,7 @@ use Drupal\user\UserInterface;
  *   },
  *   list_cache_contexts = { "user" },
  *   base_table = "brapi_list",
- *   admin_permission = "use brapi",
+ *   admin_permission = "administrate brapi",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",

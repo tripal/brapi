@@ -344,7 +344,7 @@ class BrapiDatatypeFormBase extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $brapi_datatype = $this->getEntity();
-
+    $is_new = $brapi_datatype->isNew();
     $status = $brapi_datatype->save();
     $url = $brapi_datatype->toUrl();
     $edit_link = Link::fromTextAndUrl($this->t('Edit'), $url)->toString();
@@ -361,7 +361,9 @@ class BrapiDatatypeFormBase extends EntityForm {
     }
 
     // Redirect the user back to the data type management page.
-    // $form_state->setRedirect('brapi.datatypes');
+    if ($is_new) {
+      $form_state->setRedirect('entity.brapidatatype.edit_form', ['brapidatatype' => $brapi_datatype->id(),]);
+    }
   }
 
   /**

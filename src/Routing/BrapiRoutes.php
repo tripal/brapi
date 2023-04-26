@@ -35,7 +35,7 @@ class BrapiRoutes {
           ['_access' => 'TRUE',]
         );
         // (Invalid) methods are managed by BrAPI controller.
-        $route->setMethods(['GET', 'POST', 'PUT', 'DELETE']);
+        $route->setMethods(['GET', 'DELETE', 'POST', 'PUT', ]);
         $route_name =
           'brapi.'
           . $version
@@ -62,7 +62,7 @@ class BrapiRoutes {
           ],
           ['_access' => 'TRUE',]
         );
-        $route->setMethods(['GET', 'POST', 'PUT', 'DELETE']);
+        $route->setMethods(['GET', 'DELETE', 'POST', 'PUT', ]);
         $route_collection->add($route_name, $route);
       }
     }

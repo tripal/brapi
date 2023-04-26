@@ -86,7 +86,7 @@ class BrapiAdminForm extends FormBase {
         '#type' => 'fieldset',
         '#title' => $this->t('Compare definitions'),
         '#attributes' => [
-            'class' => ['container-inline'],
+          'class' => ['container-inline'],
         ],
       ];
       $form['versions']['compare']['ref_version'] = [

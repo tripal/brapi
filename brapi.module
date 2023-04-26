@@ -9,7 +9,10 @@ use Drupal\brapi\Entity\BrapiDatatype;
 use Drupal\brapi\Entity\BrapiToken;
 use Drupal\Core\Routing\RouteMatchInterface;
 
-const BRAPI_USE_PERMISSION = 'use brapi';
+const BRAPI_PERMISSION_USE      = 'use brapi';
+const BRAPI_PERMISSION_EDIT     = 'edit brapi content';
+const BRAPI_PERMISSION_SPECIFIC = 'use restricted brapi';
+const BRAPI_PERMISSION_ADMIN    = 'administrate brapi';
 const BRAPI_DEFAULT_PAGE_SIZE  = 40;
 const BRAPI_DEFAULT_PAGE_SIZE_MAX  = 200;
 const BRAPI_DATATYPE_ID_REGEXP = '/^(v[\d])-([^\-]+)-([^\-]+)-?(.*)$/';
@@ -76,8 +79,8 @@ function brapi_preprocess_brapi_token(&$variables){
   $tokens = BrapiToken::getUserTokens($user, TRUE);
   $variables['tokens'] = $tokens;
 
-  // Check if admin and add all available tokens.
-  if ($user->hasPermission('administrate brapi')) {
+  // Check if admin and add all available tokens if so.
+  if ($user->hasPermission(BRAPI_PERMISSION_ADMIN)) {
     $token_storage = \Drupal::entityTypeManager()->getStorage('brapi_token');
     $query = $token_storage->getQuery()
       ->accessCheck(FALSE)
