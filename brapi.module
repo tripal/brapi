@@ -63,7 +63,7 @@ function brapi_theme($existing, $type, $theme, $path) {
     ],
     'brapi_token' => [
       'template' => 'brapi-token',
-      'variables' => ['tokens'],
+      'variables' => ['tokens', 'all_tokens'],
     ],
   ];
 }
@@ -75,7 +75,28 @@ function brapi_preprocess_brapi_token(&$variables){
   $user = \Drupal::currentUser();
   $tokens = BrapiToken::getUserTokens($user, TRUE);
   $variables['tokens'] = $tokens;
-  // @todo: Check if admin and add all available tokens.
+
+  // Check if admin and add all available tokens.
+  if ($user->hasPermission('administrate brapi')) {
+    $token_storage = \Drupal::entityTypeManager()->getStorage('brapi_token');
+    $query = $token_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('user_id', $user->id(), '!=')
+      ->sort('expiration', 'DESC');
+    ;
+    // Only display unexpired tokens.
+    $group = $query
+      ->orConditionGroup()
+      ->condition('expiration', time(), '>')
+      ->condition('expiration', 0, '<')
+    ;
+    $query->condition($group);
+    $ids = $query->execute();
+    if (count($ids)) {
+      // Load tokens.
+      $variables['all_tokens'] = $token_storage->loadMultiple($ids);
+    }
+  }
 }
 
 /**

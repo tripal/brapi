@@ -234,6 +234,16 @@ class BrapiToken extends ContentEntityBase implements BrapiTokenInterface {
   }
 
   /**
+   * Returns the user owning the token.
+   *
+   * @return ?\Drupal\Core\Session\AccountInterface
+   *   The user account owning the token.
+   */
+  public function getUser() :?AccountInterface {
+    return $this->user_id->referencedEntities()[0];
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function isExpired() :bool {

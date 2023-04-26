@@ -3,4 +3,7 @@
   description: Allows clients to use BrAPI calls an retrieve content.
 'edit brapi content':
   title: 'Edit BrAPI content'
-  description: Allows clients to modify data through BrAPI.
+  description: Allows clients to modify any data through BrAPI.
+'administrate brapi':
+  title: 'Administrate BrAPI'
+  description: Allows access to BrAPI administration froms.
