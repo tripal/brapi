@@ -243,7 +243,7 @@ class BrapiDatatype extends ConfigEntityBase {
       $ids = $query->execute();
       // Load entity instances.
       $entities = $storage->loadMultiple($ids);
-      
+
     }
 
     // Initialize result array.
@@ -613,6 +613,37 @@ class BrapiDatatype extends ConfigEntityBase {
     }
 
     return $mapped_field;
+  }
+
+  /**
+   * Create or update a BrAPI record.
+   *
+   * @return array
+   * Returns the new BrAPI data if recorded or an empty array if it failed.
+   */
+  public function saveBrapiData(array $parameters) :array {
+    // @todo: implement create/update.
+    throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
+
+    if (array_key_exists('#is_new', $parameters)) {
+      // @todo: make sure the object does not exist already.
+    }
+
+    return [];
+  }
+
+  /**
+   * Delete a BrAPI record.
+   *
+   * @return int
+   * SAVED_DELETED if deleted or 0 if failed.
+   *
+   * @see https://api.drupal.org/api/drupal/core%21includes%21common.inc/10
+   */
+  public function deleteBrapiData(array $parameters) :int {
+    // @todo: implement delete.
+    throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
+    return 0;
   }
 
   /**

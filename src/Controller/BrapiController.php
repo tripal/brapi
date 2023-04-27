@@ -14,6 +14,7 @@ use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -138,12 +139,12 @@ class BrapiController extends ControllerBase {
       ) {
         $read_mode = TRUE;
       }
-      
+
       $user = \Drupal::currentUser();
       if ((!($read_mode && $user->hasPermission(BRAPI_PERMISSION_USE)))
           && (!$user->hasPermission(BRAPI_PERMISSION_EDIT))
           && (!$user->hasPermission(BRAPI_PERMISSION_ADMIN))
-          && !(('v1' == $version) && ('/login' == $call))
+          && !(('v1' == $version) && (in_array($call, ['/login', '/logout'])))
       ) {
         // Check call permission.
         $allowed_roles = array_keys(
@@ -154,32 +155,47 @@ class BrapiController extends ControllerBase {
           throw new AccessDeniedHttpException('You are not allowed to use BrAPI. Please use a valid access token.');
         }
       }
-      //@todo: also check write access on DELETE, POST or PUT calls.
 
       // Manage call cases.
       if (0 === strpos($call, '/search/')) {
         $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
       }
       elseif (('v2' == $version) && ('/serverinfo' == $call)) {
-        $json_array = $this->processV2ServerInfoCall($request, $config);
+        $json_array = $this->processV2ServerInfoCall($request, $config, $version, $call, $method);
       }
       elseif (('v1' == $version) && ('/calls' == $call)) {
-        $json_array = $this->processV1CallsCall($request, $config);
+        $json_array = $this->processV1CallsCall($request, $config, $version, $call, $method);
       }
       elseif (('v1' == $version) && ('/login' == $call)) {
-        $json_array = $this->processV1LoginCall($request, $config);
+        $json_array = $this->processV1LoginCall($request, $config, $version, $call, $method);
       }
       elseif (('v1' == $version) && ('/logout' == $call)) {
-        $json_array = $this->processV1LogoutCall($request, $config);
+        $json_array = $this->processV1LogoutCall($request, $config, $version, $call, $method);
       }
-      elseif ('/lists' == $call) {
+      elseif ((1 == count($brapi_def['calls'][$call]['data_types']))
+        || ('/lists' == $call)
+      ) {
         // Special case of '/lists' thats uses 2 data types. The right one is
-        // selected in processObjectCalls() by a dedicated "if".
-        $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
-      }
-      elseif (1 == count($brapi_def['calls'][$call]['data_types'])) {
+        // selected in processQueryObjectCalls() by a dedicated "if".
+
         // Call works with one data type: a regular BrAPI object call.
-        $json_array = $this->processObjectCalls($request, $config, $version, $call, $method);
+        if (('get' == $method)
+            || (('post' == $method) && (str_contains($call, 'search')))
+        ) {
+          $json_array = $this->processQueryObjectCalls($request, $config, $version, $call, $method);
+        }
+        elseif ('post' == $method) {
+          $json_array = $this->processPostObjectCalls($request, $config, $version, $call, $method);
+        }
+        elseif ('put' == $method) {
+          $json_array = $this->processPutObjectCalls($request, $config, $version, $call, $method);
+        }
+        elseif ('delete' == $method) {
+          $json_array = $this->processDeleteObjectCalls($request, $config, $version, $call, $method);
+        }
+        else {
+          \Drupal::logger('brapi')->warning('Unsupported call method: %method for %call (%version)', ['%method' => $method, '%call' => $call, '%version' => $version, ]);
+        }
       }
       else {
         \Drupal::logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
@@ -397,13 +413,28 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    */
   public function processV2ServerInfoCall(
     Request $request,
-    ImmutableConfig $config
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
   ) {
+    // Check method.
+    if ('get' != $method) {
+      throw new NotFoundHttpException('Invalid HTTP method used.');
+    }
     // Get verssions supporting each call through BrAPI definitions.
     // $brapi_def = brapi_get_definition($version, $active_def);
     $active_def = $config->get('v2def');
@@ -450,13 +481,28 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    */
   public function processV1CallsCall(
     Request $request,
-    ImmutableConfig $config
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
   ) {
+    // Check method.
+    if ('get' != $method) {
+      throw new NotFoundHttpException('Invalid HTTP method used.');
+    }
     // Get verssions supporting each call through BrAPI definitions.
     // $brapi_def = brapi_get_definition($version, $active_def);
     $active_def = $config->get('v1def');
@@ -492,6 +538,14 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    * @throw \Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException
@@ -499,13 +553,20 @@ class BrapiController extends ControllerBase {
    */
   public function processV1LoginCall(
     Request $request,
-    ImmutableConfig $config
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
   ) {
     // Enforce HTTPS use.
     if (!$request->isSecure() && !$config->get('insecure')) {
       throw new PreconditionFailedHttpException(
         'You must use HTTPS protocol to login. Login through insecure HTTP is forbidden.'
       );
+    }
+    // Check method.
+    if ('post' != $method) {
+      throw new NotFoundHttpException('Only POST method is allowed for login.');
     }
 
     // Default.
@@ -603,13 +664,27 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    */
   public function processV1LogoutCall(
     Request $request,
-    ImmutableConfig $config
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
   ) {
+    if ('delete' != $method) {
+      throw new NotFoundHttpException('Only DELETE method is allowed for logout.');
+    }
     user_logout();
     return [];
   }
@@ -617,7 +692,7 @@ class BrapiController extends ControllerBase {
   /**
    * Manage search calls.
    *
-   * This method uses `processObjectCalls` to search and fetch objects.
+   * This method uses `processQueryObjectCalls` to search and fetch objects.
    * However, it can manage deferred search in order to send a quick response to
    * the client.
    *
@@ -683,6 +758,14 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    *
@@ -691,9 +774,9 @@ class BrapiController extends ControllerBase {
   public function processSearchCalls(
     Request $request,
     ImmutableConfig $config,
-    $version,
-    $call,
-    $method
+    string $version,
+    string $call,
+    string $method
   ) {
     // Prepare pagger.
     $page_size   = 1;
@@ -854,7 +937,7 @@ class BrapiController extends ControllerBase {
     }
     elseif ('post' == $method) {
       // Direct execution.
-      return $this->processObjectCalls($request, $config, $version, $call, $method);
+      return $this->processQueryObjectCalls($request, $config, $version, $call, $method);
     }
     else {
       // Using 'get' method on a non-deferred search call.
@@ -873,15 +956,23 @@ class BrapiController extends ControllerBase {
    *   The HTTP request object.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
    * @return array
    *   The response data structure.
    */
-  public function processObjectCalls(
+  public function processQueryObjectCalls(
     Request $request,
     ImmutableConfig $config,
-    $version,
-    $call,
-    $method
+    string $version,
+    string $call,
+    string $method
   ) {
     $page_size   = 1;
     $page        = 0;
@@ -921,12 +1012,12 @@ class BrapiController extends ControllerBase {
     }
 
     // Get associated data type.
-    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
     // Special case for list of lists.
     if ('ListTypes' == $datatype) {
       $datatype = 'ListSummary';
     }
+    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
     $datatype_mapping = $mapping_loader->load($datatype_id);
     if (empty($datatype_mapping)) {
@@ -934,12 +1025,7 @@ class BrapiController extends ControllerBase {
       \Drupal::logger('brapi')->error($message);
       throw new NotFoundHttpException($message);
     }
-    // @todo: manage PUT (and POST?) calls and record data.
-    if ('put' == $method) {
-      $message = "Not implemented yet.";
-      \Drupal::logger('brapi')->error($message);
-      \Drupal::messenger()->addWarning($message);
-    }
+
     // Manage old /v1/*-search calls and /v*/search/* calls.
     if (str_contains($call, 'search')) {
       $json_input = $this->getPostData($request);
@@ -948,7 +1034,6 @@ class BrapiController extends ControllerBase {
         array_map('strtolower', array_keys($json_input ?? [])),
         array_keys($json_input ?? [])
       );
-      $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
       $fields = array_keys($brapi_def['data_types'][$datatype]['fields']);
       $referenced_datatypes = [];
       // Process simple field filters.
@@ -1150,14 +1235,26 @@ class BrapiController extends ControllerBase {
         // Warn that more than one corresponding record was found.
         $route = $request->attributes->get('_route_object');
         \Drupal::logger('brapi')->warning(
-          "%count records found wil expecting only one for call %call.",
+          "%count records found while expecting only one for call %call.",
           ['%count' => count($entities), '%call' => $route->getPath(), ]
         );
       }
       $result = ['result' => current($entities)];
     }
     else {
-      $result = ['result' => ['data' => $entities]];
+      // Check for multiple results that directly provide the "data" structure.
+      if ((1 == count($brapi_def['data_types'][$datatype]['fields']))
+            && (array_key_exists('data', $brapi_def['data_types'][$datatype]['fields']))
+      ) {
+        $data = [];
+        foreach ($entities as $entity) {
+          $data = array_merge($data, $entity['data'] ?? []);
+        }
+        $result = ['result' => ['data' => $data, ], ];
+      }
+      else {
+        $result = ['result' => ['data' => $entities]];
+      }
     }
 
     // Update $total_count and $total_pages.
@@ -1175,17 +1272,208 @@ class BrapiController extends ControllerBase {
   }
 
   /**
+   * Object creation calls.
    *
+   * Manages the creation of objects.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
+   * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
+   * @return array
+   *   The response data structure.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
+   * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
    */
-  public function getBrapiData(
-    $datatype_mapping,
-    $filters
+  public function processPostObjectCalls(
+    Request $request,
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
   ) {
-    // Fetch BrAPI object(s).
-    $brapi_data = $datatype_mapping->getBrapiData($filters);
-    $entities = $brapi_data['entities'];
+    // Get associated data type.
+    $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+    $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
+    $datatype_mapping = $mapping_loader->load($datatype_id);
+    if (empty($datatype_mapping)) {
+      $message = "No mapping available for data type '$datatype_id'.";
+      \Drupal::logger('brapi')->error($message);
+      throw new NotFoundHttpException($message);
+    }
 
-    return $entities;
+    // Get POST data.
+    $parameters = $this->getPostData($request);
+    if (empty($parameters)) {
+      throw new BadRequestHttpException('Missing input data to record.');
+    }
+
+    // Set object as new.
+    $parameters['#is_new'] = TRUE;
+
+    // Save new record.
+    try {
+      $brapi_data = $datatype_mapping->saveBrapiData($parameters);
+    }
+    catch (HttpException $e) {
+    }
+
+    if (empty($brapi_data)) {
+      $message = 'Failed to save new record.';
+      if (!empty($e)) {
+        $message .= ' ' . $e->getMessage();
+      }
+      throw new BadRequestHttpException($message);
+    }
+
+    // Returns the new record.
+    return $brapi_data;
   }
 
+  /**
+   * Object update calls.
+   *
+   * Manages the update of objects.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
+   * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
+   * @return array
+   *   The response data structure.
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
+   * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+   */
+  public function processPutObjectCalls(
+    Request $request,
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
+  ) {
+    // Get associated data type.
+    $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+    $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
+    $datatype_mapping = $mapping_loader->load($datatype_id);
+    if (empty($datatype_mapping)) {
+      $message = "No mapping available for data type '$datatype_id'.";
+      \Drupal::logger('brapi')->error($message);
+      throw new NotFoundHttpException($message);
+    }
+
+    // Get POST data.
+    $parameters = $this->getPostData($request);
+    if (empty($parameters)) {
+      throw new BadRequestHttpException('Missing input data to record.');
+    }
+
+    // Get idenfitier.
+    $parameters = array_merge(
+      $parameters,
+      $request->attributes->get('_raw_variables')->all()
+    );
+
+    // Update record.
+    try {
+      $brapi_data = $datatype_mapping->saveBrapiData($parameters);
+    }
+    catch (HttpException $e) {
+    }
+
+    if (empty($brapi_data)) {
+      $message = 'Failed to update record.';
+      if (!empty($e)) {
+        $message .= ' ' . $e->getMessage();
+      }
+      throw new BadRequestHttpException($message);
+    }
+
+    // Returns the updated record.
+    return $brapi_data;
+  }
+
+  /**
+   * Object delete calls.
+   *
+   * Manages object deletions.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The HTTP request object.
+   * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   BrAPI config.
+   * @param string $version
+   *   BrAPI call version.
+   *   ex.: 'v1' or 'v2'
+   * @param string $call
+   *   BrAPI call name in Drupal format
+   *   ex.: '/search/attributes/@searchResultsDbId'
+   * @param string $method
+   *   HTTP call method used (in lower case).
+   * @return int
+   *   SAVED_DELETED (an exception is thrown if it fails).
+   *
+   * @throws \Symfony\Component\HttpKernel\Exception\BadRequestHttpException
+   * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+   */
+  public function processDeleteObjectCalls(
+    Request $request,
+    ImmutableConfig $config,
+    string $version,
+    string $call,
+    string $method
+  ) {
+    // Get associated data type.
+    $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+    $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+    $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
+    $datatype_mapping = $mapping_loader->load($datatype_id);
+    if (empty($datatype_mapping)) {
+      $message = "No mapping available for data type '$datatype_id'.";
+      \Drupal::logger('brapi')->error($message);
+      throw new NotFoundHttpException($message);
+    }
+
+    // Get idenfitier.
+    $parameters = $request->attributes->get('_raw_variables')->all();
+    if (empty($parameters)) {
+      throw new BadRequestHttpException('Missing input data to record.');
+    }
+
+    // Delete record.
+    try {
+      $delete = $datatype_mapping->deleteBrapiData($parameters);
+    }
+    catch (HttpException $e) {
+    }
+
+    if (!$delete) {
+      $message = 'Failed to delete record.';
+      if (!empty($e)) {
+        $message .= ' ' . $e->getMessage();
+      }
+      throw new BadRequestHttpException($message);
+    }
+
+    return $delete;
+  }
 }
