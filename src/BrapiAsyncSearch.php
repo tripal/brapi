@@ -34,16 +34,19 @@ class BrapiAsyncSearch {
   public function performSearches() {
     while ($this->search_data) {
       $search = array_shift($this->search_data);
+      \Drupal::logger('brapi')->notice('Processing deferred search ' . $search['cid'] . '.');
       // Perform the search.
       try {
-        //@todo: clear pager data
-        $search_result = $search['controller']->processObjectCalls(
+        // Ignore paggination to get all values.
+        $search_result = $search['controller']->processQueryObjectCalls(
           $search['request'],
           $search['config'],
           $search['version'],
           $search['call'],
-          $search['method']
+          $search['method'],
+          TRUE
         );
+        \Drupal::logger('brapi')->notice('Deferred search ' . $search['cid'] . ' done.');
         // Save search result to cache.
         // @todo: manage search result storage strategies:
         //   save query filters or save resulting identifiers as list

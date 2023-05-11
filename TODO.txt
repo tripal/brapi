@@ -2,11 +2,11 @@ To Do List
 ==========
 
 Manage search/load cache.
-  BrapiController.php, in processObjectCalls(), line 640.
+  BrapiController.php, in processQueryObjectCalls(), line 640.
   $brapi_data = $datatype_mapping->getBrapiData([]);
   
 Manage paginiation when filtering search results using module.
-  BrapiController.php, in processObjectCalls(), line 640.
+  BrapiController.php, in processQueryObjectCalls(), line 640.
   $brapi_data = $datatype_mapping->getBrapiData([]);
 
 Implement list call.
@@ -22,7 +22,7 @@ Manage special calls with files outputs
   BrapiController.php, in brapiCall(), line 126.
 
 Support for PUT/POST request to edit/create new objects.
-  BrapiController.php, in processObjectCalls(), line 594.
+  BrapiController.php, in processQueryObjectCalls(), line 594.
   if ('put' == $method) {
 
 Add and manage permission for editing.
@@ -34,7 +34,7 @@ Add debug info for all calls.
 
 Manage subcalls that return multiple values for a given object.
   ex.: /seedlots/{seedLotDbId}/transactions
-  BrapiController.php, in processObjectCalls(), line 565.
+  BrapiController.php, in processQueryObjectCalls(), line 565.
   // @todo: also check for sub-calls that may have an identifier in the filter
 
 Add automated tests.

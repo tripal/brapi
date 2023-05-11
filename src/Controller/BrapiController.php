@@ -179,7 +179,12 @@ class BrapiController extends ControllerBase {
         // selected in processQueryObjectCalls() by a dedicated "if".
 
         // Call works with one data type: a regular BrAPI object call.
-        if (('get' == $method)
+        if (('delete' == $method)
+          || (('post' == $method) && (str_contains($call, '/delete')))
+        ) {
+          $json_array = $this->processDeleteObjectCalls($request, $config, $version, $call, $method);
+        }
+        elseif (('get' == $method)
             || (('post' == $method) && (str_contains($call, 'search')))
         ) {
           $json_array = $this->processQueryObjectCalls($request, $config, $version, $call, $method);
@@ -189,9 +194,6 @@ class BrapiController extends ControllerBase {
         }
         elseif ('put' == $method) {
           $json_array = $this->processPutObjectCalls($request, $config, $version, $call, $method);
-        }
-        elseif ('delete' == $method) {
-          $json_array = $this->processDeleteObjectCalls($request, $config, $version, $call, $method);
         }
         else {
           \Drupal::logger('brapi')->warning('Unsupported call method: %method for %call (%version)', ['%method' => $method, '%call' => $call, '%version' => $version, ]);
@@ -910,12 +912,15 @@ class BrapiController extends ControllerBase {
           // @todo: manage search result storage strategies:
           //   save query filters or save resulting identifiers as list
           //   or save the full result set?
-          $result = ['result' => $cache_data->data['result']];
-          // @todo: Manage pager.
+          $all_data = $cache_data->data['result']['data'];
+          // Manage pager.
           $page_size = $this->getCleanPageSize(
             $config,
             $request->query->get('pageSize')
           );
+          $page = $request->query->get('page') ?? 0;
+          $total_count = count($all_data);
+          $result = ['result' => array_splice($all_data, $page*$page_size, $page_size)];
         }
         else {
           // Invalid result.
@@ -964,6 +969,8 @@ class BrapiController extends ControllerBase {
    *   ex.: '/search/attributes/@searchResultsDbId'
    * @param string $method
    *   HTTP call method used (in lower case).
+   * @param string $ignore_pagination
+   *   If TRUE, pagination parameters are ignored and all results are returned.
    * @return array
    *   The response data structure.
    */
@@ -972,7 +979,8 @@ class BrapiController extends ControllerBase {
     ImmutableConfig $config,
     string $version,
     string $call,
-    string $method
+    string $method,
+    bool $ignore_pagination = FALSE
   ) {
     $page_size   = 1;
     $page        = 0;
@@ -995,7 +1003,7 @@ class BrapiController extends ControllerBase {
       $page = 0;
       $page_size = 1;
     }
-    else {
+    elseif (!$ignore_pagination) {
       // No filter here means no identifier provided in the URL.
       // We will return a page of objects, check for pagintation.
       $page = $request->query->get('page') ?? 0;

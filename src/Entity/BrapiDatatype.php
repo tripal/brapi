@@ -2,6 +2,7 @@
 
 namespace Drupal\brapi\Entity;
 
+use Drupal\brapi\Exception\BrapiObjectAlreadyExistsException;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityInterface;
 use JsonPath\JsonObject;
@@ -144,6 +145,26 @@ class BrapiDatatype extends ConfigEntityBase {
   }
 
   /**
+   * Returns BrAPI data type identifier field name.
+   *
+   * @return string
+   *   The BrAPI identifier field name.
+   */
+  public function getBrapiIdField() :string {
+    if (!isset($this->brapiVersion)) {
+      $this->parseId();
+    }
+    $id_field = $this->brapiDatatype . 'DbId';
+    // Make sure field exists.
+    if (!array_key_exists($id_field, $this->brapiFields)) {
+      // Field not found.
+      // @todo: manage other ways to get identifier fields (invalid case, etc.).
+      $id_field = '';
+    }
+    return $id_field;
+  }
+
+  /**
    * Loads a BrAPI entity according to parameters and current mapping.
    *
    * @param array $parameters
@@ -243,7 +264,6 @@ class BrapiDatatype extends ConfigEntityBase {
       $ids = $query->execute();
       // Load entity instances.
       $entities = $storage->loadMultiple($ids);
-
     }
 
     // Initialize result array.
@@ -618,32 +638,79 @@ class BrapiDatatype extends ConfigEntityBase {
   /**
    * Create or update a BrAPI record.
    *
+   * @param array $parameters
+   *   An array of keyed values used to create or update an object.
+   *   Special keys starting with '#' are not treated as field values.
+   *   - '#is_new': if TRUE, a new object should be created but if there is any 
+   *     existing object with the same identifier, it will raise an exception.
    * @return array
-   * Returns the new BrAPI data if recorded or an empty array if it failed.
+   * Returns the new BrAPI data if recorded.
    */
   public function saveBrapiData(array $parameters) :array {
     // @todo: implement create/update.
     throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
 
-    if (array_key_exists('#is_new', $parameters)) {
-      // @todo: make sure the object does not exist already.
+    $storage = \Drupal::service('entity_type.manager')
+      ->getStorage($this->getMappedEntityTypeId())
+    ;
+    if (empty($storage)) {
+      \Drupal::logger('brapi')->error(
+        "No storage available for content type '" . $this->contentType . "'."
+      );
+      throw new BrapiObjectAlreadyExistsException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
     }
 
-    return [];
+    // For creation, make sure the object does not exist already.
+    if (array_key_exists('#is_new', $parameters)) {
+      if (!empty($this->getBrapiData($parameters)['entities'])) {
+        throw new BrapiObjectAlreadyExistsException("Cannot create a new " . $this->getBrapiDatatype() . " object. Another object with the same key(s) already exists.");
+      }
+      // Create Drupal entity.
+      // generate $drupal_data from $parameters and mapping.
+      $storage->create($drupal_data);
+      // Add new identifier and default field values to $parameters.
+    }
+    else {
+      // Load Drupal entity.
+      // Update field values.
+    }
+    // Save changes.
+    $storage->save($entity);
+
+    return current($this->getBrapiData($parameters)['entities']);
   }
 
   /**
    * Delete a BrAPI record.
    *
-   * @return int
-   * SAVED_DELETED if deleted or 0 if failed.
+   * @param array $parameters
+   *   An array of parameters used to identify the object(s) to delete.
+   *   
+   * @return array
+   * An arry of deleted object identifiers if deleted or [] if failed.
    *
    * @see https://api.drupal.org/api/drupal/core%21includes%21common.inc/10
    */
   public function deleteBrapiData(array $parameters) :int {
     // @todo: implement delete.
     throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
-    return 0;
+
+    $storage = \Drupal::service('entity_type.manager')
+      ->getStorage($this->getMappedEntityTypeId())
+    ;
+    if (empty($storage)) {
+      \Drupal::logger('brapi')->error(
+        "No storage available for content type '" . $this->contentType . "'."
+      );
+      throw new BrapiObjectAlreadyExistsException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
+    }
+
+    // $brapi_entities = $this->getBrapiData($parameters)['entities'];
+    // foreach ($brapi_entities as $brapi_entity) {
+    //   $entity = load drupal entity from $brapi_entity 
+    //   $storage->delete($entity);
+    // }
+    return [];
   }
 
   /**
