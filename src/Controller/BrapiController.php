@@ -920,7 +920,11 @@ class BrapiController extends ControllerBase {
           );
           $page = $request->query->get('page') ?? 0;
           $total_count = count($all_data);
-          $result = ['result' => array_splice($all_data, $page*$page_size, $page_size)];
+          $result = [
+            'result' => [
+              'data' => array_splice($all_data, $page*$page_size, $page_size),
+            ]
+          ];
         }
         else {
           // Invalid result.
