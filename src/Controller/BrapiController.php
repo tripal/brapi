@@ -849,12 +849,23 @@ class BrapiController extends ControllerBase {
           return $array;
         };
         $json_input = $filter_array_recursive($json_input);
-        // @todo: take into account user identifier for access restrictions and
+        // Take into account user roles for access restrictions and
         // concurrent search limitations.
         $user = \Drupal::currentUser();
-        $json_input['#user'] = $user->getAccount()->getAccountName();
-        // Generate a normalized cache identifier (unique for a given search call
-        // with a given set of parameter values).
+        $roles = $user->getAccount()->getRoles();
+        sort($roles);
+        $json_input['#roles'] = $roles;
+        $status[] = [
+          'message'     => 'Search results are filtered by user roles.',
+          'messageType' => 'INFO',
+        ];
+        # @todo: Maybe add configuration setting to enable/disable search cache
+        # by roles, or by user identifier, or a subset of roles to only take
+        # into account.
+        # $json_input['#user'] = $user->getAccount()->getAccountName();
+
+        // Generate a normalized cache identifier (unique for a given search
+        // call with a given set of parameter values).
         $search_id = md5($call . serialize($json_input));
       }
       $cid = 'brapi_search:' . $search_id;
@@ -907,6 +918,10 @@ class BrapiController extends ControllerBase {
         }
         elseif (202 == ($cache_data->data['metadata']['code'] ?? 0)) {
           // Still searching.
+          $status[] = [
+            'message'     => 'Search still in progress...',
+            'messageType' => 'INFO',
+          ];
           $page_size = 1;
           $status['code'] = 202;
           $result = ['searchResultsDbId' => $search_id, ];
@@ -921,6 +936,10 @@ class BrapiController extends ControllerBase {
           //   save query filters or save resulting identifiers as list
           //   or save the full result set?
           $all_data = $cache_data->data['result']['data'];
+          $status[] = [
+            'message'     => 'Search results loaded from cache.',
+            'messageType' => 'INFO',
+          ];
           // Manage pager.
           $page_size = $this->getCleanPageSize(
             $config,
@@ -931,7 +950,7 @@ class BrapiController extends ControllerBase {
           $result = [
             'result' => [
               'data' => array_splice($all_data, $page*$page_size, $page_size),
-            ]
+            ],
           ];
         }
         else {
