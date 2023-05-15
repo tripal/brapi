@@ -212,12 +212,18 @@ class BrapiController extends ControllerBase {
 
       // Check if the whole response is not specific and has not been set already.
       if (!isset($json_array)) {
-        // @todo: Add error and debug info.
+        // No result array, display an error.
         $parameters = [
-          'status' => [[
-            'message'     => 'Not implemented',
-            'messageType' => 'ERROR',
-          ]],
+          'status' => [
+            [
+              'message'     => 'Not implemented.',
+              'messageType' => 'ERROR',
+            ],
+            [
+              'message'     => 'Call: ' . $call . ' (' . $version . ')',
+              'messageType' => 'DEBUG',
+            ]
+          ],
         ];
         $metadata = $this->generateMetadata($request, $config, $parameters);
         $json_array = $metadata;
@@ -845,6 +851,8 @@ class BrapiController extends ControllerBase {
         $json_input = $filter_array_recursive($json_input);
         // @todo: take into account user identifier for access restrictions and
         // concurrent search limitations.
+        $user = \Drupal::currentUser();
+        $json_input['#user'] = $user->getAccount()->getAccountName();
         // Generate a normalized cache identifier (unique for a given search call
         // with a given set of parameter values).
         $search_id = md5($call . serialize($json_input));

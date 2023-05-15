@@ -604,7 +604,16 @@ class BrapiDatatype extends ConfigEntityBase {
     // Manage JSON data in a custom string.
     if (!empty($is_json)) {
       // Treate as JSON.
-      $custom_value = json_decode($custom_value, TRUE);
+      $json_value = json_decode($custom_value, TRUE);
+      if (!isset($json_value) && !empty($custom_value)) {
+        \Drupal::logger('brapi')->warning(
+          'Failed to parse JSON value "'
+          . $custom_value
+          . '": '
+          . json_last_error_msg()
+        );
+      }
+      $custom_value = $json_value;
     }
     return $custom_value;
   }
