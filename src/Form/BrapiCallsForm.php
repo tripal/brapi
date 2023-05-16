@@ -224,9 +224,9 @@ class BrapiCallsForm extends FormBase {
                   $call_id = strtolower(
                     str_replace(['/', '{', '}'], '', $call) . '-' . $method
                   );
-                  $form[$version][$call]['access'][$method] = [
+                  $form[$version][$call][$method . '_access'] = [
                     '#type' => 'details',
-                    '#title' => $this->t('Roles allowed to use the method'),
+                    '#title' => $this->t('Roles allowed to use the %method method', ['%method' => strtoupper($method), ]),
                     '#open' => FALSE,
                     '#tree' => TRUE,
                     '#attributes' => [
@@ -239,15 +239,15 @@ class BrapiCallsForm extends FormBase {
                     ],
                   ];
                   if (!empty($restricted_roles)) {
-                    $form[$version][$call]['access'][$method]['_label_'] = [
+                    $form[$version][$call][$method . '_access']['_label_'] = [
                       '#type' => 'markup',
                       '#markup' => $this->t('<div>Allow for:</div>'),
                     ];
                     foreach ($restricted_roles as $role) {
-                      $form[$version][$call]['access'][$method][$role->id()] = [
+                      $form[$version][$call][$method . '_access'][$role->id()] = [
                         '#type' => 'checkbox',
                         '#title' => $role->label(),
-                        '#default_value' => !empty($call_settings[$version][$call]['access'][$method][$role->id()]),
+                        '#default_value' => !empty($call_settings[$version][$call][$method . '_access'][$role->id()]),
                       ];
                     }
                   }
@@ -263,7 +263,7 @@ class BrapiCallsForm extends FormBase {
                         && empty($read_roles)
                     ) {
                       // Nobody except admins.
-                      $form[$version][$call]['access'][$method]['_default_'] = [
+                      $form[$version][$call][$method . '_access']['_default_'] = [
                         '#type' => 'markup',
                         '#markup' => $this->t('Administrators only'),
                       ];
@@ -277,7 +277,7 @@ class BrapiCallsForm extends FormBase {
                         array_merge($read_roles, $write_roles)
                       );
                       sort($all_read_roles);
-                      $form[$version][$call]['access'][$method]['_default_'] = [
+                      $form[$version][$call][$method . '_access']['_default_'] = [
                         '#type' => 'markup',
                         '#markup' => $this->t(
                           'Roles allowed by global permissions: %roles',
@@ -290,7 +290,7 @@ class BrapiCallsForm extends FormBase {
                     // Write access.
                     if (empty($restricted_roles) && empty($write_roles)) {
                       // Nobody except admins.
-                      $form[$version][$call]['access'][$method]['_default_'] = [
+                      $form[$version][$call][$method . '_access']['_default_'] = [
                         '#type' => 'markup',
                         '#markup' => $this->t('Administrators only'),
                       ];
@@ -304,7 +304,7 @@ class BrapiCallsForm extends FormBase {
                         $write_roles
                       );
                       sort($all_write_roles);
-                      $form[$version][$call]['access'][$method]['_default_'] = [
+                      $form[$version][$call][$method . '_access']['_default_'] = [
                         '#type' => 'markup',
                         '#markup' => $this->t(
                           '<div>Roles allowed by global permissions: %roles</div>',

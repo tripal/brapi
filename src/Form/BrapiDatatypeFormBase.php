@@ -752,19 +752,18 @@ class BrapiDatatypeFormBase extends EntityForm {
       // Provide a list of available JSON Path with example values.
       try {
         try {
-          // @todo FIXME: change the way to check and get the bundle type. It
-          // generates a log error for content type that use the "type" field
-          // as something else than a bundle identifier.
           // Try using bundle first.
-          if ('node' == $entity_type_id) {
-            $last_number = max(\Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->count()->execute() - 1, 0);
-            $id = \Drupal::entityQuery($entity_type_id)->condition('type', $bundle_id)->range(rand(0, $last_number),1)->execute();
+          $bundle_key = \Drupal::entityTypeManager()->getDefinition($entity_type_id)->getKey('bundle');
+          if (!empty($bundle_key)) {
+            $last_number = max(\Drupal::entityQuery($entity_type_id)->condition($bundle_key, $bundle_id)->count()->execute() - 1, 0);
+            $id = \Drupal::entityQuery($entity_type_id)->condition($bundle_key, $bundle_id)->range(rand(0, $last_number),1)->execute();
             if (!empty($id)) {
               $example_entity = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load(current($id));
             }
           }
         }
         catch (\TypeError $e) {
+          // Silently ignore bunlde failure and try an other way.
         }
         if (empty($last_number)) {
           // No bundle.

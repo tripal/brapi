@@ -2,9 +2,10 @@
 
 namespace Drupal\brapi\Exception;
 
-use Drupal\brapi\Exception\BrapiException;
+use Drupal\brapi\Exception\BrapiObjectException;
 
 /**
- * Exception thrown by database tool object.
+ * Exception thrown when a new BrAPI object needs to be created with a given
+ * identifier but another BrAPI object with the same identifier already exists.
  */
-class BrapiObjectAlreadyExistsException extends BrapiException {}
+class BrapiObjectAlreadyExistsException extends BrapiObjectException {}

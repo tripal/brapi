@@ -21,6 +21,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class BrapiController extends ControllerBase {
 
@@ -148,7 +149,7 @@ class BrapiController extends ControllerBase {
       ) {
         // Check call permission.
         $allowed_roles = array_keys(
-          array_filter($call_settings[$version][$call]['access'][$method] ?? [])
+          array_filter($call_settings[$version][$call][$method . '_access'] ?? [])
         );
         if (empty(array_intersect($allowed_roles, $user->getRoles()))) {
           // No maching role, not allowed.
@@ -237,6 +238,7 @@ class BrapiController extends ControllerBase {
     }
     catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
       // Catch HTTP errors.
+      \Drupal::logger('brapi')->error('An HTTP error occured for call %call (%version): @exception', ['%call' => $call, '%version' => $version, '@exception' => $e]);
       $parameters = [
         'status' => [[
           'message'     => $e->getMessage() ?: 'An exception occurred.',
@@ -249,6 +251,7 @@ class BrapiController extends ControllerBase {
     }
     catch (\Throwable $e) {
       // Catch other errors.
+      \Drupal::logger('brapi')->error('An exception occured for call %call (%version): @exception', ['%call' => $call, '%version' => $version, '@exception' => $e]);
       $parameters = [
         'status' => [[
           'message'     => 'Unexpected: ' . ($e->getMessage() ?: 'An exception occurred.'),
@@ -1341,7 +1344,12 @@ class BrapiController extends ControllerBase {
     string $method
   ) {
     // Get associated data type.
+    $active_def = $config->get($version . 'def');
+    $brapi_def = brapi_get_definition($version, $active_def);
     $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
+    if ('ListTypes' == $datatype) {
+      $datatype = 'ListSummary';
+    }
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
     $datatype_mapping = $mapping_loader->load($datatype_id);
@@ -1356,27 +1364,61 @@ class BrapiController extends ControllerBase {
     if (empty($parameters)) {
       throw new BadRequestHttpException('Missing input data to record.');
     }
-
-    // Set object as new.
-    $parameters['#is_new'] = TRUE;
-
-    // Save new record.
-    try {
-      $brapi_data = $datatype_mapping->saveBrapiData($parameters);
-    }
-    catch (HttpException $e) {
+    if (!is_array($parameters)) {
+      throw new BadRequestHttpException('Invalid input data to record. Expecting a list of objects.');
     }
 
-    if (empty($brapi_data)) {
-      $message = 'Failed to save new record.';
-      if (!empty($e)) {
-        $message .= ' ' . $e->getMessage();
+    // Save each new record.
+    $id_field_name = $datatype_mapping->getBrapiIdField();
+    $status = [];
+    $unrecorded = 0;
+    $brapi_data = [];
+    foreach ($parameters as $object_data) {
+      if (!is_array($object_data)) {
+        throw new BadRequestHttpException('Invalid input data to record. Not a list of objects.');
       }
-      throw new BadRequestHttpException($message);
+      // Set object as new.
+      $object_data['#is_new'] = TRUE;
+
+      try {
+        $new_brapi_data = $datatype_mapping->saveBrapiData($object_data);
+        $status[] = [
+          'message'     => 'New ' . $datatype_mapping->getBrapiDatatype() . ' ' . ($new_brapi_data[$id_field_name] ?? '') . ' saved.',
+          'messageType' => 'INFO',
+        ];
+      }
+      catch (HttpException $e) {
+        $status[] = [
+          'message'     => 'Failed to save new record. ' . $e->getMessage(),
+          'messageType' => 'ERROR',
+        ];
+        $status[] = [
+          'message'     => "Unrecorded data:\n" . print_r($object_data, TRUE),
+          'messageType' => 'DEBUG',
+        ];
+        ++$unrecorded;
+      }
+      $brapi_data[] = $new_brapi_data;
     }
+
+    if ($unrecorded) {
+      $status[] = [
+        'message'     => $unrecorded . ' object(s) failed to be recorded. See other messages for details.',
+        'messageType' => 'WARNING',
+      ];
+    }
+
+    $result = ['result' => ['data' => $brapi_data]];
+    $parameters = [
+      'page_size'   =>  count($brapi_data),
+      'page'        =>  0,
+      'total_count' =>  count($brapi_data),
+      'status'      =>  $status ?: NULL,
+    ];
+    $metadata = $this->generateMetadata($request, $config, $parameters);
 
     // Returns the new record.
-    return $brapi_data;
+    return $metadata + $result;
   }
 
   /**
@@ -1410,6 +1452,8 @@ class BrapiController extends ControllerBase {
     string $method
   ) {
     // Get associated data type.
+    $active_def = $config->get($version . 'def');
+    $brapi_def = brapi_get_definition($version, $active_def);
     $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
@@ -1420,23 +1464,45 @@ class BrapiController extends ControllerBase {
       throw new NotFoundHttpException($message);
     }
 
-    // Get POST data.
+    // Get PUT data.
     $parameters = $this->getPostData($request);
     if (empty($parameters)) {
       throw new BadRequestHttpException('Missing input data to record.');
     }
 
-    // Get idenfitier.
-    $parameters = array_merge(
-      $parameters,
-      $request->attributes->get('_raw_variables')->all()
-    );
+    // Get idenfitier from URL.
+    $id_field_name = $datatype_mapping->getBrapiIdField();
+    if (empty($id_field_name)) {
+      throw new UnprocessableEntityHttpException(
+        'The given data type ('
+        . $datatype_mapping->getBrapiDatatype()
+        . ', v'
+        . $datatype_mapping->getBrapiRelease()
+        . ') to update has no identifier field.'
+      );
+    }
+    $id = $request->attributes->get($id_field_name);
+    if (empty($id)) {
+      throw new BadRequestHttpException(
+        'Missing data identifier value ('
+        . $id_field_name
+        . ').'
+      );
+    }
+    $parameters[$id_field_name] = $id;
+    $status = [];
 
     // Update record.
     try {
       $brapi_data = $datatype_mapping->saveBrapiData($parameters);
+      $status[] = [
+        'message'     => $datatype_mapping->getBrapiDatatype() . ' ' . $id . ' updated.',
+        'messageType' => 'INFO',
+      ];
     }
     catch (HttpException $e) {
+      // If an error occurred, we got an empty $brapi_data that will be handled
+      // right after.
     }
 
     if (empty($brapi_data)) {
@@ -1447,8 +1513,18 @@ class BrapiController extends ControllerBase {
       throw new BadRequestHttpException($message);
     }
 
+    $result = ['result' => ['data' => [$brapi_data]]];
+    $parameters = [
+      'page_size'   =>  1,
+      'page'        =>  0,
+      'total_count' =>  1,
+      'status'      =>  $status ?: NULL,
+    ];
+    $metadata = $this->generateMetadata($request, $config, $parameters);
+
     // Returns the updated record.
-    return $brapi_data;
+    return $metadata + $result;
+
   }
 
   /**

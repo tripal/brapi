@@ -3,6 +3,8 @@
 namespace Drupal\brapi\Entity;
 
 use Drupal\brapi\Exception\BrapiObjectAlreadyExistsException;
+use Drupal\brapi\Exception\BrapiObjectException;
+use Drupal\brapi\Exception\BrapiStorageException;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityInterface;
 use JsonPath\JsonObject;
@@ -59,14 +61,14 @@ class BrapiDatatype extends ConfigEntityBase {
           $this->brapiVersion = $matches[1];
           $this->brapiRelease = $matches[2];
           $this->brapiDatatype = $matches[3];
-          $this->brapiFields = array_filter(explode('-', $matches[4]));
+          $this->brapiSubFields = array_filter(explode('-', $matches[4]));
       }
     }
     return [
       $this->brapiVersion,
       $this->brapiRelease,
       $this->brapiDatatype,
-      $this->brapiFields,
+      $this->brapiSubFields,
     ];
   }
 
@@ -117,11 +119,11 @@ class BrapiDatatype extends ConfigEntityBase {
    * @return array
    *   The BrAPI datatype sub-field list.
    */
-  public function getBrapiFields() :array {
+  public function getBrapiSubFields() :array {
     if (!isset($this->brapiVersion)) {
       $this->parseId();
     }
-    return $this->brapiFields;
+    return $this->brapiSubFields;
   }
 
   /**
@@ -154,12 +156,19 @@ class BrapiDatatype extends ConfigEntityBase {
     if (!isset($this->brapiVersion)) {
       $this->parseId();
     }
-    $id_field = $this->brapiDatatype . 'DbId';
+    $id_field = lcfirst($this->brapiDatatype). 'DbId';
     // Make sure field exists.
-    if (!array_key_exists($id_field, $this->brapiFields)) {
+    if (!array_key_exists($id_field, $this->mapping)) {
       // Field not found.
       // @todo: manage other ways to get identifier fields (invalid case, etc.).
-      $id_field = '';
+      // @todo: manage plugin or hook for override of default behavior.
+      if ('listDetailsDbId' == $id_field) {
+        // Manage special case for list details.
+        $id_field = 'listDbId';
+      }
+      else {
+        $id_field = '';
+      }
     }
     return $id_field;
   }
@@ -212,13 +221,7 @@ class BrapiDatatype extends ConfigEntityBase {
       $filters = [];
       $post_filters = [];
       foreach ($parameters as $parameter => $value) {
-        $field_name = $this->getDrupalMappedField($parameter);
-        if (FALSE === $field_name) {
-          $field_name = $this->getDrupalMappedField(brapi_get_term_singular($parameter));
-        }
-        if (FALSE ===  $field_name) {
-          $field_name = $this->getDrupalMappedField(brapi_get_term_plural($parameter));
-        }
+        $field_name = $this->getDrupalMappedField($parameter, TRUE);
 
         if (FALSE !== $field_name) {
           if ('' === $field_name) {
@@ -244,6 +247,17 @@ class BrapiDatatype extends ConfigEntityBase {
         $query->condition($name, (array) $value, 'IN');
         $count_query->condition($name, (array) $value, 'IN');
       }
+      // Manage bundle.
+      $bundle_key = \Drupal::entityTypeManager()
+        ->getDefinition($this->getMappedEntityTypeId())
+        ->getKey('bundle')
+      ;
+      if (!empty($bundle_key)) {
+        $bundle_id = $this->getMappedEntityBundleId();
+        $query->condition($bundle_key, $bundle_id);
+        $count_query->condition($bundle_key, $bundle_id);
+      }
+
       // Pagination.
       if (isset($parameters['#pageSize']) && (0 < $parameters['#pageSize'])) {
         $page_size = $parameters['#pageSize'];
@@ -626,13 +640,25 @@ class BrapiDatatype extends ConfigEntityBase {
    *
    * @param string $brapi_field_name
    *   A BrAPI field name.
+   * @param bool $auto_adjust_field_name
+   *   If TRUE, also test singular and plural versions of the field name.
    *
    * @return bool|string
    *   The associated Drupal field name if mapped, an empty string if mapped to
    *   a complex value (like a custom value) or FALSE if no mapping was set.
    */
-  public function getDrupalMappedField(string $brapi_field_name) {
+  public function getDrupalMappedField(string $brapi_field_name, bool $auto_adjust_field_name = FALSE) {
     $mapped_field = $this->mapping[$brapi_field_name]['field'] ?? FALSE;
+
+    if ($auto_adjust_field_name) {
+        if (FALSE === $mapped_field) {
+          $mapped_field = $this->mapping[brapi_get_term_singular($brapi_field_name)]['field'] ?? FALSE;
+        }
+        if (FALSE === $mapped_field) {
+          $mapped_field = $this->mapping[brapi_get_term_plural($brapi_field_name)]['field'] ?? FALSE;
+        }
+    }
+
     // Take into account special mappings.
     if (!empty($mapped_field) && ('_custom' == $mapped_field)) {
       $mapped_field = '';
@@ -654,11 +680,11 @@ class BrapiDatatype extends ConfigEntityBase {
    *     existing object with the same identifier, it will raise an exception.
    * @return array
    * Returns the new BrAPI data if recorded.
+   * @throw \Drupal\brapi\Exception\BrapiObjectAlreadyExistsException
+   * @throw \Drupal\brapi\Exception\BrapiObjectException
+   * @throw \Drupal\brapi\Exception\BrapiStorageException
    */
   public function saveBrapiData(array $parameters) :array {
-    // @todo: implement create/update.
-    throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
-
     $storage = \Drupal::service('entity_type.manager')
       ->getStorage($this->getMappedEntityTypeId())
     ;
@@ -666,27 +692,128 @@ class BrapiDatatype extends ConfigEntityBase {
       \Drupal::logger('brapi')->error(
         "No storage available for content type '" . $this->contentType . "'."
       );
-      throw new BrapiObjectAlreadyExistsException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
+      throw new BrapiStorageException(
+        'Failed to load the storage engine for data type '
+        . $this->getBrapiDatatype()
+        . '.'
+      );
     }
 
-    // For creation, make sure the object does not exist already.
-    if (array_key_exists('#is_new', $parameters)) {
-      if (!empty($this->getBrapiData($parameters)['entities'])) {
-        throw new BrapiObjectAlreadyExistsException("Cannot create a new " . $this->getBrapiDatatype() . " object. Another object with the same key(s) already exists.");
+    $id_field_name = $this->getBrapiIdField();
+    if (!empty($parameters['#is_new'])) {
+      // New record.
+      if (!empty($id_field_name)
+        && !empty($parameters[$id_field_name])
+      ) {
+        // Trying to create a new object with a specific identifier.
+        $id_filter = [$id_field_name => $parameters[$id_field_name]];
+        // Make sure it does not exist already.
+        if (!empty($this->getBrapiData($id_filter)['entities'])) {
+          throw new BrapiObjectAlreadyExistsException(
+            "Cannot create a new "
+            . $this->getBrapiDatatype()
+            . " object. Another object with the same identifier already exists ("
+            . $id_field_name
+            . '='
+            . $parameters[$id_field_name]
+            . ")."
+          );
+        }
       }
       // Create Drupal entity.
-      // generate $drupal_data from $parameters and mapping.
-      $storage->create($drupal_data);
-      // Add new identifier and default field values to $parameters.
+      $drupal_data = [];
+      // If mapped to a bundle, specify it.
+      $bundle_key = \Drupal::entityTypeManager()
+        ->getDefinition($this->getMappedEntityTypeId())
+        ->getKey('bundle')
+      ;
+      if (!empty($bundle_key)) {
+        $drupal_data[$bundle_key] = $this->getMappedEntityBundleId();
+      }
+      foreach ($parameters as $parameter => $value) {
+        // Get Drupal field mapping.
+        $field_name = $this->getDrupalMappedField($parameter, TRUE);
+        if ((FALSE !== $field_name)
+          && ('' !== $field_name)
+        ) {
+          $drupal_data[$field_name] = $value;
+        }
+        else {
+          \Drupal::logger('brapi')->warning(
+            'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
+          );
+        }
+      }
+      $entity = $storage->create($drupal_data);
     }
     else {
+      // Update.
+      if (empty($id_field_name)) {
+        throw new BrapiStorageException(
+          'Unable to update data type '
+          . $this->getBrapiDatatype()
+          . ': no identifier field available.'
+        );
+      }
+      if (empty($parameters[$id_field_name])) {
+        throw new BrapiObjectException(
+          "Cannot update "
+          . $this->getBrapiDatatype()
+          . " object. No object identifier provided ("
+          . $id_field_name
+          . ")."
+        );
+      }
       // Load Drupal entity.
+      $query = $storage->getQuery();
+      $query->accessCheck(FALSE);
+      $drupal_id_field_name = $this->getDrupalMappedField($id_field_name, TRUE);
+      $query->condition($drupal_id_field_name, $parameters[$id_field_name]);
+      $drupal_id = current($query->execute());
+      if (!empty($drupal_id)) {
+        $entity = $storage->load($drupal_id);
+      }
+      if (empty($entity)) {
+        throw new BrapiObjectException(
+          "Cannot update "
+          . $this->getBrapiDatatype()
+          . " object. Failed to load existing object ("
+          . $id_field_name
+          . '='
+          . $parameters[$id_field_name]
+          . ")."
+        );
+      }
+
       // Update field values.
+      foreach ($parameters as $parameter => $value) {
+        // Get Drupal field mapping.
+        $field_name = $this->getDrupalMappedField($parameter, TRUE);
+        if ((FALSE !== $field_name)
+          && ('' !== $field_name)
+        ) {
+          $entity->set($field_name, $value);
+        }
+        else {
+          \Drupal::logger('brapi')->warning(
+            'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
+          );
+        }
+      }
     }
     // Save changes.
     $storage->save($entity);
-
-    return current($this->getBrapiData($parameters)['entities']);
+    // \Drupal::logger('brapi')->warning(
+    //   'DEBUG: Would save : ' . print_r($entity->toArray(), TRUE)
+    // );
+    
+    $saved_data = [];
+    $updated_entities = $this->getBrapiData($parameters)['entities'];
+    if (1 == count($updated_entities)) {
+      $saved_data = $updated_entities[0];
+    }
+    
+    return $saved_data;
   }
 
   /**
@@ -698,6 +825,7 @@ class BrapiDatatype extends ConfigEntityBase {
    * @return array
    * An arry of deleted object identifiers if deleted or [] if failed.
    *
+   * @throw \Drupal\brapi\Exception\BrapiStorageException
    * @see https://api.drupal.org/api/drupal/core%21includes%21common.inc/10
    */
   public function deleteBrapiData(array $parameters) :int {
@@ -711,7 +839,7 @@ class BrapiDatatype extends ConfigEntityBase {
       \Drupal::logger('brapi')->error(
         "No storage available for content type '" . $this->contentType . "'."
       );
-      throw new BrapiObjectAlreadyExistsException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
+      throw new BrapiStorageException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
     }
 
     // $brapi_entities = $this->getBrapiData($parameters)['entities'];
@@ -758,7 +886,7 @@ class BrapiDatatype extends ConfigEntityBase {
    *
    * @var array
    */
-  protected $brapiFields;
+  protected $brapiSubFields;
 
   /**
    * The UUID.
