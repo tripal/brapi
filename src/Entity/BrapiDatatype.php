@@ -322,13 +322,16 @@ class BrapiDatatype extends ConfigEntityBase {
                 $field_name = $drupal_mapping['subcontent'];
                 if ('_custom' == $field_name) {
                   // Get field value(s).
+                  if (!isset($entity_array)) {
+                    $entity_array = $this->entityToArray($entity);
+                  }
                   // Issue: the design expects an entity and we provide a field.
                   // @todo Rethink the thing. Remove "custom"? or:
                   // Consider the returned value as an identifier to load an
                   // entity of the type given by the corresponding BrAPI mapping.
                   $sub_entities = $this->parseCustomValue(
                     $drupal_mapping['custom'],
-                    $entity,
+                    $entity_array,
                     $drupal_mapping['is_json'],
                     'Invalid JSONPath for BrAPI field ' . $brapi_field
                   );
@@ -336,8 +339,17 @@ class BrapiDatatype extends ConfigEntityBase {
                 else {
                   // Get referenced entities from field.
                   $sub_entities = $entity->get($field_name)->referencedEntities();
-                  // @todo Check if the field should return a single value or is
-                  // an array as we manage returned values according to the type.
+                  // Check if the field should return a single value or is an
+                  // array as we manage returned values according to the type.
+                  if ('[]' != substr($brapi_fields[$brapi_field]['type'], -2)) {
+                    // Return a single value.
+                    if (empty($sub_entities)) {
+                      $sub_entities = NULL;
+                    }
+                    else {
+                      $sub_entities = current($sub_entities);
+                    }
+                  }
                 }
               }
 
@@ -396,9 +408,12 @@ class BrapiDatatype extends ConfigEntityBase {
             }
             elseif ('_custom' == $drupal_mapping['field']) {
               // Custom value.
+              if (!isset($entity_array)) {
+                $entity_array = $this->entityToArray($entity);
+              }
               $brapi_data[$brapi_field] = $this->parseCustomValue(
                 $drupal_mapping['custom'],
-                $entity,
+                $entity_array,
                 $drupal_mapping['is_json'],
                 'Invalid JSONPath ("' . $drupal_mapping['custom'] . '") for field "' . $brapi_field . '" of ' . $this->label
               );
@@ -409,7 +424,6 @@ class BrapiDatatype extends ConfigEntityBase {
               // Check if field is an entity reference.
               if ($field->getFieldDefinition()->getType() == 'entity_reference') {
                 // We got referenced entities.
-                $brapi_data[$brapi_field] = [];
                 // Add all referenced entities as arrays.
                 $brapi_data[$brapi_field] = array_map(
                   function ($ref_entity) { return $ref_entity->toArray(); },
@@ -418,12 +432,11 @@ class BrapiDatatype extends ConfigEntityBase {
               }
               else {
                 // Regular field, get it as string.
-                if (empty($drupal_mapping['is_json'])) {
-                  $brapi_data[$brapi_field] = $field->getString();
+                if (!empty($array_fields[$drupal_mapping['field']])) {
+                  $brapi_data[$brapi_field] = $field->getValue();
                 }
                 else {
-                  // Treate as JSON.
-                  $brapi_data[$brapi_field] = json_decode($field->getString(), TRUE);
+                  $brapi_data[$brapi_field] = $field->getString();
                 }
               }
             }
@@ -565,13 +578,50 @@ class BrapiDatatype extends ConfigEntityBase {
   }
 
   /**
+   * Convert an entity into an array.
+   *
+   * This method also resolves first level referenced entities to their content
+   * as an array as well. Therefore, an entity reference field which should be
+   * normally turned into a structure like:
+   *
+   *   ["ref_field_name" => [["target_id" => 1234]]]
+   *
+   * would now be turned into:
+   *
+   *   ["ref_field_name" => [["target_id" => 1234, "value" => <the referenced entity as an array>]]]
+   *
+   * @param EntityInterface $entity
+   *   The entity to convert.
+   *
+   * @return array
+   *   The entity content as an array with referenced entities as array as well.
+   */
+  protected function entityToArray(
+    EntityInterface $entity
+  ) :array {
+    $entity_array = $entity->toArray();
+    // Turn referenced entities into their array.
+    foreach (array_keys($entity_array) as $field_name) {
+      $field = $entity->get($field_name);
+      if ($field->getFieldDefinition()->getType() == 'entity_reference') {
+        foreach ($field->referencedEntities() as $index => $ref_entity) {
+          $entity_array[$field_name][$index]['value'] = $ref_entity->toArray();
+        }
+      }
+    }
+
+    return $entity_array;
+  }
+
+  /**
    * Parse custom field value that may contain JSON path items and be JSON data.
    *
    * @param string $custom_value
    *   The custom string containing static text, JSON Path expression or any
    *   combination of both.
-   * @param EntityInterface $entity
-   *   The entity from wich data should be extracted.
+   * @param array $entity_array
+   *   An array representing the entity content from wich data should be
+   *   extracted.
    * @param $is_json
    *   If not empty, the result string is parsed as JSON and the parsed
    *   data structure is returned instead of a sting.
@@ -585,13 +635,12 @@ class BrapiDatatype extends ConfigEntityBase {
    */
   protected function parseCustomValue(
     string $custom_value,
-    EntityInterface $entity,
+    array $entity_array,
     $is_json,
     string $invalid_jp_message = 'Invalid JSONPath'
   ) {
     // Check for JSON path to replace.
-    if (preg_match_all('/\$(?:\*|\.\.|\.\w+|\[\'\w+\'(?:\s*,\s*\'\w+\')*\]|\[-?\d+(?:\s*,\s*-?\d+)*\]|\[-?\d*:-?\d*\])+/', $custom_value, $matches)) {
-      $entity_array = $entity->toArray();
+    if (preg_match_all('/\$(?:\.?\*|\.\.|\.\w+|\[\'\w+\'(?:\s*,\s*\'\w+\')*\]|\[-?\d+(?:\s*,\s*-?\d+)*\]|\[-?\d*:-?\d*\]|\[\*\])+/', $custom_value, $matches)) {
       foreach ($matches[0] as $match) {
         try {
           $json_object = new JsonObject($entity_array, TRUE);
@@ -600,6 +649,9 @@ class BrapiDatatype extends ConfigEntityBase {
             $custom_value = str_replace($match, json_encode($jpath_value), $custom_value);
           }
           else {
+            if (!is_string($jpath_value)) {
+              $jpath_value = json_encode($jpath_value);
+            }
             $custom_value = str_replace($match, $jpath_value, $custom_value);
           }
         }
@@ -676,7 +728,7 @@ class BrapiDatatype extends ConfigEntityBase {
    * @param array $parameters
    *   An array of keyed values used to create or update an object.
    *   Special keys starting with '#' are not treated as field values.
-   *   - '#is_new': if TRUE, a new object should be created but if there is any 
+   *   - '#is_new': if TRUE, a new object should be created but if there is any
    *     existing object with the same identifier, it will raise an exception.
    * @return array
    * Returns the new BrAPI data if recorded.
@@ -738,7 +790,7 @@ class BrapiDatatype extends ConfigEntityBase {
         ) {
           $drupal_data[$field_name] = $value;
         }
-        else {
+        elseif ('#' != $parameter[0]) {
           \Drupal::logger('brapi')->warning(
             'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
           );
@@ -766,7 +818,7 @@ class BrapiDatatype extends ConfigEntityBase {
       }
       // Load Drupal entity.
       $query = $storage->getQuery();
-      $query->accessCheck(FALSE);
+      $query->accessCheck(TRUE);
       $drupal_id_field_name = $this->getDrupalMappedField($id_field_name, TRUE);
       $query->condition($drupal_id_field_name, $parameters[$id_field_name]);
       $drupal_id = current($query->execute());
@@ -803,34 +855,29 @@ class BrapiDatatype extends ConfigEntityBase {
     }
     // Save changes.
     $storage->save($entity);
-    // \Drupal::logger('brapi')->warning(
-    //   'DEBUG: Would save : ' . print_r($entity->toArray(), TRUE)
-    // );
-    
+
     $saved_data = [];
     $updated_entities = $this->getBrapiData($parameters)['entities'];
     if (1 == count($updated_entities)) {
       $saved_data = $updated_entities[0];
     }
-    
+
     return $saved_data;
   }
 
   /**
-   * Delete a BrAPI record.
+   * Delete BrAPI record(s).
    *
    * @param array $parameters
    *   An array of parameters used to identify the object(s) to delete.
-   *   
+   *
    * @return array
-   * An arry of deleted object identifiers if deleted or [] if failed.
+   * An array of deleted object identifiers if deleted or [] if failed.
    *
    * @throw \Drupal\brapi\Exception\BrapiStorageException
    * @see https://api.drupal.org/api/drupal/core%21includes%21common.inc/10
    */
   public function deleteBrapiData(array $parameters) :int {
-    // @todo: implement delete.
-    throw new \Symfony\Component\HttpKernel\Exception\BadRequestHttpException("Not implemented yet.");
 
     $storage = \Drupal::service('entity_type.manager')
       ->getStorage($this->getMappedEntityTypeId())
@@ -839,15 +886,43 @@ class BrapiDatatype extends ConfigEntityBase {
       \Drupal::logger('brapi')->error(
         "No storage available for content type '" . $this->contentType . "'."
       );
-      throw new BrapiStorageException('Failed to load the storage engine for data type ' . $this->getBrapiDatatype() . '.');
+      throw new BrapiStorageException(
+        'Failed to load the storage engine for data type '
+        . $this->getBrapiDatatype()
+        . '.'
+      );
     }
 
-    // $brapi_entities = $this->getBrapiData($parameters)['entities'];
-    // foreach ($brapi_entities as $brapi_entity) {
-    //   $entity = load drupal entity from $brapi_entity 
-    //   $storage->delete($entity);
-    // }
-    return [];
+    // Load Drupal entities.
+    $query = $storage->getQuery();
+    $query->accessCheck(TRUE);
+    foreach ($parameters as $parameter => $value) {
+      $drupal_field_name = $this->getDrupalMappedField($parameter, TRUE);
+      if (!empty($drupal_field_name)) {
+        $query->condition($drupal_field_name, $value);
+      }
+    }
+    $drupal_ids = $query->execute();
+    // Delete.
+    $removed = [];
+    foreach ($drupal_ids as $drupal_id) {
+      $entity = $storage->load($drupal_id);
+      if (empty($entity)) {
+        throw new BrapiObjectException(
+          "Cannot update "
+          . $this->getBrapiDatatype()
+          . " object. Failed to load existing object ("
+          . $this->getMappedEntityTypeId()
+          . ' id='
+          . $drupal_id
+          . ")."
+        );
+      }
+      $removed[] = $entity->id;
+      $storage->delete($entity);
+    }
+
+    return $removed;
   }
 
   /**

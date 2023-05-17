@@ -1,36 +1,14 @@
 To Do List
 ==========
 
-Manage search/load cache.
-  BrapiController.php, in processQueryObjectCalls(), line 640.
-  $brapi_data = $datatype_mapping->getBrapiData([]);
-  
-Manage paginiation when filtering search results using module.
-  BrapiController.php, in processQueryObjectCalls(), line 640.
-  $brapi_data = $datatype_mapping->getBrapiData([]);
-
-Implement list call.
-  BrapiController.php, in brapiCall(), line 102.
-  // elseif (0 === strpos($call, '/lists/')) {
-
 Improve interface access token management.
-  - add "remove" token on user token page (brapi/token)
-  - add a "create new token" button (targetting brapi/token/new)
   - add admin interface for global management (interface BrapiToken::purgeExpiredTokens())
+  - possibility to create permanent tokens (expiration = -1)
 
 Manage special calls with files outputs
   BrapiController.php, in brapiCall(), line 126.
 
-Support for PUT/POST request to edit/create new objects.
-  BrapiController.php, in processQueryObjectCalls(), line 594.
-  if ('put' == $method) {
-
-Add and manage permission for editing.
-
 Documentation.
-
-Add debug info for all calls.
-  BrapiController.php, in brapiCall() and generateMetadata(), line 135 and ...
 
 Manage subcalls that return multiple values for a given object.
   ex.: /seedlots/{seedLotDbId}/transactions
@@ -45,8 +23,6 @@ Manual tests to check BrAPI specifications compliance.
 
 Support Drupal config export.
 
-Auto-generate s content type fields to match a BrAPI object model.
-
-Add permission by-call management.
+Auto-generates content type fields to match a BrAPI object model.
 
 Drupal 10 compatibility.

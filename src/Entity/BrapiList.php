@@ -76,7 +76,26 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
     parent::preCreate($storage_controller, $values);
     $values += [
       'user_id' => \Drupal::currentUser()->id(),
+      'data' => [],
+      'list_size' => 0,
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * Update the appropriate fields if needed.
+   */
+  public function preSave(EntityStorageInterface $storage) {
+    if (!empty($this->data)) {
+      // Update count.
+      $this->list_size = count($this->data);
+    }
+    else {
+      $this->data = [];
+      $this->list_size = 0;
+    }
+    parent::preSave($storage);
   }
 
   /**
@@ -126,7 +145,7 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ->setReadOnly(TRUE)
     ;
 
-    $fields['name'] = BaseFieldDefinition::create('string')
+    $fields['list_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Name'))
       ->setDescription(t('The name of the BrAPI List entity.'))
       ->setSettings([
@@ -184,10 +203,9 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
-      ->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
     ;
 
-    $fields['description'] = BaseFieldDefinition::create('string')
+    $fields['list_description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
       ->setDescription(t('List description.'))
       ->setSettings([
@@ -249,7 +267,7 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ->setDisplayConfigurable('view', TRUE)
     ;
 
-    $fields['item_list'] = BaseFieldDefinition::create('list_string')
+    $fields['data'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Item list'))
       ->setDescription(t('The list of data items.'))
       ->setDisplayOptions('view', [
@@ -258,9 +276,20 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
+      ->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
     ;
 
-    $fields['external_ref'] = BaseFieldDefinition::create('list_string')
+    $fields['list_size'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('List size'))
+      ->setDescription(t('Number of items in the list.'))
+      ->setSetting('unsigned', TRUE)
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
+    ;
+
+    // @todo: Should hold ["referenceId" => string, "referenceSource" => string]
+    // See https://git.drupalcode.org/project/examples/-/tree/4.0.x/modules/field_example
+    $fields['external_references'] = BaseFieldDefinition::create('string')
       ->setLabel(t('External References'))
       ->setDescription(t('The list of related external references.'))
       ->setDisplayOptions('view', [
@@ -271,10 +300,12 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ->setDisplayConfigurable('view', TRUE)
     ;
 
+    // @todo: Should be rendered using date(DATE_ATOM, $entity->created).
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created'))
       ->setDescription(t('The time that the entity was created.'));
 
+    // @todo: Should be rendered using date(DATE_ATOM, $entity->changed).
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the entity was last edited.'));

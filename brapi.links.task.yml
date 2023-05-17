@@ -25,3 +25,15 @@ brapi.token.new:
   title: '(Re)New'
   base_route: brapi.token
   weight: 1
+
+brapi.token.expire:
+  route_name: brapi.token.expire
+  title: 'Expire'
+  base_route: brapi.token
+  weight: 2
+
+brapi.token.delete:
+  route_name: brapi.token.delete
+  title: 'Delete'
+  base_route: brapi.token
+  weight: 3

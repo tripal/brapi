@@ -34,6 +34,26 @@ brapi.token.new:
   options:
     no_cache: 'TRUE'
 
+brapi.token.expire:
+  path: '/brapi/token/expire'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::expireTokenPage'
+    _title: 'Expires current Plant Breeding API user access token'
+  requirements:
+    _role: 'authenticated'
+  options:
+    no_cache: 'TRUE'
+
+brapi.token.delete:
+  path: '/brapi/token/delete'
+  defaults:
+    _controller: '\Drupal\brapi\Controller\BrapiController::deleteTokenPage'
+    _title: 'Delete current Plant Breeding API user access token'
+  requirements:
+    _role: 'authenticated'
+  options:
+    no_cache: 'TRUE'
+
 brapi.admin:
   path: '/brapi/admin'
   defaults:

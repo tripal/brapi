@@ -712,25 +712,6 @@ function brapi_get_referenced_datatype_mapping(
 }
 
 /**
- * Returns the datatype identifier field of the given datatype.
- *
- * @param string $datatype
- *   BrAPI datatype name.
- * @param array $brapi_def
- *   The BrAPI definition to use.
- *
- * @return string
- *   The name of the datatype identifier field.
- */
-function brapi_get_datatype_identifier(
-  string $datatype,
-  array $brapi_def
-) :string {
-  // @todo: check the datatype exists and has a DbId field as well.
-  return lcfirst($datatype . 'DbId');
-}
-
-/**
  * Returns a given term plural as defined in BrAPI.
  *
  * This function supports lower case, uppercase, camelCase and CamelCase.

@@ -82,6 +82,26 @@ class BrapiController extends ControllerBase {
   }
 
   /**
+   * Expires current token and displays BrAPI token page.
+   */
+  public function expireTokenPage() {
+    $token = BrapiToken::getUserToken(NULL, FALSE);
+    $expiration = time() - 3600;
+    $token->expiration->setValue($expiration);
+    $token->save();
+    return $this->tokenPage();
+  }
+
+  /**
+   * Delete current token and displays BrAPI token page.
+   */
+  public function deleteTokenPage() {
+    $token = BrapiToken::getUserToken(NULL, TRUE);
+    $token->delete();
+    return $this->tokenPage();
+  }
+
+  /**
    * Export BrAPI call results as JSON.
    *
    * Useful documentation:
@@ -1176,7 +1196,7 @@ class BrapiController extends ControllerBase {
           if ($brapi_submapping) {
             $sub_entities = $brapi_submapping->getBrapiData($ref_filters);
             // Get sub-object ID field name.
-            $subdatatype_id_field = brapi_get_datatype_identifier($brapi_submapping->getBrapiDatatype(), $brapi_def);
+            $subdatatype_id_field = $brapi_submapping->getBrapiIdField();
             // Set $filter to fill the appropriate key of $filters.
             if (array_key_exists(lcfirst($ref_datatype), $brapi_def['data_types'][$datatype]['fields'])) {
               $filter = &$filters[lcfirst($ref_datatype)];

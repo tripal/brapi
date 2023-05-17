@@ -305,25 +305,58 @@ class BrapiAdminForm extends FormBase {
         $brapi_list = $mapping_sm->load($list_datatype_id);
         if (!$brapi_list) {
           // No mapping. Create one.
+          $DRUPAL_FIELD_MAPPING = [
+            'data' => [
+              'field' => 'data',
+              'custom' => '$.data[*].value',
+              'is_json' => TRUE,
+            ],
+            'dateCreated' => [
+              'field' => 'created',
+              'custom' => '',
+              'is_json' => FALSE,
+            ],
+            'dateModified' => [
+              'field' => 'changed',
+              'custom' => '',
+              'is_json' => FALSE,
+            ],
+            'listDbId' => [
+              'field' => 'id',
+              'custom' => '',
+              'is_json' => FALSE,
+            ],
+            'listOwnerName' => [
+              'field' => '_custom',
+              'custom' => '$.user_id[0].value.name[0].value',
+              'is_json' => FALSE,
+            ],
+            'listOwnerPersonDbId' => [
+              'field' => '_custom',
+              'custom' => '$.user_id[0].target_id',
+              'is_json' => FALSE,
+            ],
+          ];
           $brapi_definition = brapi_get_definition('v2', $active_def);
           $mapping = [];
           foreach (
-            $brapi_definition['data_types']['ListDetails']['fields']
+            $brapi_definition['data_types'][$list_datatype]['fields']
             as $bfield => $fdef
           ) {
-            // Change field name convention (CaMel to snake_case).
-            // (?<!^) lookbehind to avoid a '_' at the begining of the name.
-            $dfield = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $bfield));
-            $mapping[$bfield] = [
-              'field' => $dfield,
-              'custom' => '',
-              // Use JSON for complex data and lists.
-              'is_json' => (
-                in_array($fdef['type'], ['string', 'integer', 'uuid'])
-                ? FALSE
-                : TRUE
-              ),
-            ];
+            // Special cases.
+            if (!empty($DRUPAL_FIELD_MAPPING[$bfield])) {
+              $mapping[$bfield] = $DRUPAL_FIELD_MAPPING[$bfield];
+            }
+            else {
+              // Change field name convention (CaMel to snake_case).
+              // (?<!^) lookbehind to avoid a '_' at the begining of the name.
+              $dfield = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $bfield));
+              $mapping[$bfield] = [
+                'field' => $dfield,
+                'custom' => '',
+                'is_json' => FALSE,
+              ];
+            }
           }
 
           $brapi_list = $mapping_sm->create([

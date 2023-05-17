@@ -18,11 +18,23 @@ class BrapiDatatypeAccessController extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-    // @todo: manage access permission BRAPI_PERMISSION_USE, BRAPI_PERMISSION_SPECIFIC and BRAPI_PERMISSION_EDIT.
-    // 'view', 'update' or 'delete'
-    // if ($operation == 'view') {
-    //   return AccessResult::allowed();
-    // }
+    if (is_a($entity, \Drupal\brapi\Entity\BrapiDatatype::class)) {
+      // Allow access to BrAPI mapping to any people with any BrAPI access.
+      if ($operation == 'view'
+        && ($account->hasPermission(BRAPI_PERMISSION_USE)
+          || $account->hasPermission(BRAPI_PERMISSION_EDIT)
+          || $account->hasPermission(BRAPI_PERMISSION_SPECIFIC))
+      ) {
+        return AccessResult::allowed();
+      }
+      // Restrict BrAPI mapping modification to admins.
+      if (($operation == 'update' || $operation == 'delete')
+          && ($account->hasPermission(BRAPI_PERMISSION_ADMIN)
+            || $account->hasPermission('administer site configuration'))
+      ) {
+        return AccessResult::allowed();
+      }
+    }
     return parent::checkAccess($entity, $operation, $account);
   }
 

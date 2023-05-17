@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * Update list content type definition.
+ */
+function brapi_update_9001(&$sandbox) {
+  // Remove previous mapping.
+  $storage = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+  $to_delete = [];
+  $to_delete[] = $storage->load('v2-2.0-ListDetails');
+  $to_delete[] = $storage->load('v2-2.1-ListDetails');
+  $to_delete[] = $storage->load('v2-2.0-ListSummary');
+  $to_delete[] = $storage->load('v2-2.1-ListSummary');
+  $to_delete = array_filter($to_delete);
+  $storage->delete($to_delete);
+
+  // Remove old definition as it was not used.
+  $entity_type = \Drupal::entityDefinitionUpdateManager()->getEntityType('brapi_list');
+  \Drupal::entityDefinitionUpdateManager()->uninstallEntityType($entity_type);
+  // Create the new one.
+  $new_def = \Drupal::entityTypeManager()->getDefinition('brapi_list');
+  \Drupal::entityDefinitionUpdateManager()->installEntityType($new_def);
+
+  return t('Please visit the BrAPI admin page and save setting to update BrAPI list mapping.');
+}

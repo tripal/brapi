@@ -233,10 +233,7 @@ class BrapiDatatypeFormBase extends EntityForm {
     // filter.
     if (!empty($subfields)) {
       $brapi_definition = brapi_get_definition($version, $active_def);
-      $id_field = brapi_get_datatype_identifier(
-        $datatype_name,
-        $brapi_definition
-      );
+      $id_field = $brapi_datatype->getBrapiIdField();
       $id_field_def =
         $brapi_definition['data_types'][$datatype_name]['fields'][$id_field]
         ?? NULL
@@ -780,6 +777,17 @@ class BrapiDatatypeFormBase extends EntityForm {
           '#tree' => FALSE,
         ];
         if (!empty($example_entity)) {
+          $example_entity_array = $example_entity->toArray();
+          // Resolves first-level referenced entities.
+          foreach (array_keys($example_entity_array) as $field_name) {
+            $field = $example_entity->get($field_name);
+            if ($field->getFieldDefinition()->getType() == 'entity_reference') {
+              foreach ($field->referencedEntities() as $index => $ref_entity) {
+                $example_entity_array[$field_name][$index]['value'] = $ref_entity->toArray();
+              }
+            }
+          }
+
           $definitions = $this->entityTypeManager->getDefinitions();
           $get_jpath = function ($data, $current_path = '$') use (&$get_jpath) {
             if (is_array($data)) {
@@ -799,6 +807,14 @@ class BrapiDatatypeFormBase extends EntityForm {
             }
           };
 
+          $source_structure = preg_replace(
+              ['/^(  +?)\\1(?=[^ ])/m', '/\n\s+\{\n/'],
+              ['$1', " {\n"],
+              json_encode(
+                $example_entity_array,
+                JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+              )
+          );
           $mapping_form['json_path']['examples'] = [
             '#type' => 'markup',
             '#markup' => $this->t(
@@ -808,8 +824,10 @@ class BrapiDatatypeFormBase extends EntityForm {
             . '<br/><pre>'
             . implode(
               '<br/>',
-              $get_jpath($example_entity->toArray())
+              $get_jpath($example_entity_array)
             )
+            . '</pre><br/>Those JSON Path were generated from the following entity structure:<pre>'
+            . $source_structure
             . '</pre>'
           ];
         }
