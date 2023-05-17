@@ -432,7 +432,7 @@ class BrapiDatatype extends ConfigEntityBase {
               }
               else {
                 // Regular field, get it as string.
-                if (!empty($array_fields[$drupal_mapping['field']])) {
+                if (!empty($array_fields[$brapi_field])) {
                   $brapi_data[$brapi_field] = $field->getValue();
                 }
                 else {
@@ -749,6 +749,13 @@ class BrapiDatatype extends ConfigEntityBase {
         . $this->getBrapiDatatype()
         . '.'
       );
+    }
+    
+    $module_handler = \Drupal::moduleHandler();
+    $data_type_hook = 'brapi_' . strtolower($this->getBrapiDatatype());
+    // Allow other module to alter saved data before saving.
+    if ($module_handler->hasImplementations($data_type_hook . '_save_alter')) {
+      $module_handler->alter($data_type_hook . '_save', $parameters, $this, $storage);
     }
 
     $id_field_name = $this->getBrapiIdField();

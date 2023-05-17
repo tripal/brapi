@@ -298,6 +298,7 @@ class BrapiList extends ContentEntityBase implements BrapiListInterface {
       ])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
+      ->setCardinality(FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
     ;
 
     // @todo: Should be rendered using date(DATE_ATOM, $entity->created).

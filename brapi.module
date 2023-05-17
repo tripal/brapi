@@ -7,6 +7,7 @@
 
 use Drupal\brapi\Entity\BrapiDatatype;
 use Drupal\brapi\Entity\BrapiToken;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 const BRAPI_PERMISSION_USE      = 'use brapi';
@@ -760,3 +761,106 @@ function brapi_get_term_singular(string $term) :string {
   return $singular;
 }
 
+
+/**
+ * Implements hook_brapi_call_CALL_SIGNATURE_result_alter().
+ *
+ * This implementation alters the 'data' result of list details. By default, it
+ * is mapped to a Drupal array of string fields which is turned into an array
+ * containing 'value' keys. The implementation removes the 'value' keys and
+ * flatten the array.
+ *
+ * It also turns dates into the appropriate format.
+ */
+function brapi_brapi_call_get_v2_lists_listdbid_result_alter(&$json_array, array &$context) {
+  // Flatten data.
+  if (!empty($json_array['result']['data'])) {
+    $json_array['result']['data'] = array_map(
+      function ($d) {
+        return $d['value'] ?? $d;
+      },
+      $json_array['result']['data']
+    );
+  }
+  // Adjust date format.
+  if (!empty($json_array['result']['dateCreated'])
+    && is_numeric($json_array['result']['dateCreated'])
+  ) {
+    $json_array['result']['dateCreated'] = date(DATE_ATOM, $json_array['result']['dateCreated']);
+  }
+  if (!empty($json_array['result']['dateModified'])
+    && is_numeric($json_array['result']['dateModified'])
+  ) {
+    $json_array['result']['dateModified'] = date(DATE_ATOM, $json_array['result']['dateModified']);
+  }
+
+  // Manage externalReferences.
+  if (!empty($json_array['result']['externalReferences'])
+    && is_array($json_array['result']['externalReferences'])
+  ) {
+    $new_extref_values = [];
+    foreach ($json_array['result']['externalReferences'] as $extref) {
+      if (is_array($extref) && !empty($extref['value'])) {
+        $extref = json_decode($extref['value']) ?: $extref;
+      }
+      $new_extref_values[] = $extref;
+    }
+    $json_array['result']['externalReferences'] = $new_extref_values;
+  }
+
+}
+
+/**
+ * Implements hook_brapi_call_CALL_SIGNATURE_result_alter().
+ */
+function brapi_brapi_call_put_v2_lists_listdbid_result_alter(&$json_array, array &$context) {
+  brapi_brapi_call_get_v2_lists_listdbid_result_alter($json_array, $context);
+}
+
+/**
+ * Implements hook_brapi_call_CALL_SIGNATURE_result_alter().
+ */
+function brapi_brapi_call_post_v2_lists_listdbid_data_result_alter(&$json_array, array &$context) {
+  brapi_brapi_call_get_v2_lists_listdbid_result_alter($json_array, $context);
+}
+
+/**
+ * Implements hook_brapi_call_CALL_SIGNATURE_result_alter().
+ */
+function brapi_brapi_call_post_v2_lists_listdbid_items_result_alter(&$json_array, array &$context) {
+  brapi_brapi_call_get_v2_lists_listdbid_result_alter($json_array, $context);
+}
+
+/**
+ * Implements hook_brapi_BRAPI_DATA_TYPE_save_alter().
+ */
+function brapi_brapi_listdetails_save_alter(
+  array &$data,
+  BrapiDatatype &$data_type,
+  EntityStorageInterface &$storage
+) {
+  // Convert dates.
+  $date_created = strtotime($data['dateCreated'] ?? '');
+  if ($date_created) {
+    $data['dateCreated'] = $date_created;
+  }
+  $date_modified = strtotime($data['dateModified'] ?? '');
+  if ($date_modified) {
+    $data['dateModified'] = $date_modified;
+  }
+  // Manage externalReferences.
+  if (!empty($data['externalReferences'])
+    && is_array($data['externalReferences'])
+  ) {
+    $new_extref_values = [];
+    foreach ($data['externalReferences'] as $extref) {
+      if (!is_string($extref)) {
+        $extref = json_encode($extref);
+      }
+      $new_extref_values[] = $extref;
+    }
+    $data['externalReferences'] = $new_extref_values;
+  }
+}
+
+// @todo: manage special output formats (eg. /phenotypes-search/csv)

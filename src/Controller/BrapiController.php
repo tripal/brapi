@@ -178,58 +178,91 @@ class BrapiController extends ControllerBase {
       }
 
       // Manage call cases.
-      if (0 === strpos($call, '/search/')) {
-        $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
+      $context = [
+        'request' => $request,
+        'config'  => $config,
+        'version' => $version,
+        'call'    => $call,
+        'method'  => $method,
+      ];
+      $module_handler = \Drupal::moduleHandler();
+      $call_hook =
+        'brapi_call_'
+        . $method
+        . '_'
+        . $version
+        . strtolower(rtrim(preg_replace('/\W+/', '_', $call), '_'))
+      ;
+      // Check for external implementations.
+      if ($module_handler->hasImplementations('brapi_call_alter')) {
+        $module_handler->alter('brapi_call', $json_array, $context);
       }
-      elseif (('v2' == $version) && ('/serverinfo' == $call)) {
-        $json_array = $this->processV2ServerInfoCall($request, $config, $version, $call, $method);
-      }
-      elseif (('v1' == $version) && ('/calls' == $call)) {
-        $json_array = $this->processV1CallsCall($request, $config, $version, $call, $method);
-      }
-      elseif (('v1' == $version) && ('/login' == $call)) {
-        $json_array = $this->processV1LoginCall($request, $config, $version, $call, $method);
-      }
-      elseif (('v1' == $version) && ('/logout' == $call)) {
-        $json_array = $this->processV1LogoutCall($request, $config, $version, $call, $method);
-      }
-      elseif ((1 == count($brapi_def['calls'][$call]['data_types']))
-        || ('/lists' == $call)
-      ) {
-        // Special case of '/lists' thats uses 2 data types. The right one is
-        // selected in processQueryObjectCalls() by a dedicated "if".
+      // If not externally implemented, check specific implementations and
+      // fallback to default.
+      if (!isset($json_array)) {
+        if ($module_handler->hasImplementations($call_hook . '_alter')) {
+          $module_handler->alter($call_hook, $json_array, $context);
+        }
+        elseif (0 === strpos($call, '/search/')) {
+          $json_array = $this->processSearchCalls($request, $config, $version, $call, $method);
+        }
+        elseif (('v2' == $version) && ('/serverinfo' == $call)) {
+          $json_array = $this->processV2ServerInfoCall($request, $config, $version, $call, $method);
+        }
+        elseif (('v1' == $version) && ('/calls' == $call)) {
+          $json_array = $this->processV1CallsCall($request, $config, $version, $call, $method);
+        }
+        elseif (('v1' == $version) && ('/login' == $call)) {
+          $json_array = $this->processV1LoginCall($request, $config, $version, $call, $method);
+        }
+        elseif (('v1' == $version) && ('/logout' == $call)) {
+          $json_array = $this->processV1LogoutCall($request, $config, $version, $call, $method);
+        }
+        elseif ((1 == count($brapi_def['calls'][$call]['data_types']))
+          || ('/lists' == $call)
+        ) {
+          // Special case of '/lists' thats uses 2 data types. The right one is
+          // selected in processQueryObjectCalls() by a dedicated "if".
 
-        // Call works with one data type: a regular BrAPI object call.
-        if (('delete' == $method)
-          || (('post' == $method) && (str_contains($call, '/delete')))
-        ) {
-          $json_array = $this->processDeleteObjectCalls($request, $config, $version, $call, $method);
+          // Call works with one data type: a regular BrAPI object call.
+          if (('delete' == $method)
+            || (('post' == $method) && (str_contains($call, '/delete')))
+          ) {
+            $json_array = $this->processDeleteObjectCalls($request, $config, $version, $call, $method);
+          }
+          elseif (('get' == $method)
+              || (('post' == $method) && (str_contains($call, 'search')))
+          ) {
+            $json_array = $this->processQueryObjectCalls($request, $config, $version, $call, $method);
+          }
+          elseif ('post' == $method) {
+            $json_array = $this->processPostObjectCalls($request, $config, $version, $call, $method);
+          }
+          elseif ('put' == $method) {
+            $json_array = $this->processPutObjectCalls($request, $config, $version, $call, $method);
+          }
+          else {
+            \Drupal::logger('brapi')->warning('Unsupported call method: %method for %call (%version)', ['%method' => $method, '%call' => $call, '%version' => $version, ]);
+          }
         }
-        elseif (('get' == $method)
-            || (('post' == $method) && (str_contains($call, 'search')))
-        ) {
-          $json_array = $this->processQueryObjectCalls($request, $config, $version, $call, $method);
-        }
-        elseif ('post' == $method) {
-          $json_array = $this->processPostObjectCalls($request, $config, $version, $call, $method);
-        }
-        elseif ('put' == $method) {
-          $json_array = $this->processPutObjectCalls($request, $config, $version, $call, $method);
+        elseif ($module_handler->hasImplementations('brapi_unsupported_call_alter')) {
+          $module_handler->alter('brapi_unsupported_call', $json_array, $context);
         }
         else {
-          \Drupal::logger('brapi')->warning('Unsupported call method: %method for %call (%version)', ['%method' => $method, '%call' => $call, '%version' => $version, ]);
+          \Drupal::logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
         }
       }
-      else {
-        \Drupal::logger('brapi')->warning('Unsupported call type: %call (%version)', ['%call' => $call, '%version' => $version, ]);
+
+      // Manage other special call cases.
+      if ($module_handler->hasImplementations('brapi_call_result_alter')) {
+        $module_handler->alter('brapi_call_result', $json_array, $context);
       }
-
-      // @todo: Manage other special call cases.
-      // -manage special output formats (eg. /phenotypes-search/csv)
-
-      // https://api.drupal.org/api/drupal/vendor!symfony!http-foundation!Request.php/class/Request/9.3.x
-      // https://api.drupal.org/api/drupal/vendor%21symfony%21routing%21Route.php/class/Route/9.3.x
-      // https://api.drupal.org/api/drupal/vendor%21symfony%21http-foundation%21ParameterBag.php/class/ParameterBag/9.3.x
+      if ($module_handler->hasImplementations($call_hook . '_result_alter')) {
+        $module_handler->alter($call_hook . '_result', $json_array, $context);
+      }
+      if (!empty($context['response'])) {
+        return $context['response'];
+      }
 
       // Check if the whole response is not specific and has not been set already.
       if (!isset($json_array)) {
@@ -1533,7 +1566,7 @@ class BrapiController extends ControllerBase {
       throw new BadRequestHttpException($message);
     }
 
-    $result = ['result' => ['data' => [$brapi_data]]];
+    $result = ['result' => $brapi_data];
     $parameters = [
       'page_size'   =>  1,
       'page'        =>  0,
