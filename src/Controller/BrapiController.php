@@ -1611,6 +1611,8 @@ class BrapiController extends ControllerBase {
     string $method
   ) {
     // Get associated data type.
+    $active_def = $config->get($version . 'def');
+    $brapi_def = brapi_get_definition($version, $active_def);
     $datatype = array_keys($brapi_def['calls'][$call]['data_types'])[0];
     $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
     $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);

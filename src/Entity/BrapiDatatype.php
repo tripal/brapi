@@ -884,7 +884,7 @@ class BrapiDatatype extends ConfigEntityBase {
    * @throw \Drupal\brapi\Exception\BrapiStorageException
    * @see https://api.drupal.org/api/drupal/core%21includes%21common.inc/10
    */
-  public function deleteBrapiData(array $parameters) :int {
+  public function deleteBrapiData(array $parameters) :array {
 
     $storage = \Drupal::service('entity_type.manager')
       ->getStorage($this->getMappedEntityTypeId())
@@ -925,8 +925,8 @@ class BrapiDatatype extends ConfigEntityBase {
           . ")."
         );
       }
-      $removed[] = $entity->id;
-      $storage->delete($entity);
+      $removed[] = $entity->id();
+      $storage->delete([$entity]);
     }
 
     return $removed;

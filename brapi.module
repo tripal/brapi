@@ -298,6 +298,8 @@ function brapi_get_definition(string $version, string $subversion) :array {
         $versions[$version_key] = $definition;
       }
     }
+    $module_handler = \Drupal::moduleHandler();
+    $module_handler->alter('brapi_definition', $versions, $version_key);
   }
 
   return $versions[$version_key];
@@ -863,4 +865,104 @@ function brapi_brapi_listdetails_save_alter(
   }
 }
 
-// @todo: manage special output formats (eg. /phenotypes-search/csv)
+/**
+ * Implements hook_brapi_definition_alter().
+ *
+ * Adds a delete method to /lists/{listDbId}.
+ */
+function brapi_brapi_definition_alter(
+  array &$versions,
+  string &$version_key,
+) {
+  if (empty($versions[$version_key]['calls']['/lists/{listDbId}']['definition']['delete'])) {
+    $versions[$version_key]['calls']['/lists/{listDbId}']['definition']['delete'] = [
+      "tags" => [
+        "Lists",
+      ],
+      "summary" => "Removes a specific list",
+      "description" => "Removes a specific list",
+      "parameters" => [
+        [
+          "name" => "listDbId",
+          "in" => "path",
+          "description" => "The unique ID of this generic list",
+          "required" => true,
+          "style" => "simple",
+          "explode" => false,
+          "schema" => [
+            "type" => "string",
+          ],
+        ],
+        [
+          "name" => "Authorization",
+          "in" => "header",
+          "description" => "HTTP HEADER - Token used for Authorization\n\n<strong> Bearer {token_string} </strong>",
+          "required" => false,
+          "style" => "simple",
+          "explode" => false,
+          "schema" => [
+            "pattern" => "^Bearer .*$",
+            "type" => "string",
+          ],
+          "example" => "Bearer XXXX",
+        ],
+      ],
+      "responses" => [
+        200 => [
+          "description" => "OK",
+          "content" => [
+            "application/json" => [
+              "schema" => [
+                "$ref" => "#/components/schemas/ListsSingleResponse",
+              ],
+            ],
+          ],
+        ],
+        400 => [
+          "description" => "Bad Request",
+          "content" => [
+            "application/json" => [
+              "schema" => [
+                "type" => "string",
+              ],
+              "example" => "ERROR - 2018-10-08T18:15:11Z - Malformed JSON Request Object\n\nERROR - 2018-10-08T18:15:11Z - Invalid query parameter\n\nERROR - 2018-10-08T18:15:11Z - Required parameter is missing",
+            ],
+          ],
+        ],
+        401 => [
+          "description" => "Unauthorized",
+          "content" => [
+            "application/json" => [
+              "schema" => [
+                "type" => "string",
+              ],
+              "example" => "ERROR - 2018-10-08T18:15:11Z - Missing or expired authorization token",
+            ],
+          ],
+        ],
+        403 => [
+          "description" => "Forbidden",
+          "content" => [
+            "application/json" => [
+              "schema" => [
+                "type" => "string",
+              ],
+              "example" => "ERROR - 2018-10-08T18:15:11Z - User does not have permission to perform this action",
+            ],
+          ],
+        ],
+        404 => [
+          "description" => "Not Found",
+          "content" => [
+            "application/json" => [
+              "schema" => [
+                "type" => "string",
+              ],
+              "example" => "ERROR - 2018-10-08T18:15:11Z - The requested object DbId is not found",
+            ],
+          ],
+        ],
+      ],
+    ];
+  }
+}

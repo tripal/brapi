@@ -3,11 +3,10 @@ To Do List
 
 Manage special calls with files outputs, manage subcalls that return multiple
 values for a given object: this should be solved by call alteration hooks.
-  ex.: /seedlots/{seedLotDbId}/transactions
-  BrapiController.php, in processQueryObjectCalls(), line 565.
-  // @todo: also check for sub-calls that may have an identifier in the filter
+  ex.: /seedlots/{seedLotDbId}/transactions, /phenotypes-search/csv,
+  /lists/{listDbId}/data
 
-Fix code @todo.
+Fix code @todos.
 
 Improve interface access token management.
   - add admin interface for global management (interface BrapiToken::purgeExpiredTokens())
