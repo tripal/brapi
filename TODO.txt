@@ -2,26 +2,30 @@ To Do List
 ==========
 
 Manage special calls with files outputs, manage subcalls that return multiple
-values for a given object: this should be solved by call alteration hooks.
+values for a given object. Create a dedicated example sub-module.
   ex.: /seedlots/{seedLotDbId}/transactions, /phenotypes-search/csv,
   /lists/{listDbId}/data
 
-Fix code @todos.
+Button to auto-generates missing content type fields to match a BrAPI data type.
+  Also possible to auto-generate a full external entity with fields and data mapping.
 
-Improve interface access token management.
+Fix code @todos and admin interface @todos.
+
+Provide a default mapping for Chado databases.
+
+Improve interface access token management and test permissions.
   - add admin interface for global management (interface BrapiToken::purgeExpiredTokens())
   - possibility to create permanent tokens (expiration = -1)
 
-Documentation.
+Documentation. Hook examples/documentation. Tutorials.
 
 Add automated tests.
   /tests directory.
 
-Manual (UI) tests to check BrAPI specifications compliance.
+Manual (UI) tests to check BrAPI specifications compliance (mapping and calls
+  pages).
   Should include a call test page to check BrAPI compliance against specs.
 
 Support Drupal config export.
-
-Auto-generates content type fields to match a BrAPI object model.
 
 Drupal 10 compatibility.

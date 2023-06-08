@@ -57,6 +57,8 @@ function hook_brapi_call_alter(&$json_array, array &$context) {
  *   - 'version': a version string, either 'v1' or 'v2';
  *   - 'call'   : the call name string. ex.: '/lists/{listDbId}'
  *   - 'method' : the lowercase method string ex.: 'get', 'post', 'put',...
+ *
+ * @see main BrAPI hook documentation for CALL_SIGNATURE format details.
  */
 function hook_brapi_call_CALL_SIGNATURE_alter(&$json_array, array &$context) {
 }
@@ -115,6 +117,8 @@ function hook_brapi_call_result_alter(&$json_array, array &$context) {
  *   - 'version': a version string, either 'v1' or 'v2';
  *   - 'call'   : the call name string. ex.: '/lists/{listDbId}'
  *   - 'method' : the lowercase method string ex.: 'get', 'post', 'put',...
+ *
+ * @see main BrAPI hook documentation for CALL_SIGNATURE format details.
  */
 function hook_brapi_call_CALL_SIGNATURE_result_alter(&$json_array, array &$context) {
   // This example changes ['result']['data'] from
