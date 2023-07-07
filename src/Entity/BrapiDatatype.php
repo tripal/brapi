@@ -178,8 +178,8 @@ class BrapiDatatype extends ConfigEntityBase {
    *
    * @param array $parameters
    *   An associative array. Keys starting with '#' contain special values such
-   *   as pager data and other keys are considered as field names with their
-   *   associated values to use to filter data.
+   *   as pagination data and other keys are considered as field names with
+   *   their associated values to use to filter data.
    *   Special values:
    *   #entity: used by submapping to grab field values from an already loaded
    *     entity.
@@ -446,8 +446,8 @@ class BrapiDatatype extends ConfigEntityBase {
             \Drupal::logger('brapi')->warning(
               'Invalid datatype field mapping for BrAPI object field "%brapi_field" to Drupal entity field "%drupal_field".',
               [
-                '%brapi_field'  => $drupal_field,
-                '%drupal_field' => $drupal_field,
+                '%brapi_field'  => $brapi_field,
+                '%drupal_field' => $drupal_mapping['field'],
               ]
             );
           }
@@ -538,16 +538,18 @@ class BrapiDatatype extends ConfigEntityBase {
         }
         // Entity passed filtration.
         $result[] = $brapi_data;
-        // Manage pager.
+        // Manage pagination.
         if (!empty($page_size)) {
           ++$item_count;
           if (count($result) == $page_size) {
             // We got a full page.
             if ($current_page == $page) {
               // We got our page.
+              // $post_result is only filled when a page is complete and
+              // correspond to the requested page.
               $post_result = $result;
             }
-            // Empty list and proceed to next page.
+            // Empty list and proceed to next page filling.
             $result = [];
             ++$current_page;
           }
@@ -560,10 +562,11 @@ class BrapiDatatype extends ConfigEntityBase {
     }
 
     // Manage post-filtering pagination.
-    if (!empty($page_size)) {
+    if (!empty($post_filters) && !empty($page_size)) {
       // Make sure the client did not ask a higher page.
       if ($current_page < $page) {
-        $result = [];
+        // Requested page does not exist, return an empty set.
+        $post_result = [];
       }
       elseif (empty($post_result) && ($current_page == $page)) {
         // The last page may not be complete and $post_result may not be filled.

@@ -901,7 +901,7 @@ function brapi_brapi_definition_alter(
           "style" => "simple",
           "explode" => false,
           "schema" => [
-            "pattern" => "^Bearer .*$",
+            "pattern" => "^Bearer .*\$",
             "type" => "string",
           ],
           "example" => "Bearer XXXX",
@@ -913,7 +913,7 @@ function brapi_brapi_definition_alter(
           "content" => [
             "application/json" => [
               "schema" => [
-                "$ref" => "#/components/schemas/ListsSingleResponse",
+                "\$ref" => "#/components/schemas/ListsSingleResponse",
               ],
             ],
           ],

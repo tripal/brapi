@@ -362,18 +362,23 @@ class BrapiController extends ControllerBase {
     $content = $request->getContent();
     if (!empty($content)) {
       $json_input = json_decode($content, TRUE);
-    }
-    if ($raise_error && !isset($json_input)) {
-      $message =
-        $error_message
-        . (
-          empty($content)?
-          ''
-          : "\n" . json_last_error_msg()
-        )
-      ;
-      \Drupal::logger('brapi')->error($message);
-      throw new BadRequestHttpException($message);
+      if (!isset($json_input)) {
+        $message =
+          $error_message
+          . (
+            empty($content)?
+            ''
+            : "\n" . json_last_error_msg()
+          )
+        ;
+        \Drupal::logger('brapi')->error(
+          $message . "\nInput data: {input}",
+          ['input' => $content, ]
+        );
+        if ($raise_error) {
+          throw new BadRequestHttpException($message);
+        }
+      }
     }
     return $json_input ?? [];
   }
@@ -842,7 +847,7 @@ class BrapiController extends ControllerBase {
     string $call,
     string $method
   ) {
-    // Prepare pagger.
+    // Prepare pagination.
     $page_size   = 1;
     $page        = 0;
     $total_count = 1;
@@ -996,7 +1001,7 @@ class BrapiController extends ControllerBase {
             'message'     => 'Search results loaded from cache.',
             'messageType' => 'INFO',
           ];
-          // Manage pager.
+          // Manage pagination.
           $page_size = $this->getCleanPageSize(
             $config,
             $request->query->get('pageSize')
@@ -1139,7 +1144,7 @@ class BrapiController extends ControllerBase {
         }
         // Try from GET parameters.
         $param_value =
-          $request->query->get($field_name )
+          $request->query->get($field_name)
           ?? $request->query->get(brapi_get_term_plural($field_name))
           ?? $request->query->get(brapi_get_term_singular($field_name))
         ;
@@ -1293,7 +1298,7 @@ class BrapiController extends ControllerBase {
     }
     // Process query filters.
     $processed_filters = ['page', 'pageSize', 'Authorization', ];
-    foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] as $filter_param) {
+    foreach ($brapi_def['calls'][$call]['definition'][$method]['parameters'] ?? [] as $filter_param) {
       $param_name = $filter_param['name'];
       // Only take into account parameters in URL query string and skip
       // output control parameters.
