@@ -287,6 +287,7 @@ class BrapiController extends ControllerBase {
       if (!empty($json_array['metadata']['status']['code'])) {
         // Here we could delete the 'code' key from the status array if we want.
         $response->setStatusCode($json_array['metadata']['status']['code']);
+        delete($json_array['metadata']['status']['code']);
       }
     }
     catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
