@@ -520,7 +520,7 @@ class BrapiController extends ControllerBase {
       $calls[] = [
         'contentTypes' => [BRAPI_MIME_JSON],
         'dataTypes'    => [BRAPI_MIME_JSON],
-        'methods'      => $methods,
+        'methods'      => array_values($methods),
         'service'      => substr($call, 1),
         'versions'     => [$active_def],
       ];
