@@ -287,7 +287,7 @@ class BrapiController extends ControllerBase {
       if (!empty($json_array['metadata']['status']['code'])) {
         // Here we could delete the 'code' key from the status array if we want.
         $response->setStatusCode($json_array['metadata']['status']['code']);
-        delete($json_array['metadata']['status']['code']);
+        unset($json_array['metadata']['status']['code']);
       }
     }
     catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
@@ -510,6 +510,7 @@ class BrapiController extends ControllerBase {
     $active_def = $config->get('v2def');
     $call_settings = $config->get('calls');
     $calls = [];
+    $user = \Drupal::currentUser();
     foreach ($call_settings['v2'] as $call => $methods) {
       $methods = array_intersect(
         ['GET', 'DELETE', 'POST', 'PUT'],
@@ -518,13 +519,39 @@ class BrapiController extends ControllerBase {
           array_keys(array_filter($methods))
         )
       );
-      $calls[] = [
-        'contentTypes' => [BRAPI_MIME_JSON],
-        'dataTypes'    => [BRAPI_MIME_JSON],
-        'methods'      => array_values($methods),
-        'service'      => substr($call, 1),
-        'versions'     => [$active_def],
-      ];
+
+      // Check BrAPI access permission.
+      foreach ($methods as $index => $method) {
+        $read_mode = ($method == 'GET');
+        if (($method == 'POST')
+          && (FALSE !== strpos($call, 'search'))
+        ) {
+          $read_mode = TRUE;
+        }
+        if ((!($read_mode && $user->hasPermission(BRAPI_PERMISSION_USE)))
+            && (!$user->hasPermission(BRAPI_PERMISSION_EDIT))
+            && (!$user->hasPermission(BRAPI_PERMISSION_ADMIN))
+        ) {
+          // Check call permission.
+          $allowed_roles = array_keys(
+            array_filter($call_settings['v2'][$call][$method . '_access'] ?? [])
+          );
+          if (empty(array_intersect($allowed_roles, $user->getRoles()))) {
+            // No maching role, not allowed.
+            unset($methods[$index]);
+          }
+        }
+      }
+
+      if (!empty($methods)) {
+        $calls[] = [
+          'contentTypes' => [BRAPI_MIME_JSON],
+          'dataTypes'    => [BRAPI_MIME_JSON],
+          'methods'      => array_values($methods),
+          'service'      => substr($call, 1),
+          'versions'     => [$active_def],
+        ];
+      }
     }
     $metadata = $this->generateMetadata($request, $config);
     $result = [
