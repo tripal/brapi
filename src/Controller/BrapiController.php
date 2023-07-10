@@ -13,6 +13,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -132,20 +133,27 @@ class BrapiController extends ControllerBase {
       $config = \Drupal::config('brapi.settings');
       $call_settings = $config->get('calls');
 
-      // Check if we have something for that call and method.
-      if (empty($call_settings[$version][$call][$method])) {
-        $message = "No available settings for call '$call' ($version) using method $method.";
-        \Drupal::logger('brapi')->error($message);
-        throw new NotFoundHttpException($message);
-      }
-
       // Make sure we got a definition.
       $active_def = $config->get($version . 'def');
       $brapi_def = brapi_get_definition($version, $active_def);
       if (empty($brapi_def['calls'][$call])) {
+        $message = "No available definition for call '$call' ($version, $active_def).";
+        \Drupal::logger('brapi')->error($message);
+        throw new NotFoundHttpException($message);
+      }
+
+      // Make sure we got a definition for the selected method.
+      if (empty($brapi_def['calls'][$call]['definition'][$method])) {
         $message = "No available definition for call '$call' ($version, $active_def) using method $method.";
         \Drupal::logger('brapi')->error($message);
         throw new NotFoundHttpException($message);
+      }
+
+      // Check if we have something for that call and method.
+      if (empty($call_settings[$version][$call][$method])) {
+        $message = "No available settings for call '$call' ($version) using method $method.";
+        \Drupal::logger('brapi')->error($message);
+        throw new HttpException(Response::HTTP_NOT_IMPLEMENTED, $message);
       }
 
       // Check BrAPI access permission.
@@ -1367,7 +1375,7 @@ class BrapiController extends ControllerBase {
           ['%count' => count($entities), '%call' => $route->getPath(), ]
         );
       }
-      $result = ['result' => current($entities)];
+      $result = ['result' => current($entities) ?: []];
     }
     else {
       // Check for multiple results that directly provide the "data" structure.
