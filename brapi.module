@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 const BRAPI_PERMISSION_USE      = 'use brapi';
 const BRAPI_PERMISSION_EDIT     = 'edit brapi content';
 const BRAPI_PERMISSION_SPECIFIC = 'use restricted brapi';
-const BRAPI_PERMISSION_ADMIN    = 'administrate brapi';
+const BRAPI_PERMISSION_ADMIN    = 'administer brapi';
 const BRAPI_DEFAULT_PAGE_SIZE  = 40;
 const BRAPI_DEFAULT_PAGE_SIZE_MAX  = 200;
 const BRAPI_DATATYPE_ID_REGEXP = '/^(v[\d])-([^\-]+)-([^\-]+)-?(.*)$/';

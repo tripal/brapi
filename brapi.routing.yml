@@ -60,7 +60,7 @@ brapi.admin:
     _form: '\Drupal\brapi\Form\BrapiAdminForm'
     _title: 'BrAPI Administration'
   requirements:
-    _permission: 'administer site configuration,administrate brapi'
+    _permission: 'administer site configuration,administer brapi'
 
 brapi.datatypes:
   path: '/brapi/admin/datatypes'
@@ -68,7 +68,7 @@ brapi.datatypes:
     _form: '\Drupal\brapi\Form\BrapiDataTypesForm'
     _title: 'BrAPI Data Types Administration'
   requirements:
-    _permission: 'administer site configuration,administrate brapi'
+    _permission: 'administer site configuration,administer brapi'
 
 entity.brapidatatype.list:
   path: '/brapi/admin/datatypes/list'
@@ -76,7 +76,7 @@ entity.brapidatatype.list:
     _entity_list: brapidatatype
     _title: 'BrAPI Data Mapping'
   requirements:
-    _permission: 'administer site configuration,administrate brapi'
+    _permission: 'administer site configuration,administer brapi'
 
 entity.brapidatatype.add_form:
   path: '/brapi/admin/datatypes/add/{mapping_id}'
@@ -109,7 +109,7 @@ brapi.calls:
     _form: '\Drupal\brapi\Form\BrapiCallsForm'
     _title: 'BrAPI Calls Administration'
   requirements:
-    _permission: 'administer site configuration,administrate brapi'
+    _permission: 'administer site configuration,administer brapi'
 
 route_callbacks:
   - '\Drupal\brapi\Routing\BrapiRoutes::routes'

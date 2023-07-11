@@ -3,3 +3,5 @@ type: module
 description: 'Plant Breeding API server implementation for Drupal.'
 package: 'Tripal'
 core_version_requirement: ^8.8 || ^9 || ^10
+dependencies:
+  - drupal:datetime

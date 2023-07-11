@@ -4,8 +4,8 @@
 'edit brapi content':
   title: 'Edit BrAPI content'
   description: Allows clients to modify any data through BrAPI.
-'administrate brapi':
-  title: 'Administrate BrAPI'
+'administer brapi':
+  title: 'Administer BrAPI'
   description: Allows access to BrAPI administration froms.
 'use restricted brapi':
   title: 'Only use specified BrAPI calls'
