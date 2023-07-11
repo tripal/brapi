@@ -9,6 +9,8 @@ use Drupal\brapi\Entity\BrapiDatatype;
 use Drupal\brapi\Entity\BrapiToken;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 const BRAPI_PERMISSION_USE      = 'use brapi';
 const BRAPI_PERMISSION_EDIT     = 'edit brapi content';
@@ -863,6 +865,89 @@ function brapi_brapi_listdetails_save_alter(
     }
     $data['externalReferences'] = $new_extref_values;
   }
+}
+
+/**
+ * Implements hook_brapi_call_CALL_SIGNATURE_result_alter().
+ *
+ * Handles specificities of the /lists/{listDbId}/data POST call.
+ */
+function brapi_brapi_call_post_v2_lists_listdbid_data_alter(&$json_array, array &$context) {
+  // Variable aliases.
+  $controller = &$context['controller'];
+  $request = &$context['request'];
+  $config = &$context['config'];
+  $version = &$context['version'];
+  $call = &$context['call'];
+  $method = &$context['method'];
+
+  // Load the list.
+  $active_def = $config->get($version . 'def');
+  $brapi_def = brapi_get_definition($version, $active_def);
+  $datatype = 'ListDetails';
+  $mapping_loader = \Drupal::service('entity_type.manager')->getStorage('brapidatatype');
+  $datatype_id = brapi_generate_datatype_id($datatype, $version, $active_def);
+  $datatype_mapping = $mapping_loader->load($datatype_id);
+  if (empty($datatype_mapping)) {
+    $message = "No mapping available for data type '$datatype_id'.";
+    \Drupal::logger('brapi')->error($message);
+    throw new NotFoundHttpException($message);
+  }
+  $filters = $request->attributes->get('_raw_variables')->all();
+  $result = $datatype_mapping->getBrapiData($filters);
+  if (!empty($result['entities'])) {
+    $list_data = current($result['entities']);
+  }
+
+  // Get POST data.
+  $parameters = $controller->getPostData($request);
+  if (empty($parameters)) {
+    throw new BadRequestHttpException('Missing input data to record.');
+  }
+  if (!is_array($parameters)) {
+    throw new BadRequestHttpException('Invalid input data to record. Expecting a list of object identifiers.');
+  }
+  foreach ($parameters as $index => $object_id) {
+    if (!is_string($object_id) && !is_int($object_id)) {
+      throw new BadRequestHttpException('Invalid input data to record. Expecting a list of object identifiers but found an invalid identifier (at position ' . $index . ').');
+    }
+  }
+
+  // Append new items to the list.
+  $list_data['data'] = array_unique(
+    array_merge($list_data['data'] ?? [], $parameters)
+  );
+  
+  $status = [];
+  $brapi_data = [];
+  $id_field_name = $datatype_mapping->getBrapiIdField();
+  try {
+    // Save the list.
+    $new_list_data = $datatype_mapping->saveBrapiData($list_data);
+    $status[] = [
+      'message'     => $datatype_mapping->getBrapiDatatype() . ' ' . ($new_list_data[$id_field_name] ?? '') . ' updated.',
+      'messageType' => 'INFO',
+    ];
+    $brapi_data = $new_list_data;
+  }
+  catch (HttpException $e) {
+    $status[] = [
+      'message'     => 'Failed to update record. ' . $e->getMessage(),
+      'messageType' => 'ERROR',
+    ];
+  }
+
+  $result = ['result' => $brapi_data];
+  $parameters = [
+    'page_size'   =>  $brapi_data ? 1 : 0,
+    'page'        =>  0,
+    'total_count' =>  $brapi_data ? 1 : 0,
+    'status'      =>  $status ?: NULL,
+  ];
+  $metadata = $controller->generateMetadata($request, $config, $parameters);
+
+  // Returns the updated record.
+  $json_array = $metadata + $result;
 }
 
 /**

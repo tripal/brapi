@@ -187,11 +187,12 @@ class BrapiController extends ControllerBase {
 
       // Manage call cases.
       $context = [
-        'request' => $request,
-        'config'  => $config,
-        'version' => $version,
-        'call'    => $call,
-        'method'  => $method,
+        'controller' => $this,
+        'request'    => $request,
+        'config'     => $config,
+        'version'    => $version,
+        'call'       => $call,
+        'method'     => $method,
       ];
       $module_handler = \Drupal::moduleHandler();
       $call_hook =
@@ -519,6 +520,7 @@ class BrapiController extends ControllerBase {
     $call_settings = $config->get('calls');
     $calls = [];
     $user = \Drupal::currentUser();
+    // @todo Add support for URI parameters (contentType, dataType).
     foreach ($call_settings['v2'] as $call => $methods) {
       $methods = array_intersect(
         ['GET', 'DELETE', 'POST', 'PUT'],

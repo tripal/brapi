@@ -244,8 +244,18 @@ class BrapiDatatype extends ConfigEntityBase {
       $query->accessCheck(FALSE);
       $count_query->accessCheck(FALSE);
       foreach ($filters as $name => $value) {
-        $query->condition($name, (array) $value, 'IN');
-        $count_query->condition($name, (array) $value, 'IN');
+        // Manage array of values.
+        if (is_array($value)) {
+          if (!empty($value)) {
+            $query->condition($name, $value, 'IN');
+            $count_query->condition($name, $value, 'IN');
+          }
+        }
+        elseif (isset($value)) {
+          // Single value.
+          $query->condition($name, $value);
+          $count_query->condition($name, $value);
+        }
       }
       // Manage bundle.
       $bundle_key = \Drupal::entityTypeManager()
@@ -431,9 +441,12 @@ class BrapiDatatype extends ConfigEntityBase {
                 );
               }
               else {
-                // Regular field, get it as string.
+                // Regular field, get it as string or array.
                 if (!empty($array_fields[$brapi_field])) {
-                  $brapi_data[$brapi_field] = $field->getValue();
+                  $brapi_data[$brapi_field] = [];
+                  foreach ($field->getIterator() as $item) {
+                    $brapi_data[$brapi_field][] = $item->getString();
+                  }
                 }
                 else {
                   $brapi_data[$brapi_field] = $field->getString();
@@ -801,9 +814,10 @@ class BrapiDatatype extends ConfigEntityBase {
           $drupal_data[$field_name] = $value;
         }
         elseif ('#' != $parameter[0]) {
-          \Drupal::logger('brapi')->warning(
-            'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
-          );
+          // Ignore special fields.
+          // \Drupal::logger('brapi')->warning(
+          //   'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
+          // );
         }
       }
       $entity = $storage->create($drupal_data);
@@ -857,9 +871,10 @@ class BrapiDatatype extends ConfigEntityBase {
           $entity->set($field_name, $value);
         }
         else {
-          \Drupal::logger('brapi')->warning(
-            'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
-          );
+          // Ignore special mappings.
+          // \Drupal::logger('brapi')->warning(
+          //   'BrAPI field "' . $parameter . '" can not be mapped to content type "' . $this->contentType . '". Field value ignored.'
+          // );
         }
       }
     }
@@ -867,9 +882,11 @@ class BrapiDatatype extends ConfigEntityBase {
     $storage->save($entity);
 
     $saved_data = [];
-    $updated_entities = $this->getBrapiData($parameters)['entities'];
-    if (1 == count($updated_entities)) {
-      $saved_data = $updated_entities[0];
+    if (!empty($id_field_name)) {
+      $updated_entities = $this->getBrapiData([$id_field_name => $parameters[$id_field_name]])['entities'];
+      if (1 == count($updated_entities)) {
+        $saved_data = $updated_entities[0];
+      }
     }
 
     return $saved_data;

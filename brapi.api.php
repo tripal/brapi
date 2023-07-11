@@ -2,7 +2,7 @@
 
 use Drupal\brapi\Entity\BrapiDatatype;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Routing\RouteMatchInterface;
+
 /**
  * @file
  * Hooks specific to the Hooks Example module.
