@@ -63,9 +63,11 @@ function brapi_theme($existing, $type, $theme, $path) {
   return [
     'brapi_main' => [
       'template' => 'brapi-main',
+      'variables' => [],
     ],
     'brapi_documentation' => [
       'template' => 'brapi-documentation',
+      'variables' => [],
     ],
     'brapi_token' => [
       'template' => 'brapi-token',
