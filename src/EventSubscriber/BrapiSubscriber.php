@@ -5,7 +5,7 @@ namespace Drupal\brapi\EventSubscriber;
 use Drupal\brapi\Entity\BrapiToken;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -37,10 +37,10 @@ class BrapiSubscriber implements EventSubscriberInterface {
    * @see \Symfony\Component\HttpKernel\KernelEvents
    * @see \Drupal\brapi\Entity\BrapiToken
    *
-   * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param Symfony\Component\HttpKernel\Event\RequestEvent $event
    *   The response event to process.
    */
-  public function BrapiRequest(GetResponseEvent $event) {
+  public function BrapiRequest(RequestEvent $event) {
     $request = \Drupal::request();
     $route = $request->attributes->get('_route_object');
 
